@@ -53,8 +53,12 @@ docs/_build/
 # PyBuilder
 target/
 
-#ROS generated folder
+# ROS generated folder
 devel/
 
+# smach package
+src/executive_smach
+
+# innore backup files that end with "~"
 *.py~
 *~
