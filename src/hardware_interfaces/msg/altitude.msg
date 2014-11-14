@@ -1,0 +1,3 @@
+float32 altitude
+float32 altitude_filt
+float32 altitude_der

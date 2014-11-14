@@ -1,0 +1,12 @@
+int8    cam0
+int8    cam1
+int32   cam0frame
+int32   cam1frame
+float32 cam0size
+float32 cam1size
+float32 latitude
+float32 longitude
+float32 depth
+float32 altitude
+float32 speed
+float32 heading

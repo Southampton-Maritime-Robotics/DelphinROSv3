@@ -1,0 +1,11 @@
+float32 bsp
+float32 b
+float32 csp
+float32 c
+float32 dsp
+float32 d
+float32 esp
+float32 e
+float32 propSP
+float32 current
+float32 rpm
