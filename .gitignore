@@ -55,3 +55,6 @@ target/
 
 #ROS generated folder
 devel/
+
+*.py~
+*~
