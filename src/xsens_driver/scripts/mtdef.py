@@ -1,6 +1,5 @@
 """Constant and messages definition for MT communication."""
 
-
 class MID:
 	"""Values for the message id (MID)"""
 	## Error message, 1 data byte
