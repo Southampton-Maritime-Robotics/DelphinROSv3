@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 # update: 23 October 2014 by Kantapon
 # - In "CS_controller", incorporate a constant into HC.CS_Pgain
 # - In "CS_controller", remove "cur_compass" from an input argument
@@ -12,6 +11,9 @@
 
 # TODO - make the "CS_controller" less agressive at high forward speeds
 # TODO - write a note of how the heading controller is formulated
+# TODO - check if the scalling and saturation work correctly
+# TODO - check if the sway force distribution have been done correctly
+
 
 import roslib; roslib.load_manifest('lowlevel_controllers')
 import rospy
@@ -191,7 +193,7 @@ def system_state(dt):
     
     if error <-180:
         error =   error%360
-    if error > 180:
+    elif error > 180:
         error= -(-error%360)            
 
     if dt == -1:

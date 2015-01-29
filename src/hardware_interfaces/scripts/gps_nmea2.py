@@ -206,7 +206,7 @@ def listenForData(status):
                 print 'Lat: ', latitude_decimal
                 print 'Long: ', longitude_decimal
                 print 'Time: ', time_gps
-                print 'No. sat.:', number_of_satellites
+                print 'No. sat.:', number_of_satelites
                 print 'Fix:',   fix
                 print 'Speed:', speed
                 print 'x:', X
