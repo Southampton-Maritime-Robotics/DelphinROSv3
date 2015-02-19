@@ -37,12 +37,12 @@ class Initialise(smach.State):
                    all_online = (self.__controller.getThrusterStatus() 
                         and self.__controller.getTailStatus()   
                         and self.__controller.getAltimeterStatus()
-                        and True # FIXME kantapon self.__controller.getGPSStatus()
+                        and self.__controller.getGPSStatus()
                         and self.__controller.getCompassStatus())
 ####                   print 'thruster status = ', self.__controller.getThrusterStatus()
 ####                   print 'tail status = ', self.__controller.getTailStatus()
 ####                   print 'alt status = ', self.__controller.getAltimeterStatus()
-####                   print 'gps status = ', True # FIXME kantapon self.__controller.getGPSStatus()
+####                   print 'gps status = ', self.__controller.getGPSStatus()
 ####                   print 'compass status = ', self.__controller.getCompassStatus(), '\n'
                    time.sleep(0.5)
 
@@ -64,7 +64,7 @@ class Initialise(smach.State):
                 print 'thruster status = ', self.__controller.getThrusterStatus()
                 print 'tail status = ', self.__controller.getTailStatus()
                 print 'alt status = ', self.__controller.getAltimeterStatus()
-                print 'gps status = ', True # FIXME kantapon self.__controller.getGPSStatus()
+                print 'gps status = ', self.__controller.getGPSStatus()
                 print 'compass status = ', self.__controller.getCompassStatus()
                 print 'all online = ', all_online
                 print 'time elapsed = ', time.time()-time_zero
@@ -96,5 +96,3 @@ class Initialise(smach.State):
                     str='Initialise State Succeded' 
                     pub.publish(str)  
                     return 'succeeded'
-                
-                

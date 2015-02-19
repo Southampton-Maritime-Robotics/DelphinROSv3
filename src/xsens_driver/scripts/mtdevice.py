@@ -64,7 +64,7 @@ ReqPacket = {'req.Acc_lin','req.Vel_ang','req.Ori'}
 ## XSens MT device communication object.
 class MTDevice(object):
 	"""XSens MT device communication object."""
-	def __init__(self, port, baudrate=115200, timeout=0.001, autoconf=True,
+	def __init__(self, port, baudrate=230400, timeout=0.001, autoconf=True,
 			config_mode=False):
 		"""Open device."""
 		

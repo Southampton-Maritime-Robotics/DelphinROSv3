@@ -54,10 +54,10 @@ def set_params():
     HC.CS_min         = -HC.CS_max
     
 ### Thrust Controller ###
-    HC.Thrust_Pgain =  30000 #0.01
+    HC.Thrust_Pgain =  15000
     HC.Thrust_Igain =  0.00
-    HC.Thrust_Dgain =  10000 # 0.005, 0.05
-    HC.Thrust_Smax  =  15 #  1000    
+    HC.Thrust_Dgain =  10000
+    HC.Thrust_Smax  =  500 #  1000    
 
 ################################################################################
 #### CONTROL SURFACE CONTROLLER ################################################
@@ -69,8 +69,7 @@ def CS_controller(error, int_error, der_error):
     HC.CS_Pterm      = error*HC.CS_Pgain
 ####    HC.CS_Iterm      = int_error*HC.CS_Igain
 # TODO may incorporate a forward speed into a consideration using gain schedualing
-
-# TODO other option: divide the gains with u^2. If the speed is less than a threshold, all gain will be forced to zero
+# TODO other option: divide the gains by u^2. If the speed is less than a threshold, all gain will be set to zero
 
     CS_demand = HC.CS_Pterm
 ####    CS_demand = HC.CS_Pterm + HC.CS_Iterm  
@@ -116,13 +115,18 @@ def thrust_controller(error, int_error, der_error):
     else:
         HC.thruster0 = 0
         HC.thruster1 = 0
-        
-####    str = ">>>>>>>>>>>>>>>>current error is %s" %(error) 
-####    rospy.loginfo(str)
-####    str = ">>>>>>>>>>>>>>>>Thruster0 demand is %s" %(HC.thruster0) 
-####    rospy.loginfo(str)
-####    str = ">>>>>>>>>>>>>>>>Thruster1 demand is %s" %(HC.thruster1) 
-####    rospy.loginfo(str)
+    
+    str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %((HC.heading_demand)%360) 
+    rospy.loginfo(str)  
+    str = ">>>>>>>>>>>>>>>>Current heading demand is %.2fdeg" %(HC.heading) 
+    rospy.loginfo(str)
+    str = ">>>>>>>>>>>>>>>>Error is %.2fdeg" %(error) 
+    rospy.loginfo(str)
+    str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(HC.thruster0) 
+    rospy.loginfo(str)
+    str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(HC.thruster1) 
+    rospy.loginfo(str)
+    print ''
         
     return [HC.thruster0, HC.thruster1]
 
@@ -148,8 +152,6 @@ def main_control_loop():
         time_zero        = time.time()        
         [error, int_error, der_error] = system_state(-1)                            # On first loop, initialize relevant parameters
         
-        print 'About to enter main loop'
-        
         while not rospy.is_shutdown():
 
             dt = time.time() - time_zero                                            # Calculate the elapse time since last calculation
@@ -159,7 +161,6 @@ def main_control_loop():
                 time_zero = time.time()
                 # Get system state #
                 [error, int_error, der_error] = system_state(dt)
-                
                 # Control Surface Controller # Nb CSp = Sternplane port, CSt = Rudder top
                 [CSt, CSb] = CS_controller(error, int_error, der_error)
                     
@@ -170,9 +171,10 @@ def main_control_loop():
 ####                print 'T2 = ',thruster0
 ####                print 'T3 = ',thruster1
 
-#                pub_tail.publish(cs0 =CSt, cs1 = CSb)
-#                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1) # FIXME kantapon: uncomment
-                pub_HC.publish(HC) # update the heading_control.msg, and this will be subscribed by the logger.py
+                # update the heading_control.msg, and this will be subscribed by the logger.py
+                pub_tail.publish(cs0 =CSt, cs1 = CSb)
+                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+                pub_HC.publish(HC) 
             else:
                 time.sleep(0.01)
 

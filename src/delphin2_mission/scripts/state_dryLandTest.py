@@ -72,9 +72,9 @@ class dryLandTest(smach.State):
             
             #### Thruster 0 and 1 ####
             self.__controller.switchVerticalThrusters(1)
-            self.__controller.setTSLVertical(600,600)
+            self.__controller.setArduinoThrusterVertical(600,600)
             time.sleep(3)
-            self.__controller.setTSLVertical(-600,-600)
+            self.__controller.setArduinoThrusterVertical(-600,-600)
             time.sleep(3)
             
             if (numpy.abs(self.__controller.getT0rpm()) < 400):
@@ -98,9 +98,9 @@ class dryLandTest(smach.State):
             
             #### Thruster 2 and 3 ####
             self.__controller.switchHorizontalThrusters(1)
-            self.__controller.setTSLHorizontal(600,600)
+            self.__controller.setArduinoThrusterHorizontal(600,600)
             time.sleep(3)
-            self.__controller.setTSLHorizontal(-600,-600)
+            self.__controller.setArduinoThrusterHorizontal(-600,-600)
             time.sleep(3)
             
             if (numpy.abs(self.__controller.getT2rpm()) < 400):

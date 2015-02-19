@@ -42,7 +42,7 @@
     <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner4.py"  /> 
     
     <!-- <node name="depth_controller" pkg="DelphinROSv2" type="depth_controller.py" output = "screen"/> -->
-    <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller.py"/>
+    <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_P_PID.py"/>
     
     <!-- <node name="heading_controller_MPC_v1" pkg="lowlevel_controllers" type="heading_controller_MPC_nonlinear_v1.py"/> -->
     <node name="depthandspeed_controller_MPC_v5" pkg="lowlevel_controllers" type="depthandspeed_controller_MPC_nonlinear_v5.py" />
