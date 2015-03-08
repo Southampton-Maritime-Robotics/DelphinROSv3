@@ -73,7 +73,7 @@ class GoToXYZ(smach.State):
                 X=self.__controller.getX()
                 Y=self.__controller.getY()
                 heading=self.__controller.getHeading()
-		depth=self.__controller.getDepth()
+                depth=self.__controller.getDepth()
 	
                 #Check if AUV has meet stable time and tolerance in horizontal and vertical positions
                 at_Z  = self.check_Z()

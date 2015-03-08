@@ -13,7 +13,7 @@
     <param name="headType" value="1" />         <!-- 29 for Seaking -->	 
 
     <!-- values common to both -->
-    <param name="SID" value="255" />	      	<!-- Source transmission node -->
+    <param name="SID" value="255" />	     	<!-- Source transmission node -->
     <param name="DID" value="2" />	      	    <!-- Msg destination node -->
     <param name="msgSeq" value="128" />	      	<!-- Default for this message -->
     <param name="Node" value="255" />	      	<!-- Repeat of SID, NOT WHAT IT SAYS IN THE MANUAL -->
@@ -43,5 +43,6 @@
 
     <node name="sonar_node" pkg="hardware_interfaces" type="sonar_node.py" />
     <node name="sonar_detectobstacle" pkg="hardware_interfaces" type="sonar_detectobstacle.py" />
+    <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/> 
  
 </launch>

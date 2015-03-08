@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# import roslib; roslib.load_manifest('delphin2_mission')
+import roslib; roslib.load_manifest('delphin2_mission')
 import rospy
 import smach
 import smach_ros
@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt;
 import sys
 sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts/kantapon')
 #from state_thruster_testing       import thruster_testing
-from state_actions                import actions
+from state_headingControlTest                import headingControlTest
 
 ################################################################################
 #Notes
@@ -162,7 +162,7 @@ def main():
             
 ################################################################################
         # [2/3] Added States
-        smach.StateMachine.add('ACTIONS', actions(lib), 
+        smach.StateMachine.add('ACTIONS', headingControlTest(lib), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################

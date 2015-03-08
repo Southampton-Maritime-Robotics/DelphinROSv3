@@ -30,11 +30,11 @@ from lowlevel_controllers.msg import depthandpitch_MPC
 from lowlevel_controllers.msg import heading_MPC
 from hardware_interfaces.msg import dead_reckoner
 from lowlevel_controllers.msg import heading_control
+from lowlevel_controllers.msg import depth_pitch_control
 from hardware_interfaces.msg import camera_info
 from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import SMS
 from hardware_interfaces.msg import gyro
-from hardware_interfaces.msg import line_info_msg      #for Kantapon
 
 from hardware_interfaces.msg import ForcesAndMoments	#Only temporary
 
@@ -328,6 +328,19 @@ def headingPID_callback(data):
             Writer.writerow(headingPIDList)
         except ValueError:
             print 'writerow error'
+
+
+def depth_pitch_PID_callback(data): 
+    stringtime = time.time()-time_zero
+        
+    depth_pitch_PIDList = [stringtime, data.speed, data.depth, data.depth_demand, data.error_depth, data.int_error_depth, data.der_error_depth, data.deadzone_Depth, data.Depth_Pgain, data.Depth_Igain, data.Depth_Dgain, data.Depth_Pterm, data.Depth_Iterm, data.Depth_Dterm, data.Depth_Thrust, data.pitch, data.pitch_demand, data.error_pitch, data.int_error_pitch, data.der_error_pitch, data.deadzone_Pitch, data.Pitch_Pgain, data.Pitch_Igain, data.Pitch_Dgain, data.Pitch_Pterm, data.Pitch_Iterm, data.Pitch_Dterm, data.cr, data.crMax, data.Thrust_Smax, data.thruster0, data.thruster1]
+    
+    with open('%s/depthPitchPIDLog.csv' %(dirname), "a") as f:
+        try:
+            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            Writer.writerow(depth_pitch_PIDList)
+        except ValueError:
+            print 'writerow error'
             
 ##############################################################
             
@@ -393,26 +406,26 @@ def depthandpitchMPC_callback(data):
         except ValueError:
             print 'writerow error'
 
-def callback_IMU_msg(imu):
-    stringtime = time.time()-time_zero
-    lineList = [stringtime,
-    			imu.temperature,
-    			imu.orientation_roll,
-    			imu.orientation_pitch,
-    			imu.orientation_yaw,
-    			imu.angular_velocity_x,
-    			imu.angular_velocity_y,
-    			imu.angular_velocity_z,
-    			imu.linear_acceleration_x,
-    			imu.linear_acceleration_y,
-    			imu.linear_acceleration_z]
+####def callback_IMU_msg(imu):
+####    stringtime = time.time()-time_zero
+####    lineList = [stringtime,
+####    			imu.temperature,
+####    			imu.orientation_roll,
+####    			imu.orientation_pitch,
+####    			imu.orientation_yaw,
+####    			imu.angular_velocity_x,
+####    			imu.angular_velocity_y,
+####    			imu.angular_velocity_z,
+####    			imu.linear_acceleration_x,
+####    			imu.linear_acceleration_y,
+####    			imu.linear_acceleration_z]
 
-    with open('%s/IMU_Log.csv' %(dirname), "a") as f:
-        try:
-            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            Writer.writerow(lineList)
-        except ValueError:
-            print 'writerow error'
+####    with open('%s/IMU_Log.csv' %(dirname), "a") as f:
+####        try:
+####            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+####            Writer.writerow(lineList)
+####        except ValueError:
+####            print 'writerow error'
 
 ####def callback_GPS_msg(gps):
 ####    stringtime = time.time()-time_zero
@@ -552,7 +565,7 @@ if __name__ == '__main__':
     #rospy.Subscriber('position_dead', position, position_callback)
     rospy.Subscriber('gps_out', gps, gps_callback)
     rospy.Subscriber('altimeter_out',altitude, altimeter_callback)
-    #rospy.Subscriber('sonar_processed', sonar_data, sonar_callback)
+    rospy.Subscriber('sonar_processed', sonar_data, sonar_callback)
     
     
     rospy.Subscriber('MissionStrings', String, mission_callback)
@@ -561,15 +574,15 @@ if __name__ == '__main__':
     rospy.Subscriber('DepthandPitch_MPC_values', depthandpitch_MPC, depthandpitchMPC_callback)
     rospy.Subscriber('dead_reckoner', dead_reckoner, reckoner_callback) 
     rospy.Subscriber('Heading_controller_values', heading_control, headingPID_callback)
+    rospy.Subscriber('Depth_pitch_controller_values', depth_pitch_control, depth_pitch_PID_callback)
     
     rospy.Subscriber('camera_info', camera_info, camera_callback)
     rospy.Subscriber('SMS_info', SMS, SMS_callback)
     rospy.Subscriber('water_temp', Float32, temp_callback)
     rospy.Subscriber('Model_ForcesAndMoments',ForcesAndMoments, FandM_callback)
-    rospy.Subscriber('line_info', line_info_msg, callback_line_info)     #For Kantapon   
     rospy.Subscriber('rate_gyro', gyro, gyro_callback)    
     
-    rospy.Subscriber('IMU_information', IMU_msg, callback_IMU_msg)
+#    rospy.Subscriber('IMU_information', IMU_msg, callback_IMU_msg)
 
     str = "Logger online - output directory: %s" %(dirname)
     rospy.loginfo(str)

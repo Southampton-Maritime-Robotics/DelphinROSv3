@@ -9,8 +9,6 @@ import sys
 sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts')
 from library_highlevel import library_highlevel
 
-
-
 ######################################
 #Modifications
 #30/4/12 Added total water column check and heading error check
@@ -51,7 +49,6 @@ def main(controller):
     
         #Identify OverDepth?
         current_depth=controller.getDepth()
-
         
         if current_depth > overDepth: 
             BackSeatFlag=1

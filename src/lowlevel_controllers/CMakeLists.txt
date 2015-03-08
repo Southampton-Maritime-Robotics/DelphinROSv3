@@ -48,6 +48,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    heading_control.msg
+   depth_pitch_control.msg
    heading_MPC.msg
    depthandspeed_MPC.msg
    depthandpitch_MPC.msg

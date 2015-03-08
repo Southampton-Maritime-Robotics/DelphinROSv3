@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import roslib; roslib.load_manifest('delphin2_mission')
+#import roslib; roslib.load_manifest('delphin2_mission')
 import rospy
 import numpy
 import math
@@ -183,8 +183,8 @@ class library_highlevel:
         output.thruster1=thruster1
         
         #print statement might not work! hasn't been tested!
-        str = "Vertical Thruster Setpoints %s %s" %(thruster0,thruster1)
-        rospy.loginfo(str)
+#        str = "Vertical Thruster Setpoints %s %s" %(thruster0,thruster1)
+#        rospy.loginfo(str)
         self.switchVerticalThrusters(1)
         self.switchDepthOnOff(0)
         time.sleep(0.5)
@@ -196,17 +196,17 @@ class library_highlevel:
         #print 'Setting depth demand: ', demand, 'm'
         self.switchDepthOnOff(1)
         self.switchVerticalThrusters(1)
-        print demand
+#        print demand
         if (demand < self.__maxDepthDemand and demand > 0):
             self.pub_depth_demand.publish(demand)
-            str = "Setting depth demand %sm" %demand
-            rospy.loginfo(str)
-        elif demand <= 0.2:
-            str = "Requested depth demand %sm <=0m, turning vertical thrusters Off. " %	demand
-            self.pub_depth_demand.publish(demand)
-            rospy.logwarn(str)   
-            #self.switchDepthOnOff(0)
-            self.switchVerticalThrusters(0)           
+#            str = "Setting depth demand %sm" %demand
+#            rospy.loginfo(str)
+######        elif demand <= 0.2: # TODO this case will never be in use
+######            str = "Requested depth demand %sm <=0m, turning vertical thrusters Off. " %	demand
+######            self.pub_depth_demand.publish(demand)
+######            rospy.logwarn(str)   
+######            #self.switchDepthOnOff(0)
+######            self.switchVerticalThrusters(0)           
         else:
             self.pub_depth_demand.publish(self.__maxDepthDemand)
             str = "Requested depth %sm > maxDepthDemand (%sm)" %(demand, self.__maxDepthDemand)
@@ -219,19 +219,21 @@ class library_highlevel:
         str = "Setting speed demand %s m/s" %demand
         rospy.loginfo(str)
     
-    
-                
-    # move to depth 'demand' (metres)
     def setPitch(self, demand):
-        #publish depthDemand
-        #print 'Setting depth demand: ', demand, 'm'
         self.switchPitchOnOff(1)
         self.switchVerticalThrusters(1)
         
         if (abs(demand) < self.overpitch):
             self.pub_pitch_demand.publish(demand)
-            str = "Setting pitch demand %sdeg" %demand
-            rospy.loginfo(str)
+#            str = "Setting pitch demand %sdeg" %demand
+#            rospy.loginfo(str)
+        else:
+            demand_mod = numpy.sign(demand)*self.overpitch
+            self.pub_pitch_demand.publish(demand_mod)
+#            str = "Magnitude of requested pitch %sdeg > maxPitchDemand (%sdeg)" %(demand, self.overpitch)
+#            rospy.logwarn(str)
+#            str = "Setting pitch demand %sdeg" %demand_mod
+#            rospy.logwarn(str)
 
     # move to heading 'demand' (degrees)
     def setHeading(self, demand):

@@ -64,7 +64,7 @@ ReqPacket = {'req.Acc_lin','req.Vel_ang','req.Ori'}
 ## XSens MT device communication object.
 class MTDevice(object):
 	"""XSens MT device communication object."""
-	def __init__(self, port, baudrate=230400, timeout=0.001, autoconf=True,
+	def __init__(self, port, baudrate=115200, timeout=0.001, autoconf=True,
 			config_mode=False):
 		"""Open device."""
 		
@@ -121,9 +121,10 @@ class MTDevice(object):
 			
 			def waitfor(size=1):
 				while self.device.inWaiting() < size:
-					if time.time()-new_start >= self.timeout:
-						if not rospy.is_shutdown():
-							raise MTException("timeout waiting for message.")
+					pass
+#					if time.time()-new_start >= self.timeout:
+#						if not rospy.is_shutdown():
+#							raise MTException("timeout waiting for message.")
 			
 			waitfor(bufLength-3)			
 			
@@ -558,9 +559,10 @@ class XSensDriver(object):
 		self.mt.RestoreFactoryDefaults()	
 
 		# initialize topics
-		self.IMU_pub = rospy.Publisher('IMU_information',IMU_msg)
+#		self.IMU_pub = rospy.Publisher('IMU_information',IMU_msg)
 		self.COMPASS_pub = rospy.Publisher('compass_out',compass)
-
+        
+		self.depth = 0.0
 		self.depth_filt = 0.0
 		self.depth_der = 0.0
 
@@ -603,7 +605,7 @@ class XSensDriver(object):
 	def spin_once(self):
 	
 		# create messages and default values
-		imu = IMU_msg()		# Temperature, orientation, angular_velocity, linear_acceleration
+#		imu = IMU_msg()		# Temperature, orientation, angular_velocity, linear_acceleration
 		com = compass()
 		
 		has_Temp = False
@@ -632,7 +634,7 @@ class XSensDriver(object):
 		
 		# fill information where it's due #
 		if has_Temp:
-			imu.temperature = out_Temp['Temp']
+#			imu.temperature = out_Temp['Temp']
 			com.temperature = out_Temp['Temp']
 			pub_IMU = True
 		if has_Ori:
@@ -643,45 +645,48 @@ class XSensDriver(object):
 				out_Ori['Yaw'] = 360-out_Ori['Yaw']
 			else:
 				out_Ori['Yaw'] = -out_Ori['Yaw']
-			# correct a pitch representation
-			out_Ori['Pitch'] = -out_Ori['Pitch']
+####			# correct a pitch representation
+####			out_Ori['Pitch'] = out_Ori['Pitch']
 		
-			imu.orientation_roll = -out_Ori['Roll']
-			imu.orientation_pitch = out_Ori['Pitch']
-			imu.orientation_yaw = out_Ori['Yaw']
-			com.roll = out_Ori['Roll']
+#			imu.orientation_roll = -out_Ori['Roll']
+#			imu.orientation_pitch = out_Ori['Pitch']
+#			imu.orientation_yaw = out_Ori['Yaw']
+			com.roll = -out_Ori['Roll']
 			com.pitch = out_Ori['Pitch']
 			com.heading = out_Ori['Yaw']
 			pub_IMU = True
 		if has_AngVel:
-			imu.angular_velocity_x = -out_AngVel['gyrX']
-			imu.angular_velocity_y = out_AngVel['gyrY']
-			imu.angular_velocity_z = out_AngVel['gyrZ']
+#			imu.angular_velocity_x = -out_AngVel['gyrX']
+#			imu.angular_velocity_y = out_AngVel['gyrY']
+#			imu.angular_velocity_z = out_AngVel['gyrZ']
 			com.angular_velocity_x = -out_AngVel['gyrX']
 			com.angular_velocity_y = out_AngVel['gyrY']
-			com.angular_velocity_z = out_AngVel['gyrZ']
+			com.angular_velocity_z = -out_AngVel['gyrZ']
 			pub_IMU = True
 		if has_Acc:
-			imu.linear_acceleration_x = -out_Acc['accX']
-			imu.linear_acceleration_y = out_Acc['accY']
-			imu.linear_acceleration_z = out_Acc['accZ']
+#			imu.linear_acceleration_x = -out_Acc['accX']
+#			imu.linear_acceleration_y = out_Acc['accY']
+#			imu.linear_acceleration_z = out_Acc['accZ']
 			com.ax = -out_Acc['accX']
 			com.ay = out_Acc['accY']
 			com.az = out_Acc['accZ']
 			pub_IMU = True
 			
 		def callback_COMPASS_msg(com_old):
+			self.depth = com_old.depth
 			self.depth_filt = com_old.depth_filt
 			self.depth_der = com_old.depth_der
+			
 			
 		# get a depth measurement from compass_old topic
 		rospy.Subscriber('compass_old', compass, callback_COMPASS_msg)
 			
 		# publish available information #
 		if pub_IMU:
-			imu.header = h
-			self.IMU_pub.publish(imu)
+#			imu.header = h
+#			self.IMU_pub.publish(imu)
 			# add a depth measurement of old device into the new compass_out topic
+			com.depth = self.depth
 			com.depth_filt = self.depth_filt
 			com.depth_der = self.depth_der
 			self.COMPASS_pub.publish(com)

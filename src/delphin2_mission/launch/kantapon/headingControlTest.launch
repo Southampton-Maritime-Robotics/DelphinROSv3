@@ -1,6 +1,7 @@
+
 <launch>
     <param name="max-depth-demand"    value="8.0" />                  <!-- Maximum depth demand (m) -->
-    <param name="over-depth"          value="10.0" />                  <!-- Maximum depth (m) - causes abort -->
+    <param name="over-depth"          value="10.0" />                 <!-- Maximum depth (m) - causes abort -->
     <param name="over-pitch"          value="45" />                   <!-- Maximum pitch (deg) - causes abort -->
     <param name="over-roll"           value="90" />                   <!-- Maximum roll (deg) - causes abort -->
     <param name="max-internal-temp"   value="45" />                   <!-- Maximum internal pressure vessel temp (deg) - causes abort -->
@@ -11,7 +12,7 @@
     <param name="ImportWaypoints"     value="False" />                <!-- Import Waypoints -->
     <param name="look_ahead_distance" value="10" />                   <!-- look ahead distance (in m) for track following algorithm  effectivly inverse of gain-->    
     
-
+    
     <!--Notes-->
     <!--Testwood lat_orig=50.93642234975332 long_orig=-1.507850997377956 -->
     <!--Based on this origin X=12 and Y=15 is a good location for HOME at Testwood -->
@@ -22,8 +23,7 @@
     <!--Easleigh North lat_orig=50.95702499999999 long_orig=-1.36675104 -->
     <!--Coordinates are for south pier, middle south of lake (X,Y) = (-24.6,30.0) -->
     
-
-    <node name="mission_script" pkg="delphin2_mission" type="mission_script_dryLandTest.py"  output="screen" required="true" /> 
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_kantapon_headingControlTest.py"  output="screen" required="true" /> 
     
     <!-- Add all other nodes under here! -->
     
@@ -31,7 +31,7 @@
 	
     <!-- <node name="compass_dummy" pkg="hardware_interfaces" type="compass_dummy.py" /> -->
     <node name="arduino" pkg="hardware_interfaces" type="arduino.py" /> 
-    <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py" /> 
+    <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py" />
     <!-- <node name="temp_sensor" pkg="hardware_interfaces" type="temp_sensor.py" /> --> 
     <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py" /> 
     <node name="altimeter" pkg="hardware_interfaces" type="altimeter_micron.py" />
@@ -41,12 +41,8 @@
     
     <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner4.py"  /> 
     
-    <!-- <node name="depth_controller" pkg="DelphinROSv2" type="depth_controller.py" output = "screen"/> -->
-    <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py"/>
-    
-    <!-- <node name="heading_controller_MPC_v1" pkg="lowlevel_controllers" type="heading_controller_MPC_nonlinear_v1.py"/> -->
-    <node name="depthandspeed_controller_MPC_v5" pkg="lowlevel_controllers" type="depthandspeed_controller_MPC_nonlinear_v5.py" />
-        
+    <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py" output = "screen"/>
+            
     <include file="$(find delphin2_mission)/launch/thruster_system.launch" />
     <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py"/> 
     <include file="$(find xsens_driver)/launch/xsens_driver.launch" />

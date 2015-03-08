@@ -10,10 +10,7 @@
 # - simplify the structure of the heading_control.msg. this will affects set_params and logger.py
 
 # TODO - make the "CS_controller" less agressive at high forward speeds
-# TODO - write a note of how the heading controller is formulated
-# TODO - check if the scalling and saturation work correctly
 # TODO - check if the sway force distribution have been done correctly
-
 
 import roslib; roslib.load_manifest('lowlevel_controllers')
 import rospy
@@ -31,10 +28,15 @@ from std_msgs.msg               import Bool
 #### DEFINE GLOBAL VARIABLES ####
 global flag
 global controller_onOff
+
+# determine relative arm lengths for thrust allocation
 global Ltf
 global Ltr
-Ltf = 0.65       # Moment arm of front thruster [metre]
-Ltr = 0.59       # Moment arm of rear thruster [metre]
+L_th = 1.24         # distance between two horizontal thrusters [metre]: measured
+cr = 1.05            # center of rotation on horizontal plane from the AUV nose [metre]: trial-and-error
+Ltf_nose = 0.205    # location of the front horizontal thruster from nose: measured
+Ltf = cr-Ltf_nose   # Moment arm of front horizontal thruster from the cr [metre]
+Ltr = L_th-Ltf      # Moment arm of rear horizontal thruster from the cr [metre]
 
 ################################################################################
 #### CONTROLLER PARAMETERS #####################################################
@@ -47,17 +49,17 @@ def set_params():
     HC.deadzone   = 1   # deadzone of the heading error [degree]
     
 ### CS Controller ###
-    HC.CS_Pgain       =  0.5 #0.1(error square) 0.5(error)
-    HC.CS_Igain       =  0
-    HC.CS_Dgain       =  0
-    HC.CS_max         =  20
+    HC.CS_Pgain       = 1 #0.1(error square) 0.5(error)
+    HC.CS_Igain       = 0
+    HC.CS_Dgain       = 0
+    HC.CS_max         = 30
     HC.CS_min         = -HC.CS_max
     
 ### Thrust Controller ###
-    HC.Thrust_Pgain =  15000
-    HC.Thrust_Igain =  0.00
-    HC.Thrust_Dgain =  10000
-    HC.Thrust_Smax  =  500 #  1000    
+    HC.Thrust_Pgain = 50000.00
+    HC.Thrust_Igain = 0.00
+    HC.Thrust_Dgain = 30000.00
+    HC.Thrust_Smax  = 800 # 1000 # maximum thruster setpoint
 
 ################################################################################
 #### CONTROL SURFACE CONTROLLER ################################################
@@ -90,17 +92,18 @@ def CS_controller(error, int_error, der_error):
 def thrust_controller(error, int_error, der_error):
     global HC
     
-    HC.Thrust_Pterm = error*HC.Thrust_Pgain
-    HC.Thrust_Iterm = int_error*HC.Thrust_Igain
-    HC.Thrust_Dterm = der_error*HC.Thrust_Dgain
-    
-    HC.Thrust_heading = HC.Thrust_Pterm + HC.Thrust_Iterm + HC.Thrust_Dterm
-    
-    ## turn torque into thrust and superposition with sway demand
-    thruster0 = float(HC.Thrust_heading)/float(Ltf) + float(HC.sway)
-    thruster1 = -float(HC.Thrust_heading)/float(Ltr) + float(HC.sway)
-    
     if numpy.abs(error) > HC.deadzone:
+    
+        HC.Thrust_Pterm = error*HC.Thrust_Pgain
+        HC.Thrust_Iterm = int_error*HC.Thrust_Igain
+        HC.Thrust_Dterm = der_error*HC.Thrust_Dgain
+        
+        HC.Thrust_heading = HC.Thrust_Pterm + HC.Thrust_Iterm + HC.Thrust_Dterm
+        
+        ## turn torque into thrust and superposition with sway demand
+        thruster0 = float(HC.Thrust_heading)/float(Ltf) + float(HC.sway)
+        thruster1 = -float(HC.Thrust_heading)/float(Ltr) + float(HC.sway)    
+    
         HC.thruster0 = int(numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5) # according to a relationship between thrust and rpm
         HC.thruster1 = int(numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5) # according to a relationship between thrust and rpm
         # if a setpoint of one thruster goes beyond the limit. it will be saturated and the other one will be scaled down proportionally in order to scale down torque.
@@ -113,20 +116,9 @@ def thrust_controller(error, int_error, der_error):
             HC.thruster0 = int(HC.thruster0*scale_factor) 
             HC.thruster1 = int(HC.thruster1*scale_factor)
     else:
+    
         HC.thruster0 = 0
         HC.thruster1 = 0
-    
-    str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %((HC.heading_demand)%360) 
-    rospy.loginfo(str)  
-    str = ">>>>>>>>>>>>>>>>Current heading demand is %.2fdeg" %(HC.heading) 
-    rospy.loginfo(str)
-    str = ">>>>>>>>>>>>>>>>Error is %.2fdeg" %(error) 
-    rospy.loginfo(str)
-    str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(HC.thruster0) 
-    rospy.loginfo(str)
-    str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(HC.thruster1) 
-    rospy.loginfo(str)
-    print ''
         
     return [HC.thruster0, HC.thruster1]
 
@@ -142,7 +134,6 @@ def main_control_loop():
         global speed
         global HC
         
-        HC = heading_control()
         flag             = False
         speed            = 0
         controller_onOff = Bool()
@@ -150,31 +141,46 @@ def main_control_loop():
         set_params()
                 
         time_zero        = time.time()        
-        [error, int_error, der_error] = system_state(-1)                            # On first loop, initialize relevant parameters
+        [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360)                            # On first loop, initialize relevant parameters
         
         while not rospy.is_shutdown():
 
             dt = time.time() - time_zero                                            # Calculate the elapse time since last calculation
-#            if dt >= delta_t:        
+            
             if dt >= delta_t and controller_onOff == True:
 
                 time_zero = time.time()
+                
+                # get sampling
+                heading_current = HC.heading
+                heading_demand = (HC.heading_demand)%360
+                
                 # Get system state #
-                [error, int_error, der_error] = system_state(dt)
+                [error, int_error, der_error] = system_state(dt,heading_current,heading_demand)
                 # Control Surface Controller # Nb CSp = Sternplane port, CSt = Rudder top
                 [CSt, CSb] = CS_controller(error, int_error, der_error)
                     
                 # Thruster controller # 
                 [thruster0, thruster1] = thrust_controller(error, int_error, der_error)
                 
-####                print 'CSt = ',CSt
-####                print 'T2 = ',thruster0
-####                print 'T3 = ',thruster1
-
                 # update the heading_control.msg, and this will be subscribed by the logger.py
                 pub_tail.publish(cs0 =CSt, cs1 = CSb)
                 pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
-                pub_HC.publish(HC) 
+                pub_HC.publish(HC)
+                
+                # verbose activity in thrust_controller
+####                str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %(heading_demand) 
+####                rospy.loginfo(str)  
+####                str = ">>>>>>>>>>>>>>>>Current heading is %.2fdeg" %(heading_current) 
+####                rospy.loginfo(str)
+####                str = ">>>>>>>>>>>>>>>>Heading error is %.2fdeg" %(error) 
+####                rospy.loginfo(str)
+####                str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(thruster0) 
+####                rospy.loginfo(str)
+####                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
+####                rospy.loginfo(str)
+####                print ''
+
             else:
                 time.sleep(0.01)
 
@@ -182,16 +188,13 @@ def main_control_loop():
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
 ################################################################################
 
-def system_state(dt):
+def system_state(dt,heading_current,heading_demand):
     global HC
     global int_error
-    global der_array_size
     global sample
-    global cumulative_time
 
 ### ERROR ###
-    demand = (HC.heading_demand)%360
-    error  = demand - HC.heading
+    error = heading_demand - heading_current
     
     if error <-180:
         error =   error%360
@@ -202,9 +205,6 @@ def system_state(dt):
         sample = numpy.zeros(2)
         int_error = 0
         der_error = 0
-####        der_array_size = 100
-####        sample = numpy.zeros(der_array_size)
-####        cumulative_time = numpy.zeros(der_array_size)
                
     else:
 
@@ -212,18 +212,23 @@ def system_state(dt):
         int_error += dt*error					# Calculate the integral error       
 
 ### DERIVATIVE ###
-        # this simple calculation is good enough for the xsens
-        sample[1] = sample[0]	                # Shift old values up in the array
-        sample[0] = error				        # Set first array term to new error value
-        der_error = (sample[0]-sample[1])/dt    # Calculate the integral error
-####        sample[1:der_array_size] = sample[0:(der_array_size-1)]	# Shift old values up in the array
-####        sample[0] = error				                # Set first array term to new depth value
+        # this simple derivative is good enough for the xsens
 
-####        cumulative_time[1:der_array_size] = cumulative_time[0:(der_array_size-1)]	# Shift old values up in the array
-####        cumulative_time[0] = time_zero	
-####        
-####        coeffs = numpy.polyfit(cumulative_time, sample, 1)
-####        der_error = HC.der_error = coeffs[0]
+        # PID strategy (compute the derivative of heading error)
+#        sample[1] = sample[0]	                # Shift old values up in the array
+#        sample[0] = error				        # Set first array term to new error value
+#        der_error = (sample[0]-sample[1])/dt    # Calculate the derivative error
+
+        # PI-D strategy (compute the derivative of current heading)
+        sample[1] = sample[0]	                # Shift old values up in the array
+        sample[0] = heading_current  		        # Set first array term to new error value
+        der_error  = sample[0]-sample[1]
+        # dealing with a singularity
+        if der_error <-180:
+            der_error =   der_error%360
+        elif der_error > 180:
+            der_error= -(-der_error%360)
+        der_error = -der_error/dt    # Calculate the derivative heading
         
     # update the error terms. These will be subscribed by the logger node.
     HC.error = error
@@ -252,6 +257,7 @@ def heading_demand_cb(headingd):
     flag = True   
     
 def sway_demand_cb(swaydemand):
+    global flag
     global HC
     HC.sway = swaydemand.data
     flag = True
@@ -268,6 +274,7 @@ def onOff_cb(onOff):
     
 def speed_callback(data):
     global speed
+    global HC
     speed = data.forward_vel
     HC.speed = speed
     

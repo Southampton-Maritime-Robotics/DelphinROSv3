@@ -1,5 +1,6 @@
 bool    onOFF
 float32 depth
+float32 depth_der
 float32 depth_demand
 float32 pitch
 float32 pitch_demand

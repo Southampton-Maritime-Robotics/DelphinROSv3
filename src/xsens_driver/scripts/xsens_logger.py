@@ -127,7 +127,6 @@ if __name__ == '__main__':
 ################################################################################
 
     rospy.Subscriber('IMU_information', IMU_msg, callback_IMU_msg)
-    rospy.Subscriber('GPS_information', GPS_msg, callback_GPS_msg)  
 
     str = "Logger online - output directory: %s" %(dirname)
     rospy.loginfo(str)
