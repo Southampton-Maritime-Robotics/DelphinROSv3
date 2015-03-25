@@ -158,11 +158,11 @@ def main():
 ################################################################################
         # [1/3] Initialise State (Must Be Run First!)
         smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-            transitions={'succeeded':'ACTIONS', 'aborted':'STOP','preempted':'STOP'})  
+            transitions={'succeeded':'GoToXYZ', 'aborted':'STOP','preempted':'STOP'})  
             
 ################################################################################
         # [2/3] Added States
-        smach.StateMachine.add('ACTIONS', actions(lib), 
+        smach.StateMachine.add('GoToXYZ', GoToXYZ(lib, 0, 0, 2, 2, 0.5, 10, 10, 300), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################

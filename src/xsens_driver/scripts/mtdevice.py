@@ -584,12 +584,12 @@ class XSensDriver(object):
 		
 			self.mt.SetOutputConfiguration(OutputData)
 			
-########			# request a current configuration on the xsens
-########			self.mt.GoToConfig()
-########			print "Current scenario: %s (id: %d)"%self.mt.ReqCurrentScenario()[::-1]
-########			print "Current baudrate: (id: %s)"%self.mt.ReqBaudrate()
-########			print "Current location : (id: %s)"%self.mt.ReqLatLonAlt()
-########			self.mt.GoToMeasurement()
+			# request a current configuration on the xsens
+			self.mt.GoToConfig()
+			print "Current scenario: %s (id: %d)"%self.mt.ReqCurrentScenario()[::-1]
+			print "Current baudrate: (id: %s)"%self.mt.ReqBaudrate()
+			print "Current location : (id: %s)"%self.mt.ReqLatLonAlt()
+			self.mt.GoToMeasurement()
 			
 			try:
 				while not rospy.is_shutdown():
@@ -639,7 +639,7 @@ class XSensDriver(object):
 			pub_IMU = True
 		if has_Ori:
 			# compensate a heading offset due to a different in the reference frame
-			out_Ori['Yaw'] = out_Ori['Yaw'] - 90
+			out_Ori['Yaw'] = out_Ori['Yaw'] + 90
 			# remap heading from [-pi,pi] to [0,2pi]
 			if out_Ori['Yaw']>0:
 				out_Ori['Yaw'] = 360-out_Ori['Yaw']
