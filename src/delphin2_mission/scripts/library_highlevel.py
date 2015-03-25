@@ -216,8 +216,8 @@ class library_highlevel:
             
     def setSpeed(self, demand):
         self.pub_speed.publish(demand)
-        str = "Setting speed demand %s m/s" %demand
-        rospy.loginfo(str)
+#        str = "Setting speed demand %s m/s" %demand
+#        rospy.loginfo(str)
     
     def setPitch(self, demand):
         self.switchPitchOnOff(1)
