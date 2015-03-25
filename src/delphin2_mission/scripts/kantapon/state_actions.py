@@ -34,8 +34,7 @@ class actions(smach.State):
         # and shutdown the actuators once finished           
         time_zero=time.time()
         while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-            
-#            self.__controller.setControlSurfaceAngle(-30,0,-30,0) # (VerUp,HorRight,VerDown,HorLeft)            
+
             self.__controller.setRearProp(20)
 #            pass
             
