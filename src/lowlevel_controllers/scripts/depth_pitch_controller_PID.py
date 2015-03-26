@@ -168,6 +168,7 @@ def main_control_loop():
                 str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
                 rospy.loginfo(str)
                 print ''
+                self.__controller.switchDepthOnOff(0)
 
             else:
                 time.sleep(0.01)

@@ -168,6 +168,8 @@ def main_control_loop():
                 pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
                 pub_HC.publish(HC)
                 
+                self.__controller.switchHeadingOnOff(0)
+                
                 # verbose activity in thrust_controller
 ####                str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %(heading_demand) 
 ####                rospy.loginfo(str)  
