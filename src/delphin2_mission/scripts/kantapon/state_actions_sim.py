@@ -21,20 +21,21 @@ class actions(smach.State):
         time_zero=time.time()
         while not rospy.is_shutdown():
 
-            flagCon = 1
-            while flagCon:
-                self.__controller.setHeading(30)
-                self.__controller.setSpeed(0.9)
-                self.__controller.setDepth(2)
-                if self.__controller.getX()>1000:
-                    flagCon = 0
-                        
-            flagCon = 1
-            while flagCon:
-                self.__controller.setHeading(210)
-                self.__controller.setSpeed(0.9)
-                self.__controller.setDepth(2)
-                if self.__controller.getX<0:
-                    flagCon = 0
+            self.__controller.setRearProp(25)
+#            flagCon = 1
+#            while flagCon:
+#                self.__controller.setHeading(30)
+#                self.__controller.setRearProp(10)
+#                self.__controller.setDepth(2)
+#                if self.__controller.getX()>1000:
+#                    flagCon = 0
+#                        
+#            flagCon = 1
+#            while flagCon:
+#                self.__controller.setHeading(210)
+#                self.__controller.setRearProp(14)
+#                self.__controller.setDepth(2)
+#                if self.__controller.getX<0:
+#                    flagCon = 0
 
         return 'succeeded' # exit with a flag of 'succeeded'

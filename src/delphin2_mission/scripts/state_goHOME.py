@@ -104,7 +104,6 @@ class GoToHome(smach.State):
                     headingDemand=numpy.pi
                 else:
                     headingDemand=3/4*numpy.pi
-            
                 
                 #Convert headingDemand to degrees
                 headingDemand=headingDemand/numpy.pi*180

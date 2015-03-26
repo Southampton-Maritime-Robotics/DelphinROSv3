@@ -562,7 +562,7 @@ if __name__ == '__main__':
     rospy.Subscriber('depth_demand', Float32, depthdemand_callback)
     rospy.Subscriber('prop_demand', Int8, propdemand_callback)
     rospy.Subscriber('tail_output', tail_feedback, tail_feedback_callback)
-    #rospy.Subscriber('position_dead', position, position_callback)
+    rospy.Subscriber('position_dead', position, position_callback)
     rospy.Subscriber('gps_out', gps, gps_callback)
     rospy.Subscriber('altimeter_out',altitude, altimeter_callback)
     rospy.Subscriber('sonar_processed', sonar_data, sonar_callback)

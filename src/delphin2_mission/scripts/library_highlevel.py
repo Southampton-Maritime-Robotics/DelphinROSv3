@@ -131,14 +131,13 @@ class library_highlevel:
         self.pub_sway_demand.publish(demand)
         self.switchHorizontalThrusters(1)
         self.switchHeadingOnOff(1)
-        
     
     # sets a 'demand' for the rear prop (between 0 and 22ish)
     def setRearProp(self, demand):
         #publish rear prop_demand
-        print 'Rear prop to', demand
-        str = "Setting rear prop demand %s" %demand
-        rospy.loginfo(str)
+#        print 'Rear prop to', demand
+#        str = "Setting rear prop demand %s" %demand
+#        rospy.loginfo(str)
         self.pub_prop_demand.publish(demand)
         
     # set a 'demand' (in degrees) for the rudder angle
@@ -479,9 +478,6 @@ class library_highlevel:
             
         return longitude, latitude, Load
 
-
-
-
     def distanceandbearingTwoLatLong(self,lat1,lat2,lon1,lon2): #returns bearing between two locations in lat/long in degrees.
         # Code from http://www.movable-type.co.uk/scripts/latlong.html
         R = 6371000 #Radius of the earth in m
@@ -576,3 +572,4 @@ class library_highlevel:
         elif status.nodeID == 5:
             self.__compass_status = status.status
             return
+

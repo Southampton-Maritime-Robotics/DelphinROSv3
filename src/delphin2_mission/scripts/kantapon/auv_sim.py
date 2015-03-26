@@ -6,7 +6,14 @@ import math
 from hardware_interfaces.msg import compass
 from hardware_interfaces.msg import position
 from std_msgs.msg import Float32
+from std_msgs.msg import Int8
 from pylab import *
+
+#### from kantapon's folder
+import sys
+sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts/kantapon')
+from state_actions                import actions
+from utilities                    import uti
 
 # this node subscribe to a motion demand, e.g. speed, heading, depth
 # A state vector of the virtual AUV is updated accordingly
@@ -18,16 +25,19 @@ def listenForData():
   
     #### INITIALISE PARAMETERS ####
     
+    # utilities
+    myUti = uti()
+    
     # demand
     global headingDemand_cb
-    global speedDemand_cb
     global depthDemand_cb
+    global rearPropDemand_cb
     headingDemand_cb = 0
-    speedDemand_cb = 0
     depthDemand_cb = 0
+    rearPropDemand_cb = 0
     
     # increment
-    incHeading = 2.5 # [(deg)/s] how quickly the heading can change FIXME
+    incHeading = 1.5 # [(deg)/s] how quickly the heading can change FIXME
     incDepth = 0.01 # [(m)/s] how quickly the depth can change FIXME
     # saturation
     speedMax = 1 # [m/s] maximum speed
@@ -50,7 +60,7 @@ def listenForData():
     while not rospy.is_shutdown():
         
         # get demand
-        demandSpeed = speedDemand_cb # [m/s]
+        demandRearProp = rearPropDemand_cb # [m/s]
         demandDepth = depthDemand_cb # [m]
         demandHeading = headingDemand_cb # [deg] North CW
         
@@ -63,11 +73,12 @@ def listenForData():
             errHeading = -(-errHeading%360)
         
         # update kinematic parameters
-        u = demandSpeed
-        if u > speedMax:
-            u = speedMax
-        elif u < 0:
-            u = 0
+        if demandRearProp < 10:
+            u = 0 # propeller deadband
+        else:
+            u = demandRearProp*1./22. # estimated from Leo's thesis
+        
+        u = myUti.limits(u,0,speedMax)
             
         # update state vector
         heading = heading + sign(errHeading)*incHeading*dt
@@ -80,11 +91,9 @@ def listenForData():
         Y = Y+u*cos(heading*pi/180)
         
         Z = Z + sign(errDepth)*incDepth*dt
-        if Z > depthMax:
-            Z = depthMax
-        elif Z < 0:
-            Z = 0
-            
+        Z = myUti.limits(Z,0,depthMax)
+                    
+#        print demandRearProp, u
 #        print X, Y, Z, heading, u
 #        print demandSpeed, demandHeading, demandDepth
                 
@@ -94,32 +103,24 @@ def listenForData():
         pos.X = X
         pos.Y = Y
         pos.Z = Z
+        pos.forward_vel = u
         
         # publish
         pubCompass.publish(com)
         pubPosition.publish(pos)
-#        time.sleep(0.02)
+#        time.sleep(0.01)
 
 ################################################################################
 ######## SATURATION AND UPDATE PARAMETERS FROM TOPICS ##########################
 ################################################################################
 
-def limits(value, min, max):       #Function to contrain within defined limits
-    if value < min:				   
-       value = min
-    elif value > max:
-       value = max
-    return value
-
-################################################################################
-
 def heading_demand_cb(headingd):
     global headingDemand_cb
     headingDemand_cb = headingd.data
-    
-def speed_demand_cb(speedd):
-    global speedDemand_cb
-    speedDemand_cb = speedd.data
+   
+def rearProp_demand_cb(propd):
+    global rearPropDemand_cb
+    rearPropDemand_cb = propd.data
     
 def depth_demand_cb(depthd):
     global depthDemand_cb
@@ -130,7 +131,7 @@ def depth_demand_cb(depthd):
 ################################################################################
 
 if __name__ == '__main__':
-    time.sleep(1) #Allow System to come Online    
+    time.sleep(1) #Allow System to come Online
     rospy.init_node('auvsim')
     
     global pubCompass
@@ -139,7 +140,7 @@ if __name__ == '__main__':
     pubPosition = rospy.Publisher('position_dead', position)
     
     rospy.Subscriber('heading_demand', Float32, heading_demand_cb)
-    rospy.Subscriber('speed_demand', Float32, speed_demand_cb)
     rospy.Subscriber('depth_demand', Float32, depth_demand_cb)
+    rospy.Subscriber('prop_demand',Int8,rearProp_demand_cb)
         
     listenForData()   #Main loop for update the AUV parameters

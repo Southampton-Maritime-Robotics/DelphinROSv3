@@ -3,6 +3,7 @@
 #-------------------------
 
 from pylab import *
+from math import *
 
 class uti:
 
@@ -58,3 +59,26 @@ class uti:
         p_inter = wp1+t*vec_wp
         
         return t, p_inter
+        
+    def rangeBearing(self, p1, p2):
+        rang = sqrt( (p2[0]-p1[0])**2 + (p2[1]-p1[1])**2 )
+        bear = atan2( (p2[0]-p1[0]), (p2[1]-p1[1]) )*180/pi
+        if bear<0:
+            bear = bear+360
+            
+        return rang, bear
+    
+    def computeHeadingError(self,demand,actual):
+        errHeading = demand-actual
+        if errHeading<-180:
+            errHeading = errHeading%360
+        elif errHeading>180:
+            errHeading = -(-errHeading%360)
+        return errHeading
+        
+    def limits(self,value, min, max):       #Function to contrain within defined limits
+        if value < min:				   
+           value = min
+        elif value > max:
+           value = max
+        return value

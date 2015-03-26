@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-# import roslib; roslib.load_manifest('delphin2_mission')
 import rospy
 import smach
 import smach_ros
 import time
+from pylab import *
+import numpy
 
 from library_highlevel            import library_highlevel
 from state_initialise             import Initialise
@@ -22,7 +23,6 @@ from state_N                      import N
 from state_setTail                import setTail
 from state_actionserver_goToDepth import GoToDepthServer
 from hardware_interfaces.msg      import compass
-#### from hardware_interfaces.msg      import GoToDepthAction, GoToDepthGoal
 from actionlib                    import *
 from actionlib.msg                import *
 from std_msgs.msg import String
@@ -31,24 +31,52 @@ import matplotlib.pyplot as plt;
 #### from kantapon's folder
 import sys
 sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts/kantapon')
-#from state_thruster_testing       import thruster_testing
-from state_testSurge                import actions
+from state_testSurge                import testSurge
+from utilities                      import uti
+from state_pathFollowingLOS         import pathFollowingLOS
 
 ################################################################################
 #Notes
 #
-#X is defined as east, Y is defined as north
-
-################################################################################
-#Modifications
-#
-#9/2/12 Modified state GoToXYZ
+# X is defined as east, Y is defined as north
 
 def main():
 
+################################################################################
+########### DECLARE PARAMETERS #################################################
+################################################################################
+    
     rospy.init_node('smach_example_state_machine')
     # Define an instance of highlevelcontrollibrary to pass to all action servers
     lib = library_highlevel()
+    myUti = uti()
+
+    # points defined relative to the origin, i.e. north pier of Eastleigh lake TODO: correct these point
+    A = array([-32.,4.]) # reference point A
+    B = array([-2.,64.]) # reference point B
+    M = array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
+    O = array([-2,2]) # home: shifted from the origin a little to make sure it will not collide with the pier
+    pathAtoB = numpy.vstack((A,B)).T 
+    pathBtoA = numpy.vstack((B,A)).T
+    pathMtoO = numpy.vstack((M,O)).T
+    
+    # guidance
+    L_los = 5 # [m] line-of-sight distance
+    wp_R = 5 # [m] radius of acceptance
+    
+    # speed control
+    uGain = -0.07 # gain to control speed variation: high abs(value) -> less overshoot -> more settling time
+    uMax = 1 # [m/s] maximum surge speed
+
+    # tolerant
+    headingHold = 1 # TODO [sec] Heading must be hold for this many second to ensure the auv achieve equilibrium
+    errHeadingTol = 5 # TODO [sec] tolarance in heading error
+    
+    time.sleep(10) # TODO: to be removed: tempolary used to allow the system to come online
+
+################################################################################
+########### STATE MACHINE ######################################################
+################################################################################
 
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
@@ -58,22 +86,25 @@ def main():
         # Add states to the container
         # generic state
 
-################################################################################
-########### MAIN CODE ##########################################################
-################################################################################
-
 #################################################################################
 #        # [1/3] Initialise State (Must Be Run First!)
 #        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-#            transitions={'succeeded':'GoToXYZ', 'aborted':'STOP','preempted':'STOP'})  
+#            transitions={'succeeded':'SURGE', 'aborted':'STOP','preempted':'STOP'})  
             
 ################################################################################
         # [2/3] Added States
-        smach.StateMachine.add('ACTIONS', actions(lib), 
-            transitions={'succeeded':'finish', 'aborted':'finish','preempted':'finish'})
+        
+#        smach.StateMachine.add('TRANSIT', pathFollowingLOS(lib,myUti,pathBtoA), 
+#            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        
+        # This state will guide the AUV back and forth between point A and B with different rudder RPM
+        smach.StateMachine.add('SURGE', testSurge(lib,myUti,pathAtoB, uGain, uMax, headingHold, errHeadingTol,wp_R), 
+            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
-
+        # [3/3] Generic States (Come to this state just before terminating the mission)
+        smach.StateMachine.add('STOP', Stop(lib), 
+            transitions={'succeeded':'finish'})
 
 ################################################################################
 ########### EXECUTE STATE MACHINE AND STOP #####################################
