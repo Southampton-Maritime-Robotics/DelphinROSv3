@@ -31,7 +31,7 @@ class uti:
 #                print 'condition is hold'
         
         # identify the segment to follow
-        if wpTarget == pathLen:
+        if wpTarget == pathLen-1:
             # if the last wp is the closest one, set it as a target
             pass
         else:

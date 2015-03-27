@@ -111,21 +111,18 @@ def getVoltage():
                 if serialPort.inWaiting()>0: 
                     _in = serialPort.read(1)
                     if _in == '#': # searching for a header '#', and continue if found. otherwise, neglect this data packet
-    #                    print 'found a header #'
                         timeStart = time.time()
                         timeElapse = time.time()-timeStart    
                         while(timeElapse<timeOut) and not rospy.is_shutdown() and not found: # get the rest of a data packet
                             if serialPort.inWaiting()>0:
                                 _in = serialPort.read(1)
                                 if _in=='V': # break if found the end of a data packet
-    #                                print 'found footer V'
                                     found = 1
                                     break
                                 else: # keep the data in a msg string
                                     msg+=_in
                                 timeElapse = time.time()-timeStart # elapsed time for getting the rest of data packet
                         try :
-    #                        print float(msg)*1000
                             vol = int(float(msg)*1000)
                         except :
                             pass
@@ -133,10 +130,8 @@ def getVoltage():
                 timeElapse = time.time()-timeStart # elapsed time for finding a header
     except:
         pass
-        
-
-    # return in mili vol
-    return vol
+    
+    return vol # return in mili vol
     
 ############################# GET AMPARE ######################################    
 
@@ -167,20 +162,17 @@ def getAmp():
                 if serialPort.inWaiting()>0: 
                     _in = serialPort.read(1)
                     if _in == '#': # searching for a header '#', and continue if found. otherwise, neglect this data packet
-    #                    print 'found a header #'
                         timeStart = time.time()
                         timeElapse = time.time()-timeStart    
                         while(timeElapse<timeOut) and not rospy.is_shutdown() and not found: # get the rest of a data packet
                             if serialPort.inWaiting()>0:
                                 _in = serialPort.read(1)
                                 if _in=='A': # break if found the end of a data packet
-    #                                print 'found footer A'
                                     found = 1
                                 else: # keep the data in a msg string
                                     msg+=_in
                                 timeElapse = time.time()-timeStart # elapsed time for getting the rest of data packet
                         try :
-    #                        print float(msg)*1000
                             amp = int(float(msg)*1000)
                         except :
                             pass
@@ -212,7 +204,6 @@ def getRPM():
     
     try:
         if serialPort.inWaiting(): # if arduino replied
-    #        print "inside serial read"
             timeStart = time.time()
             timeElapse = time.time()-timeStart
             found = 0
@@ -220,7 +211,6 @@ def getRPM():
                 if serialPort.inWaiting()>0: 
                     _in = serialPort.read(1)
                     if _in == '#': # searching for a header '#', and continue if found. otherwise, neglect this character
-    #                    print 'found a header #'
                         i_rpm = 0
                         timeStart = time.time()
                         timeElapse = time.time()-timeStart    
@@ -228,10 +218,8 @@ def getRPM():
                             if serialPort.inWaiting()>0:
                                 _in = serialPort.read(1)
                                 if _in=='R': # break if found the end of a data packet
-    #                                print 'found footer R'
                                     found = 1
                                 elif _in=='@':
-    #                                print msg
                                     rpm[i_rpm] = int(float(msg))
                                     i_rpm += 1
                                     msg = ""
@@ -254,12 +242,16 @@ def motor_control(status):
     global delaySerial
     global ThrusterSetpoint_max
     global thrust_dr_ref        
+    global timeHorizLastDemand
+    global timeVertLastDemand
     onOff_horiz = 1
     onOff_vert = 1
     sp_max = 2300
     sp_max_arduino = 255
-    time_zero = time.time()	
-    
+    time_zero = time.time()
+    timeHorizLastDemand = time.time()
+    timeVertLastDemand = time.time()
+
     #parameters to utilize watchdog
     timeStart_vol = time.time()
     timeLim_vol = 5 # [sec]
@@ -267,16 +259,17 @@ def motor_control(status):
     timeElapse_rpm = [0.0,0.0,0.0,0.0]
     timeStart_rpm = [timeStart_vol,timeStart_vol,timeStart_vol,timeStart_vol]
     timeLim_rpm = timeLim_vol
+    timeLastDemand_sat = 3 # [sec]
     
     while not rospy.is_shutdown():      
         pubStatus.publish(nodeID = 1, status = status)
-        data_now = current_data                                                 #Get the data at the current time. This is in the range of [-2500,2500] 
+        data_now = current_data #Get the data at the current time. This is in the range of [-2500,2500] 
         
         ############################# ON/OFF MSG ######################################    
         thrust_sp = [data_now['thruster0']*onOff_vert, data_now['thruster1']*onOff_vert, data_now['thruster2']*onOff_horiz, data_now['thruster3']*onOff_horiz]
         
         ############################# REMAP THRUSTER SETPOINT ######################################    
-        thrust_dr = [0,0,0,1] # a vector to correct thrust_direction
+        thrust_dr = thrust_dr_ref # a vector to correct thrust_direction
         # remap a setpoint from [-2500, 2500] to [0,255] with direction of 0 or 1
         for i in range(len(thrust_sp)):
             if thrust_sp[i] > 0:
@@ -296,30 +289,32 @@ def motor_control(status):
             if thrust_sp[i] > ThrusterSetpoint_max:
                 thrust_sp[i] = ThrusterSetpoint_max
 
-        setpoint0= onOff_vert*thrust_sp[0]
-        setpoint1= onOff_vert*thrust_sp[1]                               
-        setpoint2= onOff_horiz*thrust_sp[2]
-        setpoint3= onOff_horiz*thrust_sp[3]  
-        
+        # Note: onOff flag will be pulled off by the stop function when terminate the mission
+        if timeVertLastDemand-time.time() < timeLastDemand_sat:
+            setpoint0= onOff_vert*thrust_sp[0]
+            setpoint1= onOff_vert*thrust_sp[1]
+        else: # if there is no update on vert thruster for longer than timeLastDemand_sat, turn off the vert thruster
+            setpoint0= 0
+            setpoint1= 0        
+        if timeHorizLastDemand-time.time() < timeLastDemand_sat:
+            setpoint2= onOff_horiz*thrust_sp[2]
+            setpoint3= onOff_horiz*thrust_sp[3]
+        else: # if there is no update on horiz thruster for longer than timeLastDemand_sat, turn off the horiz thruster
+            setpoint2= 0
+            setpoint3= 0
+            
         setPoints = '%d,%d@%d,%d@%d,%d@%d,%d@' %(setpoint0,thrust_dr[0],setpoint1,thrust_dr[1],setpoint2,thrust_dr[2],setpoint3,thrust_dr[3])
         dataToSend = 'faP' + setPoints # add header to a data packet
         dataToSend = dataToSend + 'cs' # add footer to a data packet        
 
         ############################# SET SPEED ######################################    
-#        print 'Sending setpoints'
         serialPort.write(dataToSend)
         time.sleep(delaySerial)
 
-
         ############################# GET INFO. ######################################    
-
         voltage = getVoltage()
         amp = getAmp()    
         rpm = getRPM()
-####        voltage = 21000
-####        amp = 0 
-####        rpm = [0,0,0,0]
-
 
         ############################# WATCHDOG ######################################    
         if voltage < voltage_min:
@@ -359,23 +354,25 @@ def motor_control(status):
 
 def vert_callback(new_sp):
     global current_data
+    global timeVertLastDemand
     current_data['thruster0']= new_sp.thruster0
     current_data['thruster1'] = new_sp.thruster1
+    timeVertLastDemand = time.time()
 
 def horiz_callback(new_sp):
     global current_data
+    global timeHorizLastDemand
     current_data['thruster2'] = new_sp.thruster0
     current_data['thruster3'] = new_sp.thruster1
+    timeHorizLastDemand = time.time()
 
 def motor_shutdown():
     global delaySerial
-    
     # construct a string to shutdown the motor
     setPoints = ''
     setPoints = '0,0@0,0@0,0@0,0@'
     dataToSend = 'faP' + setPoints # add header to a data packet
-    dataToSend = dataToSend + 'cs' # add footer to a data packet    
-    
+    dataToSend = dataToSend + 'cs' # add footer to a data packet
     # send a shutdown command
     serialPort.flushOutput()
     serialPort.write(dataToSend)
@@ -408,8 +405,6 @@ if __name__ == '__main__':
     global pubStatus
     
     port_status = init_serial()
-#    str = "Arduino_Thruster serial port status = %s. Port = %s" %(port_status, serialPort.portstr)
-#    rospy.loginfo(str)
     
     rospy.Subscriber('TSL_onOff_horizontal', Bool, onOff_horiz_callback)
     rospy.Subscriber('TSL_onOff_vertical', Bool, onOff_vert_callback)
@@ -428,8 +423,7 @@ if __name__ == '__main__':
         status = False
         pubStatus.publish(nodeID = 1, status = status)
     
-    rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
-    # entering the main loop
-    motor_control(status)
+    rospy.on_shutdown(shutdown) #Defining shutdown behaviour
+    motor_control(status) # entering the main loop
 
 

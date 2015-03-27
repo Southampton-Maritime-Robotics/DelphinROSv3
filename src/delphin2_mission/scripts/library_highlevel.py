@@ -168,11 +168,11 @@ class library_highlevel:
         output=tsl_setpoints()
         output.thruster0=thruster2
         output.thruster1=thruster3
-        str = "Horizontal Thruster Setpoints %s %s" %(thruster2,thruster3)
-        rospy.loginfo(str)
+#        str = "Horizontal Thruster Setpoints %s %s" %(thruster2,thruster3)
+#        rospy.loginfo(str)
         self.switchHorizontalThrusters(1)
         self.switchHeadingOnOff(0)
-        time.sleep(0.5)
+#        time.sleep(0.5)
         self.pub_tsl_heading.publish(output)
 
     # manually send tsl setpoint values for vertical thrusters
@@ -186,7 +186,7 @@ class library_highlevel:
 #        rospy.loginfo(str)
         self.switchVerticalThrusters(1)
         self.switchDepthOnOff(0)
-        time.sleep(0.5)
+#        time.sleep(0.5)
         self.pub_tsl_depth.publish(output)
 
     # move to depth 'demand' (metres)

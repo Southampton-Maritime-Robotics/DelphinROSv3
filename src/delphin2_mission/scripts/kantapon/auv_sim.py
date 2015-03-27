@@ -10,9 +10,6 @@ from std_msgs.msg import Int8
 from pylab import *
 
 #### from kantapon's folder
-import sys
-sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts/kantapon')
-from state_actions                import actions
 from utilities                    import uti
 
 # this node subscribe to a motion demand, e.g. speed, heading, depth
@@ -36,13 +33,20 @@ def listenForData():
     depthDemand_cb = 0
     rearPropDemand_cb = 0
     
+    global hasHeadingDemand
+    global hasDepthDemand
+    global hasPropDemand
+    hasHeadingDemand = False
+    hasDepthDemand = False
+    hasPropDemand = False
+    
     # increment
-    incHeading = 1.5 # [(deg)/s] how quickly the heading can change FIXME
+    incHeading = 10 # [(deg)/s] how quickly the heading can change FIXME
     incDepth = 0.01 # [(m)/s] how quickly the depth can change FIXME
     # saturation
     speedMax = 1 # [m/s] maximum speed
     depthMax = rospy.get_param('over-depth') # [m] maximum depth
-    dt = 0.1 # [sec] time step size
+    dt = 0.01 # [sec] time step size
     #####################
     
     # nu: velocity vector
@@ -66,32 +70,36 @@ def listenForData():
         
         # determine error state
         errDepth = demandDepth-Z
-        errHeading = demandHeading-heading
-        if errHeading < -180:
-            errHeading = errHeading%360
-        elif errHeading > 180:
-            errHeading = -(-errHeading%360)
+        errHeading = myUti.computeHeadingError(demandHeading,heading)
+         
         
-        # update kinematic parameters
-        if demandRearProp < 10:
-            u = 0 # propeller deadband
-        else:
-            u = demandRearProp*1./22. # estimated from Leo's thesis
+        # update kinematic parameters and state vector
         
-        u = myUti.limits(u,0,speedMax)
-            
-        # update state vector
-        heading = heading + sign(errHeading)*incHeading*dt
-        if heading > 360:
-            heading = heading-360
-        elif heading < 0:
-            heading = heading+360
+        if hasHeadingDemand:
+            heading = heading + sign(errHeading)*incHeading*dt
+            if heading > 360:
+                heading = heading-360
+            elif heading < 0:
+                heading = heading+360
+            hasHeadingDemand = False
 
-        X = X+u*sin(heading*pi/180)
-        Y = Y+u*cos(heading*pi/180)
-        
-        Z = Z + sign(errDepth)*incDepth*dt
-        Z = myUti.limits(Z,0,depthMax)
+        if hasPropDemand:
+            if demandRearProp < 10:
+                u = 0 # propeller deadband
+            else:
+                u = demandRearProp*1./22. # estimated from Leo's thesis
+            
+            u = myUti.limits(u,0,speedMax)
+            
+            X = X+u*sin(heading*pi/180)
+            Y = Y+u*cos(heading*pi/180)
+            
+            hasPropDemand = False
+            
+        if hasDepthDemand:
+            Z = Z + sign(errDepth)*incDepth*dt
+            Z = myUti.limits(Z,0,depthMax)
+            hasDepthDemand = False
                     
 #        print demandRearProp, u
 #        print X, Y, Z, heading, u
@@ -108,7 +116,7 @@ def listenForData():
         # publish
         pubCompass.publish(com)
         pubPosition.publish(pos)
-#        time.sleep(0.01)
+        time.sleep(0.01)
 
 ################################################################################
 ######## SATURATION AND UPDATE PARAMETERS FROM TOPICS ##########################
@@ -116,15 +124,21 @@ def listenForData():
 
 def heading_demand_cb(headingd):
     global headingDemand_cb
+    global hasHeadingDemand
     headingDemand_cb = headingd.data
+    hasHeadingDemand = True
    
 def rearProp_demand_cb(propd):
     global rearPropDemand_cb
+    global hasPropDemand
     rearPropDemand_cb = propd.data
+    hasPropDemand = True
     
 def depth_demand_cb(depthd):
     global depthDemand_cb
+    global hasDepthDemand
     depthDemand_cb = depthd.data
+    hasDepthDemand = True
     
 ################################################################################
 ######## INITIALISATION ########################################################

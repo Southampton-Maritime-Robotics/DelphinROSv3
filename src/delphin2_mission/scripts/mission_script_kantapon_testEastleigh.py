@@ -30,10 +30,15 @@ import matplotlib.pyplot as plt;
 
 #### from kantapon's folder
 import sys
-sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts/kantapon')
-from state_testSurge                import testSurge
+import os.path
+basepath = os.path.dirname(__file__)
+filepath = os.path.abspath(os.path.join(basepath, 'kantapon'))
+sys.path.append(filepath)
 from utilities                      import uti
 from state_pathFollowingLOS         import pathFollowingLOS
+from state_testSurge                import testSurge
+from state_testYaw                  import testYaw
+from state_testSway                 import testSway
 
 ################################################################################
 #Notes
@@ -59,18 +64,24 @@ def main():
     pathAtoB = numpy.vstack((A,B)).T 
     pathBtoA = numpy.vstack((B,A)).T
     pathMtoO = numpy.vstack((M,O)).T
+    pathOtoM = numpy.vstack((O,M)).T
+    pathTest = array([[5,100,20,120],
+                      [5,40,80,120]])
     
     # guidance
     L_los = 5 # [m] line-of-sight distance
     wp_R = 5 # [m] radius of acceptance
     
     # speed control
-    uGain = -0.07 # gain to control speed variation: high abs(value) -> less overshoot -> more settling time
+    uGain = 0.07 # gain to control speed variation: high value -> less overshoot -> more settling time
     uMax = 1 # [m/s] maximum surge speed
 
     # tolerant
-    headingHold = 1 # TODO [sec] Heading must be hold for this many second to ensure the auv achieve equilibrium
-    errHeadingTol = 5 # TODO [sec] tolarance in heading error
+    errHeadingTol = 2 # TODO [sec] tolarance in heading error
+    
+    # general
+    timeDemandHold = 2 # 40 sec TODO actuator demand will be hold for this many second
+    timeDelay = 1 # 10-20 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
     
     time.sleep(10) # TODO: to be removed: tempolary used to allow the system to come online
 
@@ -93,12 +104,47 @@ def main():
             
 ################################################################################
         # [2/3] Added States
+
+        #=================================================
+        ## PATH FOLLOWING TEST 
+        # This state will get the AUV moving along the path
+####        smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R), 
+####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        #-------------------------------------------------
         
-#        smach.StateMachine.add('TRANSIT', pathFollowingLOS(lib,myUti,pathBtoA), 
-#            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        #=================================================
+        ## SURGE TEST
+        # This state will get the AUV transit to point A
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathBtoA, L_los, uGain, uMax, wp_R), 
+####            transitions={'succeeded':'SURGE', 'aborted':'HOME','preempted':'HOME'})
+####        # This state will guide the AUV back and forth between point A and B with different rudder RPM
+####        smach.StateMachine.add('SURGE', testSurge(lib,myUti,pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDelay), 
+####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        #-------------------------------------------------
         
-        # This state will guide the AUV back and forth between point A and B with different rudder RPM
-        smach.StateMachine.add('SURGE', testSurge(lib,myUti,pathAtoB, uGain, uMax, headingHold, errHeadingTol,wp_R), 
+        #=================================================
+        ## YAW TEST 
+        # This state will get the AUV transit to point M
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
+####            transitions={'succeeded':'YAW', 'aborted':'HOME','preempted':'HOME'})
+####        # This state will keep the AUV at point M and perform yaw motion response test
+####        smach.StateMachine.add('YAW', testYaw(lib, myUti, M, uGain, uMax, wp_R, timeDemandHold, timeDelay), 
+####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        #-------------------------------------------------
+        
+        #=================================================
+        ## SWAT TEST 
+        # This state will get the AUV transit to point M
+        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
+            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
+        # This state will keep the AUV at point M and perform sway motion response test
+        smach.StateMachine.add('SWAY', testSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay), 
+            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        #-------------------------------------------------
+        
+        ## GENERIC STATE FOR EASTLEIGH LAKE
+        # This state will get the AUV HOME
+        smach.StateMachine.add('HOME', pathFollowingLOS(lib,myUti, pathMtoO, L_los, uGain, uMax, wp_R), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
