@@ -259,7 +259,7 @@ def motor_control(status):
     timeElapse_rpm = [0.0,0.0,0.0,0.0]
     timeStart_rpm = [timeStart_vol,timeStart_vol,timeStart_vol,timeStart_vol]
     timeLim_rpm = timeLim_vol
-    timeLastDemand_sat = 3 # [sec]
+    timeLastDemand_sat = 5 # [sec]
     
     while not rospy.is_shutdown():      
         pubStatus.publish(nodeID = 1, status = status)
