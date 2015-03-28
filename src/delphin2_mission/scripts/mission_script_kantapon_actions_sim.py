@@ -30,7 +30,10 @@ import matplotlib.pyplot as plt;
 
 #### from kantapon's folder
 import sys
-sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts/kantapon')
+import os.path
+basepath = os.path.dirname(__file__)
+filepath = os.path.abspath(os.path.join(basepath, 'kantapon'))
+sys.path.append(filepath)
 #from state_thruster_testing       import thruster_testing
 from state_actions_sim                import actions
 
