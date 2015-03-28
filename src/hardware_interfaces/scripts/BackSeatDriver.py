@@ -6,7 +6,11 @@ from std_msgs.msg import Int8
 from std_msgs.msg import String
 
 import sys
-sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts')
+import os.path
+basepath = os.path.dirname(__file__)
+filepath = os.path.abspath(os.path.join(basepath,'..','..','delphin2_mission/scripts'))
+sys.path.append(filepath)
+
 from library_highlevel import library_highlevel
 
 ######################################
@@ -22,9 +26,8 @@ def main(controller):
     # Store Initial Time
     time_zero = time.time()    
     
-    time.sleep(5) #Allow critical systems to come online.
+    time.sleep(15) #Allow critical systems to come online.
     time_error=time.time() #Error for heading check
-    #time_error_water=time.time()
   
     # Import Limit Parameters from laumch file
     overDepth = rospy.get_param('over-depth')
@@ -33,7 +36,7 @@ def main(controller):
     maxInternalTemp = rospy.get_param('max-internal-temp')  
     minMotorVoltage = rospy.get_param('min-motor-voltage')
     missionTimeout = rospy.get_param('mission-timeout')
-    missionTimeout = missionTimeout*60          #Mission timeout in minutes therfore convert to seconds
+    missionTimeout = missionTimeout*60 #Mission timeout in minutes therfore convert to seconds
     
     
     #Initialise BackSeatFlag to zero
@@ -41,9 +44,9 @@ def main(controller):
     pub2.publish('Backseat Driver Node Is Active')
     
     while not rospy.is_shutdown():
+
         time.sleep(0.01)
         time_elapsed=time.time()-time_zero
-    
     
         #Poll System For Any Potential Errors or Status Warnings
     
@@ -91,16 +94,16 @@ def main(controller):
             pub2.publish(str)
             return   
         
-#        #Check Motor Voltage
-#        current_voltage=controller.getVoltage()
-#        
-#        if current_voltage<minMotorVoltage: 
-#            BackSeatFlag=1
-#            str = "Current voltage %smV < Motor voltage limit of %smV" %(current_voltage, minMotorVoltage) 
-#            rospy.logerr(str)
-#            pub.publish(BackSeatFlag)
-#            pub2.publish(str)
-#            return                 
+        #Check Motor Voltage
+        current_voltage=controller.getVoltage()
+        
+        if current_voltage<minMotorVoltage: 
+            BackSeatFlag=1
+            str = "Current voltage %smV < Motor voltage limit of %smV" %(current_voltage, minMotorVoltage) 
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pub2.publish(str)
+            return                 
         
         #Check Mission Duration
         current_time=time.time()-time_zero
@@ -147,10 +150,7 @@ def main(controller):
 #            pub2.publish(str)
 #            return         
 #        
-        
-        
-        
- 
+
 if __name__ == '__main__':
     # Define an instance of highlevelcontrollibrary to pass to all action servers
     lib = library_highlevel()

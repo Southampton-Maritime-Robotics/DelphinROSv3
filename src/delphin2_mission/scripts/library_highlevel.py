@@ -158,8 +158,8 @@ class library_highlevel:
         vertical.cs1 = d
         horizontal.cs0 = c
         horizontal.cs1 = e
-        str = "Control surface demands - top: %s, sb: %s, bottom: %s, p: %s deg" %(b,c,d,e)
-        rospy.loginfo(str)
+#        str = "Control surface demands - top: %s, sb: %s, bottom: %s, p: %s deg" %(b,c,d,e)
+#        rospy.loginfo(str)
         self.pub_tail_setpoints_vertical.publish(vertical)
         self.pub_tail_setpoints_horizontal.publish(horizontal)
 

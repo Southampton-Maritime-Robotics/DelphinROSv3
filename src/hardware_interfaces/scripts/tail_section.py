@@ -13,6 +13,15 @@ from hardware_interfaces.msg import status
 ################################################################################
 ################################################################################
 
+global timeLastDemandProp
+global timeLastDemandCsHor
+global timeLastDemandCsVer
+global timeLastDemandMax
+timeLastDemandProp = time.time()
+timeLastDemandCsHor = time.time()
+timeLastDemandCsVer = time.time()
+timeLastDemandMax = 1 # if there is no new demand for this many seconds, the corresponding actuators will be turned off of set to neutral position
+
 def setupSerial():
     global serialPort
     serialPort = serial.Serial(port='/dev/usbtail', baudrate='38400', timeout=0.2)
@@ -53,7 +62,20 @@ def tail_section_loop(status):
         time_zero = time.time()
         prop_on = prop_on + dt
         
-        [prop, prop_on] = speedToSetpoint(prop_demand, prop_on, prop_full_time)
+        if time.time()-timeLastDemandProp>timeLastDemandMax:
+            [prop, prop_on] = speedToSetpoint(0, prop_on, prop_full_time)
+        else:
+            [prop, prop_on] = speedToSetpoint(prop_demand, prop_on, prop_full_time)
+        if time.time()-timeLastDemandCsHor>timeLastDemandMax:
+            c_starb = angleToSetpoint(0, 70)
+            e_port = angleToSetpoint(0, 70)
+        if time.time()-timeLastDemandCsVer>timeLastDemandMax:
+            b_top = angleToSetpoint(0, 70)
+            d_bottom = angleToSetpoint(0, 70)
+            c_starb = angleToSetpoint(0, 70)
+            e_port = angleToSetpoint(0, 70)
+            
+
         
         message = 'b%03dc%03dd%03de%03df%03d' %(b_top, c_starb, d_bottom , e_port, prop)
         #print 'message: ',message
@@ -62,7 +84,6 @@ def tail_section_loop(status):
         except:
             print 'Write error'
     
-
         try:
             feedback = serialPort.read(25)
             process_feedback(feedback)
@@ -143,6 +164,9 @@ def horizontal_callback(new_angles):
     global e_port
     global c
     global e
+    global timeLastDemandCsHor
+    
+    timeLastDemandCsHor = time.time()
     
     c = new_angles.cs0
     e = new_angles.cs1
@@ -158,7 +182,10 @@ def vertical_callback(new_angles):
     global d_bottom
     global b
     global d
+    global timeLastDemandCsVer
     
+    timeLastDemandCsVer = time.time()
+        
     b = new_angles.cs0
     d = new_angles.cs1
     
@@ -169,6 +196,9 @@ def vertical_callback(new_angles):
     
 def prop_callback(new_prop):
     global prop_demand    
+    global timeLastDemandProp
+    
+    timeLastDemandProp = time.time()
     prop_demand = new_prop.data
     print 'Prop dmenad = ',prop_demand
 

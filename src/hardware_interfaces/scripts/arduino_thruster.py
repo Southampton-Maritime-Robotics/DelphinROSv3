@@ -49,9 +49,11 @@ delaySerial = 0.01 # [sec] just enough for arduino to get a data packet
 timeOut = 0.1 # [sec] timeout to wait for a data packet being sent back from arduino
 
 global ThrusterSetpoint_max
-ThrusterSetpoint_max = 255 # in a range of [0-255]
+ThrusterSetpoint_max = 5 # in a range of [0-255]
 global thrust_dr_ref
 thrust_dr_ref = [0,0,0,1] # a vector to correct thrust_direction
+global timeLastDemand_sat
+timeLastDemand_sat = 1 # [sec] associated thruster will be stopped if there is no new demand for longer than this many second
 
 ############################# INITIALISE SERIAL ######################################    
 def init_serial():
@@ -241,7 +243,6 @@ def motor_control(status):
     global current_data
     global delaySerial
     global ThrusterSetpoint_max
-    global thrust_dr_ref        
     global timeHorizLastDemand
     global timeVertLastDemand
     onOff_horiz = 1
@@ -251,6 +252,8 @@ def motor_control(status):
     time_zero = time.time()
     timeHorizLastDemand = time.time()
     timeVertLastDemand = time.time()
+    
+    thrust_dr = [0,0,0,0]
 
     #parameters to utilize watchdog
     timeStart_vol = time.time()
@@ -259,7 +262,6 @@ def motor_control(status):
     timeElapse_rpm = [0.0,0.0,0.0,0.0]
     timeStart_rpm = [timeStart_vol,timeStart_vol,timeStart_vol,timeStart_vol]
     timeLim_rpm = timeLim_vol
-    timeLastDemand_sat = 5 # [sec]
     
     while not rospy.is_shutdown():      
         pubStatus.publish(nodeID = 1, status = status)
@@ -269,8 +271,9 @@ def motor_control(status):
         thrust_sp = [data_now['thruster0']*onOff_vert, data_now['thruster1']*onOff_vert, data_now['thruster2']*onOff_horiz, data_now['thruster3']*onOff_horiz]
         
         ############################# REMAP THRUSTER SETPOINT ######################################    
-        thrust_dr = thrust_dr_ref # a vector to correct thrust_direction
+        thrust_dr = thrust_dr_ref[:] # create a deep copy of a vector to correct thrust_direction
         # remap a setpoint from [-2500, 2500] to [0,255] with direction of 0 or 1
+
         for i in range(len(thrust_sp)):
             if thrust_sp[i] > 0:
                 thrust_dr[i] = 1-thrust_dr[i]
@@ -290,13 +293,13 @@ def motor_control(status):
                 thrust_sp[i] = ThrusterSetpoint_max
 
         # Note: onOff flag will be pulled off by the stop function when terminate the mission
-        if timeVertLastDemand-time.time() < timeLastDemand_sat:
+        if time.time()-timeVertLastDemand < timeLastDemand_sat:
             setpoint0= onOff_vert*thrust_sp[0]
             setpoint1= onOff_vert*thrust_sp[1]
         else: # if there is no update on vert thruster for longer than timeLastDemand_sat, turn off the vert thruster
             setpoint0= 0
-            setpoint1= 0        
-        if timeHorizLastDemand-time.time() < timeLastDemand_sat:
+            setpoint1= 0
+        if time.time()-timeHorizLastDemand < timeLastDemand_sat:
             setpoint2= onOff_horiz*thrust_sp[2]
             setpoint3= onOff_horiz*thrust_sp[3]
         else: # if there is no update on horiz thruster for longer than timeLastDemand_sat, turn off the horiz thruster
@@ -306,7 +309,7 @@ def motor_control(status):
         setPoints = '%d,%d@%d,%d@%d,%d@%d,%d@' %(setpoint0,thrust_dr[0],setpoint1,thrust_dr[1],setpoint2,thrust_dr[2],setpoint3,thrust_dr[3])
         dataToSend = 'faP' + setPoints # add header to a data packet
         dataToSend = dataToSend + 'cs' # add footer to a data packet        
-
+        
         ############################# SET SPEED ######################################    
         serialPort.write(dataToSend)
         time.sleep(delaySerial)
@@ -321,6 +324,8 @@ def motor_control(status):
             timeElapse_vol = time.time() - timeStart_vol
             if timeElapse_vol > timeLim_vol:
                 status = False
+                str = "voltage is too low: shutdown the ArduinoMaxon"
+                rospy.logerr(str)
                 shutdown()
         else:
             timeStart_vol = time.time()
@@ -329,6 +334,8 @@ def motor_control(status):
                     timeElapse_rpm[i] = time.time()-timeStart_rpm[i]
                     if timeElapse_rpm[i] > timeLim_rpm:
                         status = False
+                        str = "motor is not functioning: shutdown the ArduinoMaxon"
+                        rospy.logerr(str)
                         shutdown()
                 else:
                     timeStart_rpm[i] = time.time()

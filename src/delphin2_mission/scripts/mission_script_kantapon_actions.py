@@ -34,7 +34,6 @@ import os.path
 basepath = os.path.dirname(__file__)
 filepath = os.path.abspath(os.path.join(basepath, 'kantapon'))
 sys.path.append(filepath)
-#from state_thruster_testing       import thruster_testing
 from state_actions                import actions
 
 ################################################################################
@@ -161,12 +160,15 @@ def main():
 ################################################################################
         # [1/3] Initialise State (Must Be Run First!)
         smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-            transitions={'succeeded':'GoToXYZ', 'aborted':'STOP','preempted':'STOP'})  
+            transitions={'succeeded':'ACTIONS', 'aborted':'STOP','preempted':'STOP'})  
             
 ################################################################################
         # [2/3] Added States
-        smach.StateMachine.add('GoToXYZ', GoToXYZ(lib, 0, 0, 2, 2, 0.5, 10, 10, 300), 
+        smach.StateMachine.add('ACTIONS', actions(lib), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+            
+#        smach.StateMachine.add('GoToXYZ', GoToXYZ(lib, 0, 0, 2, 2, 0.5, 10, 10, 300), 
+#            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
 

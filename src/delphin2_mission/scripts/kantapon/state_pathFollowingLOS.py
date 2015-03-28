@@ -8,11 +8,6 @@ import time
 from pylab import *
 from math import *
 
-#### from kantapon's folder
-import sys
-sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts/kantapon')
-from utilities                      import uti
-
 class pathFollowingLOS(smach.State):
     def __init__(self, lib, myUti, path, L_los, uGain, uMax, wp_R):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])

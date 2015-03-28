@@ -33,24 +33,23 @@ class actions(smach.State):
         # let the vehicle doing those actions for a period of time
         # and shutdown the actuators once finished           
         time_zero=time.time()
+        
+        flagTest = True
+        timeStart = time.time()
         while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-
-            self.__controller.setRearProp(20)
-#            pass
             
-#            # check if the AUV is overdepth
-#            if self.__controller.getBackSeatErrorFlag():
-#                print "over-depth detected"
-#                    # stop all the actuators
-#                self.__controller.setRearProp(0)
-#                self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
-#                self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
-#                self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-#                return 'aborted'
-#            
-#            self.__controller.setDepth(0.5) # specified depth demand in [metre]
-#            self.__controller.setPitch(0) # specified pitch demand in [degree] 
-#            self.__controller.setHeading(280)
+            self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)            
+            if time.time()-timeStart < 2:
+                
+#                self.__controller.setHeading(200)
+#                print self.__controller.getHeading()
+#                print 'heading demand is set'
+#                flagTest = False
+#                print 'control surface angles are set'
+                self.__controller.setRearProp(15)
+                self.__controller.setControlSurfaceAngle(-30,-30,-30,-30) # (VerUp,HorRight,VerDown,HorLeft)
+#                self.__controller.setArduinoThrusterVertical(-300,-400) # (FrontVer,RearVer)
+#                self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)
         
         # stop all the actuators
         self.__controller.setRearProp(0)

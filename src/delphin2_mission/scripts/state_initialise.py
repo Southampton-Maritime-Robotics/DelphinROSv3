@@ -34,7 +34,7 @@ class Initialise(smach.State):
                 pub.publish(str)
                 
                 while (time.time()-time_zero < self.__timeout) and not(all_online):
-                   all_online = (True # FIXME Kantapon self.__controller.getThrusterStatus() 
+                   all_online = (self.__controller.getThrusterStatus() 
                         and self.__controller.getTailStatus()   
                         and self.__controller.getAltimeterStatus()
                         and self.__controller.getGPSStatus()
@@ -46,7 +46,7 @@ class Initialise(smach.State):
 ####                   print 'compass status = ', self.__controller.getCompassStatus(), '\n'
                    time.sleep(0.5)
 
-                str= 'thruster status = %r' % True # FIXME Kantapon self.__controller.getThrusterStatus()
+                str= 'thruster status = %r' % self.__controller.getThrusterStatus()
                 pub.publish(str)
                 str= 'tail status = %r' % self.__controller.getTailStatus()
                 pub.publish(str)
@@ -61,7 +61,7 @@ class Initialise(smach.State):
                 str='time elapsed = %s s' %(time.time()-time_zero)
                 pub.publish(str)
 
-                print 'thruster status = ', True # FIXME Kantapon self.__controller.getThrusterStatus()
+                print 'thruster status = ', self.__controller.getThrusterStatus()
                 print 'tail status = ', self.__controller.getTailStatus()
                 print 'alt status = ', self.__controller.getAltimeterStatus()
                 print 'gps status = ', self.__controller.getGPSStatus()
@@ -82,7 +82,7 @@ class Initialise(smach.State):
                 rospy.loginfo(str)
                 pub.publish(str) 
                 
-                voltage= 24000 # FIXME self.__controller.getVoltage()
+                voltage = self.__controller.getVoltage()
                 if voltage < 20*1000:
                     "Initial battery voltage, %smV < 20,000mV" %voltage
                     rospy.logerr(str)  
