@@ -9,9 +9,6 @@ import time
 from pylab import *
 from math import *
 
-#### from kantapon's folder
-import sys
-
 class testSway(smach.State):
     def __init__(self, lib, myUti, wp, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
