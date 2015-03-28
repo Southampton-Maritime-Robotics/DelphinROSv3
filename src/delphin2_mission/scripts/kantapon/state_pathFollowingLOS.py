@@ -62,6 +62,9 @@ class pathFollowingLOS(smach.State):
                     # if arrive to the last waypoint, terminate the mission
                     print 'arrived to within the circle of acceptance of the destination'
                     print 'current location is ', eta
+                    self.__controller.setRearProp(0)
+                    self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                    self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                     return 'succeeded'
                 else:
                     # if reached the current waypoint, move onto the next line segment

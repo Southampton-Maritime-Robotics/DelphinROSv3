@@ -48,14 +48,15 @@ class testSurge(smach.State):
                     rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
                     if rang < self.__wp_R:
                         self.__controller.setRearProp(0)
+                        self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                        self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+                        time.sleep(self.__timeDelay) # vehicle will stop for this many second as to let its motion decay
                         break
                     errHeading = self.__uti.computeHeadingError(bear,heading)
                     u = 0.5*self.__uMax*exp(-self.__uGain*abs(errHeading)) # determine an appropriate speed demand based on the heading error
                     self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
                     self.__controller.setHeading(bear)
-
-                time.sleep(self.__timeDelay) # vehicle will stop for this many second as to let its motion decay
-                 
+ 
                 # point toward anoter waypoint
                 print 'head toward the target'
                 timeStart = time.time()
@@ -70,6 +71,9 @@ class testSurge(smach.State):
                         timeStart = time.time()
                     timeElapse = time.time()-timeStart
                     if timeElapse>self.__timeDelay:
+                        self.__controller.setRearProp(0)
+                        self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                        self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                         break
                 
                 # set demandProp
@@ -82,6 +86,8 @@ class testSurge(smach.State):
                     self.__controller.setRearProp(demandProp)
                     if abs(wpRang-rang) < self.__wp_R:
                         self.__controller.setRearProp(0)
+                        self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                        self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                         break
                         
                 # switch the role of two reference waypoints

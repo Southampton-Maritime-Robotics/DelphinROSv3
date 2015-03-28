@@ -46,7 +46,7 @@ def listenForData():
     # saturation
     speedMax = 1 # [m/s] maximum speed
     depthMax = rospy.get_param('over-depth') # [m] maximum depth
-    dt = 0.01 # [sec] time step size
+    dt = 0.1 # [sec] time step size
     #####################
     
     # nu: velocity vector
@@ -91,8 +91,8 @@ def listenForData():
             
             u = myUti.limits(u,0,speedMax)
             
-            X = X+u*sin(heading*pi/180)
-            Y = Y+u*cos(heading*pi/180)
+            X = X+u*dt*sin(heading*pi/180)
+            Y = Y+u*dt*cos(heading*pi/180)
             
             hasPropDemand = False
             
@@ -116,7 +116,7 @@ def listenForData():
         # publish
         pubCompass.publish(com)
         pubPosition.publish(pos)
-        time.sleep(0.01)
+#        time.sleep(0.0001)
 
 ################################################################################
 ######## SATURATION AND UPDATE PARAMETERS FROM TOPICS ##########################

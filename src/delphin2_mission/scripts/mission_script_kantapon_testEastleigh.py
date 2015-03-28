@@ -115,11 +115,11 @@ def main():
         #=================================================
         ## SURGE TEST
         # This state will get the AUV transit to point A
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathBtoA, L_los, uGain, uMax, wp_R), 
-####            transitions={'succeeded':'SURGE', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will guide the AUV back and forth between point A and B with different rudder RPM
-####        smach.StateMachine.add('SURGE', testSurge(lib,myUti,pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDelay), 
-####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathBtoA, L_los, uGain, uMax, wp_R), 
+            transitions={'succeeded':'SURGE', 'aborted':'HOME','preempted':'HOME'})
+        # This state will guide the AUV back and forth between point A and B with different rudder RPM
+        smach.StateMachine.add('SURGE', testSurge(lib,myUti,pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDelay), 
+            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         #=================================================
@@ -135,11 +135,11 @@ def main():
         #=================================================
         ## SWAT TEST 
         # This state will get the AUV transit to point M
-        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
-            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
-        # This state will keep the AUV at point M and perform sway motion response test
-        smach.StateMachine.add('SWAY', testSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay), 
-            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
+####            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
+####        # This state will keep the AUV at point M and perform sway motion response test
+####        smach.StateMachine.add('SWAY', testSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay), 
+####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         ## GENERIC STATE FOR EASTLEIGH LAKE
