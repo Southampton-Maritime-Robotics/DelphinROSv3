@@ -34,17 +34,7 @@ sys.path.append(filepath)
 from utilities                      import uti
 
 #### DEFINE GLOBAL VARIABLES ####
-global flag
 global controller_onOff
-
-# determine relative arm lengths for thrust allocation
-global Ltf
-global Ltr
-L_th = 1.24         # distance between two horizontal thrusters [metre]: measured
-cr = 1.05           # center of rotation on horizontal plane from the AUV nose [metre]: trial-and-error
-Ltf_nose = 0.205    # location of the front horizontal thruster from nose: measured
-Ltf = cr-Ltf_nose   # Moment arm of front horizontal thruster from the cr [metre]
-Ltr = L_th-Ltf      # Moment arm of rear horizontal thruster from the cr [metre]
 
 ################################################################################
 #### CONTROLLER PARAMETERS #####################################################
@@ -52,28 +42,42 @@ Ltr = L_th-Ltf      # Moment arm of rear horizontal thruster from the cr [metre]
 
 def set_params():
     global HC
+    global Ltf
+    global Ltr
     global myUti
     global controlRate
+    global timeLastDemandMax
+    global timeLastCallback
+    
+    timeLastDemandMax = 1 # [sec] if there is no onOff flag updated within this many seconds, controller will be turnned off
+    timeLastCallback = time.time()
 
-### General ###
+    ### General ###
     HC.deadzone   = 1   # deadzone of the heading error [degree]
     controlRate = 10.   # [Hz]
     
-### CS Controller ###
-    HC.CS_Pgain       = 0.5 # 0.1(error square) 0.5(error)
+    ### CS Controller ###
+    HC.CS_Pgain       = 0.5 # FIXME: tune me kantapon
     HC.CS_Igain       = 0
-    HC.CS_Dgain       = -0.3 # TODO: D gain has to be negative (c.f. PI-D)
+    HC.CS_Dgain       = -0.3 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     HC.CS_max         = 30
     HC.CS_min         = -HC.CS_max
     
-### Thrust Controller ###
+    ### Thrust Controller ###
     HC.Thrust_Pgain = 50000.00
     HC.Thrust_Igain = 0.00
-    HC.Thrust_Dgain = -30000.00 # TODO: D gain has to be negative (c.f. PI-D)
-    HC.Thrust_Smax  = 800 # 1000 # maximum thruster setpoint
+    HC.Thrust_Dgain = -30000.00 # D gain has to be negative (c.f. PI-D)
+    HC.Thrust_Smax  = 800 # 1000 # maximum thruster setpoint, FIXME: unleash me kantapon
 
-### Utility Object ###
+    ### Utility Object ###
     myUti = uti()
+    
+    # determine relative arm lengths for thrust allocation
+    L_th = 1.24         # distance between two horizontal thrusters [metre]: measured
+    cr = 1.05           # center of rotation on horizontal plane from the AUV nose [metre]: trial-and-error
+    Ltf_nose = 0.205    # location of the front horizontal thruster from nose: measured
+    Ltf = cr-Ltf_nose   # Moment arm of front horizontal thruster from the cr [metre]
+    Ltr = L_th-Ltf      # Moment arm of rear horizontal thruster from the cr [metre]
 
 ################################################################################
 #### CONTROL SURFACE CONTROLLER ################################################
@@ -81,21 +85,17 @@ def set_params():
 
 def CS_controller(error, int_error, der_error):
     global HC
-    
     HC.CS_Pterm      = error*HC.CS_Pgain
-####    HC.CS_Iterm      = int_error*HC.CS_Igain
+    HC.CS_Iterm      = 0 # TODO int_error*HC.CS_Igain
+    HC.CS_Dterm      = 0 # TODO der_err*HC.CS_Dgain
 # TODO may incorporate a forward speed into a consideration using gain schedualing
 # TODO other option: divide the gains by u^2. If the speed is less than a threshold, all gain will be set to zero
 
-    CS_demand = HC.CS_Pterm
-####    CS_demand = HC.CS_Pterm + HC.CS_Iterm  
+    CS_demand = HC.CS_Pterm + HC.CS_Iterm + HC.CS_Dterm
     CS_demand  = myUti.limits(CS_demand,HC.CS_min,HC.CS_max)
     
     HC.CSt = CS_demand
     HC.CSb = CS_demand
-    
-#    str = "current error is %s, and current CS_demand is %s" %(error,CS_demand) 
-#    rospy.loginfo(str)
 
     return [HC.CSt, HC.CSb]
     
@@ -143,25 +143,25 @@ def thrust_controller(error, int_error, der_error):
 def main_control_loop():
 
     #### SETUP ####
-        global flag
         global controller_onOff
         global speed
         global HC
 
-        flag             = False
         speed            = 0
         controller_onOff = Bool()
         set_params()
 
-        r.rospy.Rate(controlRate)
+        r = rospy.Rate(controlRate)
         controlPeriod = 1/controlRate # [sec]
         
         [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360) # On first loop, initialize relevant parameters
         
         while not rospy.is_shutdown():
-            
+
             if controller_onOff == True:
-                
+
+                timeRef = time.time()                
+
                 # get sampling
                 heading_current = HC.heading
                 heading_demand = (HC.heading_demand)%360
@@ -193,10 +193,17 @@ def main_control_loop():
 ####                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
 ####                rospy.loginfo(str)
 ####                print ''
-                r.sleep()
 
-#            else:
-#                time.sleep(0.01)
+                if time.time()-timeLastCallback > timeLastDemandMax:
+                    controller_onOff = False
+                    
+                timeElapse = time.time()-timeRef
+                
+                if timeElapse < controlPeriod:
+                    r.sleep()
+                else:
+                    str = "Heading control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+                    rospy.logwarn(str)
 
 ################################################################################
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
@@ -213,11 +220,11 @@ def system_state(dt,heading_current,heading_demand):
         int_error = 0
         der_sample = 0
     else:
-### ERROR ###
+        ### ERROR ###
         error = myUti.computeHeadingError(heading_demand,heading_current)
-### INTEGRAL ###
-        int_error += dt*error					# Calculate the integral error       
-### DERIVATIVE ###
+        ### INTEGRAL ###
+        int_error += dt*error
+        ### DERIVATIVE ###
         # PI-D strategy (compute the derivative of only the current heading)
         sample[1] = sample[0]	                # Shift old values up in the array
         sample[0] = heading_current  		    # Set first array term to new error value
@@ -233,30 +240,26 @@ def system_state(dt,heading_current,heading_demand):
     return [error, int_error, der_error]
 
 ################################################################################
-########UPDATE PARAMETERS FROM TOPICS ##########################################
+######## UPDATE PARAMETERS FROM TOPICS #########################################
 ################################################################################
 
 def heading_demand_cb(headingd):
-    global flag
     global HC
     HC.heading_demand = headingd.data
-    flag = True   
     
 def sway_demand_cb(swaydemand):
-    global flag
     global HC
     HC.sway = swaydemand.data
-    flag = True
 
 def compass_cb(compass):
-    global flag
     global HC
     HC.heading = compass.heading
-    flag = True
 
 def onOff_cb(onOff):
     global controller_onOff
+    global timeLastCallback
     controller_onOff=onOff.data
+    timeLastCallback = time.time()
     
 def speed_callback(data):
     global speed

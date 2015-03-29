@@ -31,25 +31,19 @@ class actions(smach.State):
         time.sleep(self.delay_thruster) # allow the vehicle to gain a speed (delay is specified in second)
         
         # let the vehicle doing those actions for a period of time
-        # and shutdown the actuators once finished           
-        time_zero=time.time()
+        # and shutdown the actuators once finished
         
         flagTest = True
         timeStart = time.time()
         while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
             
-            self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)            
-            if time.time()-timeStart < 2:
-                
-#                self.__controller.setHeading(200)
-#                print self.__controller.getHeading()
-#                print 'heading demand is set'
-#                flagTest = False
-#                print 'control surface angles are set'
-                self.__controller.setRearProp(15)
-                self.__controller.setControlSurfaceAngle(-30,-30,-30,-30) # (VerUp,HorRight,VerDown,HorLeft)
-#                self.__controller.setArduinoThrusterVertical(-300,-400) # (FrontVer,RearVer)
-#                self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)
+#            self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)            
+            
+            if time.time()-timeStart < 10:
+#                self.__controller.setHeading(-20)
+                self.__controller.setDepth(2)
+#                self.__controller.setRearProp(15)
+#                self.__controller.setControlSurfaceAngle(-30,-30,-30,-30) # (VerUp,HorRight,VerDown,HorLeft)
         
         # stop all the actuators
         self.__controller.setRearProp(0)
