@@ -38,9 +38,7 @@ class testSway(smach.State):
                 print 'thruster demand is ', demandThruster
                 # go to the waypoint
                 print 'go to waypoint'
-                while True:
-                    if rospy.is_shutdown():
-                        break
+                while not rospy.is_shutdown():
                     X = self.__controller.getX()
                     Y = self.__controller.getY()
                     heading = self.__controller.getHeading()
@@ -56,14 +54,10 @@ class testSway(smach.State):
                     self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
                     self.__controller.setHeading(bear)
 
-
-
                 # point toward start location
                 print 'point toward start location'
                 timeStart = time.time()
-                while True:
-                    if rospy.is_shutdown():
-                        break
+                while not rospy.is_shutdown():
                     X = self.__controller.getX()
                     Y = self.__controller.getY()
                     heading = self.__controller.getHeading()
@@ -82,9 +76,7 @@ class testSway(smach.State):
                 # set demandThruster
                 print 'actuate thruster with demand = ', demandThruster
                 timeStart = time.time()
-                while True:
-                    if rospy.is_shutdown():
-                        break
+                while not rospy.is_shutdown():
                     self.__controller.setArduinoThrusterHorizontal(demandThruster,demandThruster)
                     if time.time()-timeStart > self.__timeDemandHold:
                         self.__controller.setRearProp(0)

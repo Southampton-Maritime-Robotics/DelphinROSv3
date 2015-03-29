@@ -18,6 +18,7 @@ class pathFollowingLOS(smach.State):
         self.__uGain = uGain
         self.__uMax = uMax
         self.__wp_R = wp_R
+        self.__r = rospy.Rate(10) # [Hz] set the control rate
 
     def execute(self, userdata):
         
@@ -49,9 +50,6 @@ class pathFollowingLOS(smach.State):
             eta = [X,Y] # state vector denoted following Fossen's convention
             
             # waypoint switching criteria
-#            target = self.__path[:,wpTarget]
-#            print 'error in distance : ', sqrt( (target[0]-eta[0])**2 + (target[1]-eta[1])**2 )
-
             if (self.__uti.waypointSwitching(self.__path[:,wpTarget],eta,self.__wp_R)):
                 if wpTarget == pathLen-1:
                     # if arrive to the last waypoint, terminate the mission
@@ -87,10 +85,9 @@ class pathFollowingLOS(smach.State):
             errHeading = self.__uti.computeHeadingError(los_a,heading)
             u = self.__uMax*exp(-self.__uGain*abs(errHeading))
             
-            
             # publish heading demand
             self.__controller.setHeading(los_a)
             # turn speedDemand into propeller demand and send
             self.__controller.setRearProp(round(u*22.))
             
-#            print heading, los_a
+            self.__r.sleep()

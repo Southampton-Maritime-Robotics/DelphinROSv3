@@ -45,9 +45,7 @@ class testTurningCircle(smach.State):
                     for demandRudder in listRudder:
                         # go to the waypoint
                         print 'go to start point'
-                        while True:
-                            if rospy.is_shutdown():
-                                break
+                        while not rospy.is_shutdown():
                             X = self.__controller.getX()
                             Y = self.__controller.getY()
                             heading = self.__controller.getHeading()
@@ -66,9 +64,7 @@ class testTurningCircle(smach.State):
                         # point toward anoter waypoint with a bias of headingBias
                         print 'head toward the target with a bias of ', headingBias, ' deg'
                         timeStart = time.time()
-                        while True:
-                            if rospy.is_shutdown():
-                                break
+                        while not rospy.is_shutdown():
                             X = self.__controller.getX()
                             Y = self.__controller.getY()
                             heading = self.__controller.getHeading()
@@ -88,9 +84,7 @@ class testTurningCircle(smach.State):
                         # set demandProp
                         print 'demand is hold at [prop, thruster, rudder] = ', [demandProp, demandThruster, demandRudder]
                         flagDemandHold = True
-                        while flagDemandHold:
-                            if rospy.is_shutdown():
-                                break
+                        while flagDemandHold and not rospy.is_shutdown():
                             X = self.__controller.getX()
                             Y = self.__controller.getY()
                             heading = self.__controller.getHeading()
@@ -100,7 +94,7 @@ class testTurningCircle(smach.State):
                             if rang > wpRang*0.75: 
                                 # activate the actuator when AUV is far enough from the start location
                                 timeStart = time.time()
-                                while flagDemandHold:
+                                while flagDemandHold and not rospy.is_shutdown():
                                     self.__controller.setControlSurfaceAngle(demandRudder,0,demandRudder,0) # (VerUp,HorRight,VerDown,HorLeft)
                                     self.__controller.setArduinoThrusterHorizontal(demandThruster,-demandThruster) # (FrontHor,RearHor)
                                     
