@@ -43,10 +43,11 @@ class testTurningCircle(smach.State):
             for demandProp in listProp:
                 for demandThruster in listThruster:
                     for demandRudder in listRudder:
-
                         # go to the waypoint
                         print 'go to start point'
                         while True:
+                            if rospy.is_shutdown():
+                                break
                             X = self.__controller.getX()
                             Y = self.__controller.getY()
                             heading = self.__controller.getHeading()
@@ -66,6 +67,8 @@ class testTurningCircle(smach.State):
                         print 'head toward the target with a bias of ', headingBias, ' deg'
                         timeStart = time.time()
                         while True:
+                            if rospy.is_shutdown():
+                                break
                             X = self.__controller.getX()
                             Y = self.__controller.getY()
                             heading = self.__controller.getHeading()
@@ -86,6 +89,8 @@ class testTurningCircle(smach.State):
                         print 'demand is hold at [prop, thruster, rudder] = ', [demandProp, demandThruster, demandRudder]
                         flagDemandHold = True
                         while flagDemandHold:
+                            if rospy.is_shutdown():
+                                break
                             X = self.__controller.getX()
                             Y = self.__controller.getY()
                             heading = self.__controller.getHeading()

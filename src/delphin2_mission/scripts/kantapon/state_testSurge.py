@@ -40,7 +40,13 @@ class testSurge(smach.State):
                 print 'prop demand is ', demandProp
                 # go to the waypoint
                 print 'go to start point'
+                
+                if rospy.is_shutdown():
+                    break
+                    
                 while True:
+                    if rospy.is_shutdown():
+                        break
                     X = self.__controller.getX()
                     Y = self.__controller.getY()
                     heading = self.__controller.getHeading()
@@ -60,6 +66,10 @@ class testSurge(smach.State):
                 print 'head toward the target'
                 timeStart = time.time()
                 while True:
+                
+                    if rospy.is_shutdown():
+                        break
+                        
                     X = self.__controller.getX()
                     Y = self.__controller.getY()
                     heading = self.__controller.getHeading()
@@ -78,6 +88,8 @@ class testSurge(smach.State):
                 # set demandProp
                 print 'apply propeller demand = ', demandProp
                 while True:
+                    if rospy.is_shutdown():
+                        break
                     X = self.__controller.getX()
                     Y = self.__controller.getY()
                     heading = self.__controller.getHeading()
