@@ -25,6 +25,14 @@ from lowlevel_controllers.msg   import heading_control
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Bool
 
+#### from kantapon's folder
+import sys
+import os.path
+basepath = os.path.dirname(__file__)
+filepath = os.path.abspath(os.path.join(basepath, '..', '..', 'delphin2_mission/scripts/kantapon'))
+sys.path.append(filepath)
+from utilities                      import uti
+
 #### DEFINE GLOBAL VARIABLES ####
 global flag
 global controller_onOff
@@ -33,7 +41,7 @@ global controller_onOff
 global Ltf
 global Ltr
 L_th = 1.24         # distance between two horizontal thrusters [metre]: measured
-cr = 1.05            # center of rotation on horizontal plane from the AUV nose [metre]: trial-and-error
+cr = 1.05           # center of rotation on horizontal plane from the AUV nose [metre]: trial-and-error
 Ltf_nose = 0.205    # location of the front horizontal thruster from nose: measured
 Ltf = cr-Ltf_nose   # Moment arm of front horizontal thruster from the cr [metre]
 Ltr = L_th-Ltf      # Moment arm of rear horizontal thruster from the cr [metre]
@@ -44,22 +52,28 @@ Ltr = L_th-Ltf      # Moment arm of rear horizontal thruster from the cr [metre]
 
 def set_params():
     global HC
-    
+    global myUti
+    global controlRate
+
 ### General ###
     HC.deadzone   = 1   # deadzone of the heading error [degree]
+    controlRate = 10.   # [Hz]
     
 ### CS Controller ###
-    HC.CS_Pgain       = 1 #0.1(error square) 0.5(error)
+    HC.CS_Pgain       = 0.5 # 0.1(error square) 0.5(error)
     HC.CS_Igain       = 0
-    HC.CS_Dgain       = 0
+    HC.CS_Dgain       = -0.3 # TODO: D gain has to be negative (c.f. PI-D)
     HC.CS_max         = 30
     HC.CS_min         = -HC.CS_max
     
 ### Thrust Controller ###
     HC.Thrust_Pgain = 50000.00
     HC.Thrust_Igain = 0.00
-    HC.Thrust_Dgain = 30000.00
+    HC.Thrust_Dgain = -30000.00 # TODO: D gain has to be negative (c.f. PI-D)
     HC.Thrust_Smax  = 800 # 1000 # maximum thruster setpoint
+
+### Utility Object ###
+    myUti = uti()
 
 ################################################################################
 #### CONTROL SURFACE CONTROLLER ################################################
@@ -75,7 +89,7 @@ def CS_controller(error, int_error, der_error):
 
     CS_demand = HC.CS_Pterm
 ####    CS_demand = HC.CS_Pterm + HC.CS_Iterm  
-    CS_demand  = limits(CS_demand,HC.CS_min,HC.CS_max)
+    CS_demand  = myUti.limits(CS_demand,HC.CS_min,HC.CS_max)
     
     HC.CSt = CS_demand
     HC.CSb = CS_demand
@@ -133,33 +147,30 @@ def main_control_loop():
         global controller_onOff
         global speed
         global HC
-        
+
         flag             = False
         speed            = 0
         controller_onOff = Bool()
-        delta_t          = 0.1
         set_params()
-                
-        time_zero        = time.time()        
-        [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360)                            # On first loop, initialize relevant parameters
+
+        r.rospy.Rate(controlRate)
+        controlPeriod = 1/controlRate # [sec]
+        
+        [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360) # On first loop, initialize relevant parameters
         
         while not rospy.is_shutdown():
-
-            dt = time.time() - time_zero                                            # Calculate the elapse time since last calculation
             
-            if dt >= delta_t and controller_onOff == True:
-
-                time_zero = time.time()
+            if controller_onOff == True:
                 
                 # get sampling
                 heading_current = HC.heading
                 heading_demand = (HC.heading_demand)%360
                 
                 # Get system state #
-                [error, int_error, der_error] = system_state(dt,heading_current,heading_demand)
+                [error, int_error, der_error] = system_state(controlPeriod,heading_current,heading_demand)
+
                 # Control Surface Controller # Nb CSp = Sternplane port, CSt = Rudder top
                 [CSt, CSb] = CS_controller(error, int_error, der_error)
-                    
                 # Thruster controller # 
                 [thruster0, thruster1] = thrust_controller(error, int_error, der_error)
                 
@@ -169,20 +180,23 @@ def main_control_loop():
                 pub_HC.publish(HC)
                 
                 # verbose activity in thrust_controller
-####                str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %(heading_demand) 
-####                rospy.loginfo(str)  
-####                str = ">>>>>>>>>>>>>>>>Current heading is %.2fdeg" %(heading_current) 
-####                rospy.loginfo(str)
-####                str = ">>>>>>>>>>>>>>>>Heading error is %.2fdeg" %(error) 
-####                rospy.loginfo(str)
+                str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %(heading_demand) 
+                rospy.loginfo(str)  
+                str = ">>>>>>>>>>>>>>>>Current heading is %.2fdeg" %(heading_current) 
+                rospy.loginfo(str)
+                str = ">>>>>>>>>>>>>>>>Heading error is %.2fdeg" %(error) 
+                rospy.loginfo(str)
+                str = ">>>>>>>>>>>>>>>>Control surface demand is %d" %(CSt) 
+                rospy.loginfo(str)
 ####                str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(thruster0) 
 ####                rospy.loginfo(str)
 ####                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
 ####                rospy.loginfo(str)
 ####                print ''
+                r.sleep()
 
-            else:
-                time.sleep(0.01)
+#            else:
+#                time.sleep(0.01)
 
 ################################################################################
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
@@ -193,44 +207,25 @@ def system_state(dt,heading_current,heading_demand):
     global int_error
     global sample
 
-### ERROR ###
-    error = heading_demand - heading_current
-    
-    if error <-180:
-        error =   error%360
-    elif error > 180:
-        error= -(-error%360)            
-
     if dt == -1:
         sample = numpy.zeros(2)
+        error = 0
         int_error = 0
-        der_error = 0
-               
+        der_sample = 0
     else:
-
+### ERROR ###
+        error = myUti.computeHeadingError(heading_demand,heading_current)
 ### INTEGRAL ###
         int_error += dt*error					# Calculate the integral error       
-
 ### DERIVATIVE ###
-        # this simple derivative is good enough for the xsens
-
-        # PID strategy (compute the derivative of heading error)
-#        sample[1] = sample[0]	                # Shift old values up in the array
-#        sample[0] = error				        # Set first array term to new error value
-#        der_error = (sample[0]-sample[1])/dt    # Calculate the derivative error
-
-        # PI-D strategy (compute the derivative of current heading)
+        # PI-D strategy (compute the derivative of only the current heading)
         sample[1] = sample[0]	                # Shift old values up in the array
-        sample[0] = heading_current  		        # Set first array term to new error value
-        der_error  = sample[0]-sample[1]
-        # dealing with a singularity
-        if der_error <-180:
-            der_error =   der_error%360
-        elif der_error > 180:
-            der_error= -(-der_error%360)
-        der_error = -der_error/dt    # Calculate the derivative heading
-        
+        sample[0] = heading_current  		    # Set first array term to new error value
+        der_sample  = myUti.computeHeadingError(sample[0],sample[1])/dt       # compute error of the sample
+
     # update the error terms. These will be subscribed by the logger node.
+    der_error = der_sample # consider the derivative of sample as the derivative of the error (c.f. PI-D strategy)
+
     HC.error = error
     HC.int_error = int_error
     HC.der_error = der_error
@@ -238,16 +233,7 @@ def system_state(dt,heading_current,heading_demand):
     return [error, int_error, der_error]
 
 ################################################################################
-######## SATURATION AND UPDATE PARAMETERS FROM TOPICS ##########################
-################################################################################
-
-def limits(value, min, max):       #Function to contrain within defined limits
-    if value < min:				   
-       value = min
-    elif value > max:
-       value = max
-    return value
-
+########UPDATE PARAMETERS FROM TOPICS ##########################################
 ################################################################################
 
 def heading_demand_cb(headingd):
