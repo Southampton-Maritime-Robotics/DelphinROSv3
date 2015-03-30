@@ -27,9 +27,9 @@ class testTurningCircle(smach.State):
         ### Perform actions ################################################
         ####################################################################
 
-        listProp = [10,14,18,22] # list of propeller demand used in experiment
-        listThruster = [400, 800, 1400, 2000] # list of thruster demand used in experiment [+ve yaw CW]
-        listRudder = [10,20,30] # list of rudder angle used in experiment [+ve yaw CW]
+        listProp = [10,22] # list of propeller demand used in experiment
+        listThruster = [400, 2000] # list of thruster demand used in experiment [+ve yaw CW]
+        listRudder = [10,30] # list of rudder angle used in experiment [+ve yaw CW]
         headingBias = -25 # TODO [deg, +ve CW] point away from the target just so the vehicle have enough space for turning
         
         wpRang,_ = self.__uti.rangeBearing([self.__wp[0][0], self.__wp[1][0]],[self.__wp[0][1], self.__wp[1][1]]) # determine a range between waypoints as a reference
@@ -101,7 +101,7 @@ class testTurningCircle(smach.State):
                             self.__controller.setRearProp(0)
                             self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                             self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-                            flagDemandHold = False
+                            break
                             
                     # switch the role of two reference waypoints
                     wpIndex = 1-wpIndex

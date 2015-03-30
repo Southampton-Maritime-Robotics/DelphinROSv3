@@ -92,7 +92,7 @@ def CS_controller(error, int_error, der_error):
 # TODO other option: divide the gains by u^2. If the speed is less than a threshold, all gain will be set to zero
 
     CS_demand = HC.CS_Pterm + HC.CS_Iterm + HC.CS_Dterm
-    CS_demand  = myUti.limits(CS_demand,HC.-CS_Smax,HC.CS_Smax)
+    CS_demand  = myUti.limits(CS_demand,-HC.CS_Smax,HC.CS_Smax)
     
     HC.CSt = CS_demand
     HC.CSb = CS_demand

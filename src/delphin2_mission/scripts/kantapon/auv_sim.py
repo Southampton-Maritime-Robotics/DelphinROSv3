@@ -29,25 +29,29 @@ def listenForData():
     global headingDemand_cb
     global depthDemand_cb
     global rearPropDemand_cb
+    global swayDemand_cb
     headingDemand_cb = 0
     depthDemand_cb = 0
     rearPropDemand_cb = 0
+    swayDemand_cb = 0
     
     global hasHeadingDemand
     global hasDepthDemand
     global hasPropDemand
+    global hasSwayDemand
     hasHeadingDemand = False
     hasDepthDemand = False
     hasPropDemand = False
+    hasSwayDemand = False
     
     # increment
-    incHeading = 10 # [(deg)/s] how quickly the heading can change FIXME
-    incDepth = 0.01 # [(m)/s] how quickly the depth can change FIXME
+    incHeading = 10 # [(deg)/s] how quickly the heading can change FIXME: tune the value
+    incDepth = 0.01 # [(m)/s] how quickly the depth can change FIXME: tune the value
     # saturation
-    speedMax = 1 # [m/s] maximum speed
+    speedMax = 1 # [m/s] maximum surge speed
+    swayMax = 0.5 # [m/s] maximum sway speed
     depthMax = rospy.get_param('over-depth') # [m] maximum depth
     dt = 0.1 # [sec] time step size
-    #####################
     
     # nu: velocity vector
     u = 0 # [m/s] initial surge velocity
@@ -56,7 +60,7 @@ def listenForData():
     X = 0 # [m]
     Y = 0 # [m]
     Z = 0 # [m]
-    heading = 20 # [deg] North CW
+    heading = 0 # [deg] North CW
     
     com = compass()
     pos = position()
@@ -67,20 +71,15 @@ def listenForData():
         demandRearProp = rearPropDemand_cb # [m/s]
         demandDepth = depthDemand_cb # [m]
         demandHeading = headingDemand_cb # [deg] North CW
+        demandSway = swayDemand_cb # [m/s] stb
         
         # determine error state
         errDepth = demandDepth-Z
         errHeading = myUti.computeHeadingError(demandHeading,heading)
-         
         
         # update kinematic parameters and state vector
-        
         if hasHeadingDemand:
-            heading = heading + sign(errHeading)*incHeading*dt
-            if heading > 360:
-                heading = heading-360
-            elif heading < 0:
-                heading = heading+360
+            heading = mod( heading+sign(errHeading)*incHeading*dt, 360 )
             hasHeadingDemand = False
 
         if hasPropDemand:
@@ -88,13 +87,16 @@ def listenForData():
                 u = 0 # propeller deadband
             else:
                 u = demandRearProp*1./22. # estimated from Leo's thesis
-            
             u = myUti.limits(u,0,speedMax)
-            
             X = X+u*dt*sin(heading*pi/180)
             Y = Y+u*dt*cos(heading*pi/180)
-            
             hasPropDemand = False
+        
+        if hasSwayDemand:
+            v = myUti.limits(demandSway,-swayMax,swayMax)
+            X = X+v*dt*cos(heading*pi/180)
+            Y = Y+v*dt*sin(heading*pi/180)
+            hasSwayDemand = False
             
         if hasDepthDemand:
             Z = Z + sign(errDepth)*incDepth*dt
@@ -140,6 +142,12 @@ def depth_demand_cb(depthd):
     depthDemand_cb = depthd.data
     hasDepthDemand = True
     
+def sway_demand_cb(swayd):
+    global swayDemand_cb
+    global hasSwayDemand
+    swayDemand_cb = swayd.data
+    hasSwayDemand = True
+    
 ################################################################################
 ######## INITIALISATION ########################################################
 ################################################################################
@@ -155,6 +163,7 @@ if __name__ == '__main__':
     
     rospy.Subscriber('heading_demand', Float32, heading_demand_cb)
     rospy.Subscriber('depth_demand', Float32, depth_demand_cb)
-    rospy.Subscriber('prop_demand',Int8,rearProp_demand_cb)
+    rospy.Subscriber('prop_demand', Int8, rearProp_demand_cb)
+    rospy.Subscriber('sway_demand', Float32, sway_demand_cb)
         
     listenForData()   #Main loop for update the AUV parameters

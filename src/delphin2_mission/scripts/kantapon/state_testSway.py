@@ -74,6 +74,8 @@ class testSway(smach.State):
             print 'actuate thruster with demand = ', demandThruster
             timeStart = time.time()
             while not rospy.is_shutdown():
+                print float(demandThruster)/2300*0.5
+                self.__controller.sway(float(demandThruster)/2300*0.5) # TODO: remove me kantapon
                 self.__controller.setArduinoThrusterHorizontal(demandThruster,demandThruster)
                 if time.time()-timeStart > self.__timeDemandHold:
                     self.__controller.setRearProp(0)

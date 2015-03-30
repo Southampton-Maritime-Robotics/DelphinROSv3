@@ -62,12 +62,12 @@ def main():
     M = array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
     O = array([-2,2]) # home: shifted from the origin a little to make sure it will not collide with the pier
     pathAtoB = numpy.vstack((A,B)).T 
-    pathBtoA = numpy.vstack((B,A)).T
+#    pathBtoA = numpy.vstack((B,A)).T
     pathMtoO = numpy.vstack((M,O)).T
+    pathMtoA = numpy.vstack((M,A)).T
     pathOtoM = numpy.vstack((O,M)).T
-    pathTest = array([[5,100,20,120],
-                      [6,40,80,120]])
-    pathOtoStart = numpy.vstack((O,pathTest[:,0])).T
+    pathTest = array([[-15,100,20,120],
+                      [-60,40,80,120]])
     
     # guidance
     L_los = 5 # [m] line-of-sight distance
@@ -108,10 +108,7 @@ def main():
 
         #=================================================
         ## PATH FOLLOWING TEST 
-        # This state will get the AUV to the first wp of the path
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoStart, L_los, uGain, uMax, wp_R), 
-####            transitions={'succeeded':'PATH_FOLLOWING', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will get the AUV moving along the path
+        # This state will get the AUV moving along the path
 ####        smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
@@ -119,7 +116,7 @@ def main():
         #=================================================
         ## SURGE TEST
         # This state will get the AUV transit to point A
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathBtoA, L_los, uGain, uMax, wp_R), 
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'SURGE', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will guide the AUV back and forth between point A and B with different rudder RPM
 ####        smach.StateMachine.add('SURGE', testSurge(lib,myUti,pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDelay), 
@@ -149,7 +146,7 @@ def main():
         #=================================================
         ## TURNING CIRCLE TEST 
         # This state will get the AUV transit to point A
-        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathBtoA, L_los, uGain, uMax, wp_R), 
+        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
             transitions={'succeeded':'TURNING', 'aborted':'HOME','preempted':'HOME'})
         # This state will keep the AUV at point M and perform sway motion response test: TODO checi timeDemandHold
         smach.StateMachine.add('TURNING', testTurningCircle(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay), 

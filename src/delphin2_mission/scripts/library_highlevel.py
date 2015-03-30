@@ -111,6 +111,7 @@ class library_highlevel:
         self.setArduinoThrusterVertical(0, 0)
         self.switchVerticalThrusters(0)
         self.setRearProp(0)
+        self.setControlSurfaceAngle(0, 0, 0, 0)
         time.sleep(5)
         rospy.logfatal("Shutting down")
         self.Mission_pub.publish('Shutting Down')
@@ -124,8 +125,8 @@ class library_highlevel:
     
     # sets sway 'demand' (tsl_setpoints ~500-1000)
     def sway(self, demand):
-        str = "Swaying %s (positive to starboard)" %demand
-        rospy.loginfo(str)
+#        str = "Swaying %s (positive to starboard)" %demand
+#        rospy.loginfo(str)
         # keep current heading (not current heading demand!)
         self.changeHeadingBy(0)
         self.pub_sway_demand.publish(demand)

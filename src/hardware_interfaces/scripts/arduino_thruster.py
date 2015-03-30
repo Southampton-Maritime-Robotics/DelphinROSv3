@@ -363,10 +363,10 @@ def motor_control(status):
           
         timeElapse = time.time()-timeRef
         if timeElapse < controlPeriod:
-            print timeElapse
             r.sleep()
+            print time.time()-timeRef
         else:
-            str = "Heading control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            str = "Arduino_thruster control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
             rospy.logwarn(str)
     
 ############################# CALLBACKS ######################################    

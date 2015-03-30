@@ -26,8 +26,6 @@ class pathFollowingLOS(smach.State):
         ### Perform actions ################################################
         ####################################################################
         
-
-        
         X = self.__controller.getX()
         Y = self.__controller.getY()
         eta = [X,Y]
@@ -36,7 +34,7 @@ class pathFollowingLOS(smach.State):
 #        wpTarget = self.__uti.findFirstSegment(self.__path,eta)
 
         wpTarget = 1
-        path = numpy.vstack((eta,path.T)).T # include the current location of the AUV as the first waypoint
+        self.__path = numpy.vstack((eta,self.__path.T)).T # include the current location of the AUV as the first waypoint
         _,pathLen = self.__path.shape
 
         print 'Execute path following algorithm with a following path'

@@ -21,7 +21,8 @@ class actions(smach.State):
         time_zero=time.time()
         while not rospy.is_shutdown():
 
-            self.__controller.setRearProp(25)
+#            self.__controller.setRearProp(25)
+            self.__controller.sway(0.2) # (this function actually requires tsl_setpoints ~500-1000, however here requires sway speed in m/s)
 #            flagCon = 1
 #            while flagCon:
 #                self.__controller.setHeading(30)
