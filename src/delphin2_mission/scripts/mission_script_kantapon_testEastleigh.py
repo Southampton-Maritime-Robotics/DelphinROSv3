@@ -66,7 +66,8 @@ def main():
     pathMtoO = numpy.vstack((M,O)).T
     pathOtoM = numpy.vstack((O,M)).T
     pathTest = array([[5,100,20,120],
-                      [5,40,80,120]])
+                      [6,40,80,120]])
+    pathOtoStart = numpy.vstack((O,pathTest[:,0])).T
     
     # guidance
     L_los = 5 # [m] line-of-sight distance
@@ -81,7 +82,7 @@ def main():
     
     # general
     timeDemandHold = 2 # 40 sec TODO actuator demand will be hold for this many second
-    timeDelay = 1 # 10-20 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
+    timeDelay = 1 # 5-20 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
     
     time.sleep(10) # TODO: to be removed: tempolary used to allow the system to come online
 
@@ -107,7 +108,10 @@ def main():
 
         #=================================================
         ## PATH FOLLOWING TEST 
-        # This state will get the AUV moving along the path
+        # This state will get the AUV to the first wp of the path
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoStart, L_los, uGain, uMax, wp_R), 
+####            transitions={'succeeded':'PATH_FOLLOWING', 'aborted':'HOME','preempted':'HOME'})
+####        # This state will get the AUV moving along the path
 ####        smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------

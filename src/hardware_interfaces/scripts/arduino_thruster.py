@@ -252,8 +252,6 @@ def motor_control(status):
     time_zero = time.time()
     timeHorizLastDemand = time.time()
     timeVertLastDemand = time.time()
-    
-    thrust_dr = [0,0,0,0]
 
     #parameters to utilize watchdog
     timeStart_vol = time.time()
@@ -263,7 +261,14 @@ def motor_control(status):
     timeStart_rpm = [timeStart_vol,timeStart_vol,timeStart_vol,timeStart_vol]
     timeLim_rpm = timeLim_vol
     
+    controlRate = 10. # [Hz]
+    controlPeriod = 1/controlRate
+    r = rospy.Rate(controlRate)
+    
     while not rospy.is_shutdown():      
+        
+        timeRef = time.time()
+        
         pubStatus.publish(nodeID = 1, status = status)
         data_now = current_data #Get the data at the current time. This is in the range of [-2500,2500] 
         
@@ -283,7 +288,6 @@ def motor_control(status):
                     thrust_sp[i] = 1
                 else:
                     thrust_sp[i] = int(thrust_sp[i])
-
         # the smallest value that setpoint in arduino world could be is 1 in whih correspoinds to a RPM of 138 approximately
                 
         ############################# SETPOINT MSG ####################################    
@@ -356,6 +360,14 @@ def motor_control(status):
             speed0 = speed0, speed1 = speed1, speed2 = speed2, speed3 = speed3, 
             current0 = current0, current1 = current1, current2 = current2, current3 = current3, 
             voltage = voltage)
+          
+        timeElapse = time.time()-timeRef
+        if timeElapse < controlPeriod:
+            print timeElapse
+            r.sleep()
+        else:
+            str = "Heading control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
     
 ############################# CALLBACKS ######################################    
 

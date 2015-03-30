@@ -34,74 +34,60 @@ class testSurge(smach.State):
         print 'execute surge motion response test'
         
         # move back and forth between two waypoint with different demandProp
-        while not rospy.is_shutdown():
-            
-            for demandProp in listProp:
-                print 'prop demand is ', demandProp
-                # go to the waypoint
-                print 'go to start point'
+
+        for demandProp in listProp:
+            # go to the waypoint
+            print 'go to start point'
                 
-                if rospy.is_shutdown():
+            while not rospy.is_shutdown():
+                X = self.__controller.getX()
+                Y = self.__controller.getY()
+                heading = self.__controller.getHeading()
+                rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
+                if rang < self.__wp_R:
+                    self.__controller.setRearProp(0)
+                    self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                    self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+                    time.sleep(self.__timeDelay) # vehicle will stop for this many second as to let its motion decay
+                    break
+                errHeading = self.__uti.computeHeadingError(bear,heading)
+                u = 0.5*self.__uMax*exp(-self.__uGain*abs(errHeading)) # determine an appropriate speed demand based on the heading error
+                self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
+                self.__controller.setHeading(bear)
+
+            # point toward anoter waypoint
+            print 'head toward the target'
+            timeStart = time.time()
+            while not rospy.is_shutdown():
+                X = self.__controller.getX()
+                Y = self.__controller.getY()
+                heading = self.__controller.getHeading()
+                rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][1-wpIndex], self.__wp[1][1-wpIndex]])
+                errHeading = self.__uti.computeHeadingError(bear,heading)
+                self.__controller.setHeading(bear)
+                if abs(errHeading)>self.__errHeadingTol:
+                    timeStart = time.time()
+                timeElapse = time.time()-timeStart
+                if timeElapse>self.__timeDelay:
+                    self.__controller.setRearProp(0)
+                    self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                    self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+                    break
+            
+            # set demandProp
+            print 'apply propeller demand = ', demandProp
+            while not rospy.is_shutdown():
+                X = self.__controller.getX()
+                Y = self.__controller.getY()
+                rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
+                self.__controller.setRearProp(demandProp)
+                if abs(wpRang-rang) < self.__wp_R:
+                    self.__controller.setRearProp(0)
+                    self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                    self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                     break
                     
-                while True:
-                    if rospy.is_shutdown():
-                        break
-                    X = self.__controller.getX()
-                    Y = self.__controller.getY()
-                    heading = self.__controller.getHeading()
-                    rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
-                    if rang < self.__wp_R:
-                        self.__controller.setRearProp(0)
-                        self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
-                        self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-                        time.sleep(self.__timeDelay) # vehicle will stop for this many second as to let its motion decay
-                        break
-                    errHeading = self.__uti.computeHeadingError(bear,heading)
-                    u = 0.5*self.__uMax*exp(-self.__uGain*abs(errHeading)) # determine an appropriate speed demand based on the heading error
-                    self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
-                    self.__controller.setHeading(bear)
- 
-                # point toward anoter waypoint
-                print 'head toward the target'
-                timeStart = time.time()
-                while True:
-                
-                    if rospy.is_shutdown():
-                        break
-                        
-                    X = self.__controller.getX()
-                    Y = self.__controller.getY()
-                    heading = self.__controller.getHeading()
-                    rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][1-wpIndex], self.__wp[1][1-wpIndex]])
-                    errHeading = self.__uti.computeHeadingError(bear,heading)
-                    self.__controller.setHeading(bear)
-                    if abs(errHeading)>self.__errHeadingTol:
-                        timeStart = time.time()
-                    timeElapse = time.time()-timeStart
-                    if timeElapse>self.__timeDelay:
-                        self.__controller.setRearProp(0)
-                        self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
-                        self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-                        break
-                
-                # set demandProp
-                print 'apply propeller demand = ', demandProp
-                while True:
-                    if rospy.is_shutdown():
-                        break
-                    X = self.__controller.getX()
-                    Y = self.__controller.getY()
-                    heading = self.__controller.getHeading()
-                    rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
-                    self.__controller.setRearProp(demandProp)
-                    if abs(wpRang-rang) < self.__wp_R:
-                        self.__controller.setRearProp(0)
-                        self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
-                        self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-                        break
-                        
-                # switch the role of two reference waypoints
-                wpIndex = 1-wpIndex
-                
-            return 'succeeded' # exit with a flag of 'succeeded'
+            # switch the role of two reference waypoints
+            wpIndex = 1-wpIndex
+            
+        return 'succeeded' # exit with a flag of 'succeeded'

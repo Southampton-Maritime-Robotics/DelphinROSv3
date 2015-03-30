@@ -77,7 +77,7 @@ class pathFollowingLOS(smach.State):
                 los_p = p_inter + xe*vecAlong/vecAlongLen
 
             los_vec = los_p-eta
-            los_a = atan2(los_vec[0],los_vec[1])*180/pi # TODO: incorporated side slip angle
+            los_a = atan2(los_vec[0],los_vec[1])*180/pi # TODO: should also consider the side slip angle
             if los_a<0: # confine the los_a within [0,2pi)
                 los_a = los_a+360
 
