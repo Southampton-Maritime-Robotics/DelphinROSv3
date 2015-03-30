@@ -56,13 +56,18 @@ def main():
     lib = library_highlevel()
     myUti = uti()
 
-    # points defined relative to the origin, i.e. north pier of Eastleigh lake TODO: correct these point
-    A = array([-32.,4.]) # reference point A
-    B = array([-2.,64.]) # reference point B
-    M = array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
+    # points defined relative to the origin O
+    # North pier of the Eastleigh lake (50.957024,-1.366769)
     O = array([-2,2]) # home: shifted from the origin a little to make sure it will not collide with the pier
-    pathAtoB = numpy.vstack((A,B)).T 
-#    pathBtoA = numpy.vstack((B,A)).T
+    A = array([-28.,12.]) # reference point A
+    B = array([-1.,64.]) # reference point B
+    # North pier of the Eastleigh lake (50.956473,-1.366835)
+    O = array([-2,2]) # home: shifted from the origin a little to make sure it will not collide with the pier
+    A = array([-20.,14.]) # reference point A
+    B = array([-30.,64.]) # reference point B
+    
+    M = array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
+    pathAtoB = numpy.vstack((A,B)).T
     pathMtoO = numpy.vstack((M,O)).T
     pathMtoA = numpy.vstack((M,A)).T
     pathOtoM = numpy.vstack((O,M)).T
