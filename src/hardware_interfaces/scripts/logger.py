@@ -320,7 +320,7 @@ def reckoner_callback(data):
 def headingPID_callback(data): 
     stringtime = time.time()-time_zero
         
-    headingPIDList = [stringtime, data.heading, data.speed, data.heading_demand, data.sway, data.error, data.int_error, data.der_error, data.deadzone, data.CS_Pgain, data.CS_min , data.CS_max , data.CS_Pterm, data.CSt, data.CSb, data.Thrust_Pgain, data.Thrust_Igain, data.Thrust_Dgain, data.Thrust_Smax, data.Thrust_Pterm, data.Thrust_Iterm, data.Thrust_Dterm, data.Thrust_heading, data.thruster0, data.thruster1]
+    headingPIDList = [stringtime, data.heading, data.speed, data.heading_demand, data.sway_demand, data.error, data.int_error, data.der_error, data.deadzone, data.CS_Pgain, data.CS_Smax , data.CS_Pterm, data.CSt, data.CSb, data.Thrust_Pgain, data.Thrust_Igain, data.Thrust_Dgain, data.Thrust_Smax, data.Thrust_Pterm, data.Thrust_Iterm, data.Thrust_Dterm, data.Thrust_heading, data.thruster0, data.thruster1]
     
     with open('%s/headingPIDLog.csv' %(dirname), "a") as f:
         try:
@@ -328,7 +328,6 @@ def headingPID_callback(data):
             Writer.writerow(headingPIDList)
         except ValueError:
             print 'writerow error'
-
 
 def depth_pitch_PID_callback(data): 
     stringtime = time.time()-time_zero

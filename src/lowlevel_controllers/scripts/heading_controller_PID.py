@@ -60,8 +60,8 @@ def set_params():
     HC.CS_Pgain       = 0.5 # FIXME: tune me kantapon
     HC.CS_Igain       = 0
     HC.CS_Dgain       = -0.3 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
-    HC.CS_max         = 30
-    HC.CS_min         = -HC.CS_max
+    HC.CS_Smax         = 30
+#    HC.CS_min         = -HC.CS_max
     
     ### Thrust Controller ###
     HC.Thrust_Pgain = 50000.00
@@ -92,7 +92,7 @@ def CS_controller(error, int_error, der_error):
 # TODO other option: divide the gains by u^2. If the speed is less than a threshold, all gain will be set to zero
 
     CS_demand = HC.CS_Pterm + HC.CS_Iterm + HC.CS_Dterm
-    CS_demand  = myUti.limits(CS_demand,HC.CS_min,HC.CS_max)
+    CS_demand  = myUti.limits(CS_demand,HC.-CS_Smax,HC.CS_Smax)
     
     HC.CSt = CS_demand
     HC.CSb = CS_demand
@@ -115,8 +115,8 @@ def thrust_controller(error, int_error, der_error):
         HC.Thrust_heading = HC.Thrust_Pterm + HC.Thrust_Iterm + HC.Thrust_Dterm
         
         ## turn torque into thrust and superposition with sway demand
-        thruster0 = float(HC.Thrust_heading)/float(Ltf) + float(HC.sway)
-        thruster1 = -float(HC.Thrust_heading)/float(Ltr) + float(HC.sway)    
+        thruster0 = float(HC.Thrust_heading)/float(Ltf) + float(HC.sway_demand)
+        thruster1 = -float(HC.Thrust_heading)/float(Ltr) + float(HC.sway_demand)    
     
         HC.thruster0 = int(numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5) # according to a relationship between thrust and rpm
         HC.thruster1 = int(numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5) # according to a relationship between thrust and rpm
@@ -249,7 +249,7 @@ def heading_demand_cb(headingd):
     
 def sway_demand_cb(swaydemand):
     global HC
-    HC.sway = swaydemand.data
+    HC.sway_demand = swaydemand.data
 
 def compass_cb(compass):
     global HC
