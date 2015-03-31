@@ -20,9 +20,6 @@ filepath = os.path.abspath(os.path.join(basepath, '..', '..', 'delphin2_mission/
 sys.path.append(filepath)
 from utilities                      import uti
 
-#### DEFINE GLOBAL VARIABLES ####
-global controller_onOff
-
 ################################################################################
 #### CONTROLLER PARAMETERS #####################################################
 ################################################################################
@@ -65,7 +62,27 @@ def set_params():
     
     ### Utility Object ###
     myUti = uti()
+    
+#################################################################################
+##### CONTROL SURFACE CONTROLLER ################################################
+#################################################################################
 
+#def CS_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch):
+#    global HC
+#    HC.CS_Pterm      = error*HC.CS_Pgain
+#    HC.CS_Iterm      = 0 # TODO int_error*HC.CS_Igain
+#    HC.CS_Dterm      = 0 # TODO der_err*HC.CS_Dgain
+## TODO may incorporate a forward speed into a consideration using gain schedualing
+## TODO other option: divide the gains by u^2. If the speed is less than a threshold, all gain will be set to zero
+
+#    CS_demand = HC.CS_Pterm + HC.CS_Iterm + HC.CS_Dterm
+#    CS_demand  = myUti.limits(CS_demand,-HC.CS_Smax,HC.CS_Smax)
+#    
+#    HC.CSt = CS_demand
+#    HC.CSb = CS_demand
+
+#    return [HC.CSt, HC.CSb]
+    
 ################################################################################
 ########## THRUST CONTROLLER ###################################################
 ################################################################################

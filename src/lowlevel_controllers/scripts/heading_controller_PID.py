@@ -33,9 +33,6 @@ filepath = os.path.abspath(os.path.join(basepath, '..', '..', 'delphin2_mission/
 sys.path.append(filepath)
 from utilities                      import uti
 
-#### DEFINE GLOBAL VARIABLES ####
-global controller_onOff
-
 ################################################################################
 #### CONTROLLER PARAMETERS #####################################################
 ################################################################################
