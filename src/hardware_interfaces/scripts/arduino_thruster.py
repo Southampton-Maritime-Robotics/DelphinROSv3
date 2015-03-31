@@ -429,8 +429,8 @@ if __name__ == '__main__':
     rospy.Subscriber('TSL_onOff_vertical', Bool, onOff_vert_callback)
     rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, horiz_callback)
     rospy.Subscriber('TSL_setpoints_vertical', tsl_setpoints, vert_callback)
-    pub = rospy.Publisher('TSL_feedback', tsl_feedback)
-    pubStatus = rospy.Publisher('status', status)
+    pub = rospy.Publisher('TSL_feedback', tsl_feedback, queue_size=3)
+    pubStatus = rospy.Publisher('status', status, queue_size=3)
     
     board_status = init_board()
     

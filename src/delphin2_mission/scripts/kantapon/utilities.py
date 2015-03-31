@@ -82,3 +82,7 @@ class uti:
         elif value > max:
            value = max
         return value
+        
+    del surgeVelFromHeadingError(uMax,gGain,errHeading)
+        u = uMax*exp(-uGain*abs(errHeading))
+        return u

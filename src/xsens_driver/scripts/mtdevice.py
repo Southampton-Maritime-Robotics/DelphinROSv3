@@ -560,7 +560,7 @@ class XSensDriver(object):
 
 		# initialize topics
 #		self.IMU_pub = rospy.Publisher('IMU_information',IMU_msg)
-		self.COMPASS_pub = rospy.Publisher('compass_out',compass)
+		self.COMPASS_pub = rospy.Publisher('compass_out',compass,queue_size=1)
         
 		self.depth = 0.0
 		self.depth_filt = 0.0

@@ -294,7 +294,7 @@ if __name__ == '__main__':
     global pub
     global updateFlag
     
-    pub        = rospy.Publisher('sonar_output', String)
+    pub        = rospy.Publisher('sonar_output', String, queue_size=3)
     updateFlag = 0
     
     rospy.on_shutdown(shutdown)

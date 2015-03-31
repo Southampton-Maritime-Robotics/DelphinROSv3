@@ -304,8 +304,8 @@ if __name__ == '__main__':
     rospy.Subscriber('position_dead', position, speed_callback)
     rospy.Subscriber('Depth_onOFF', Bool, depth_onOff_callback)
 
-    pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
-    pub_DPC   = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control)
+    pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints,queue_size=10)
+    pub_DPC   = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control,queue_size=10)
     
     rospy.loginfo("Depth-Pitch controller online")
 

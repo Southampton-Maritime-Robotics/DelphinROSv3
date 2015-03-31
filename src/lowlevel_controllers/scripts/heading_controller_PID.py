@@ -283,9 +283,9 @@ if __name__ == '__main__':
     rospy.Subscriber('position_dead', position, speed_callback)
     rospy.Subscriber('Heading_onOFF', Bool, onOff_cb)
     
-    pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
-    pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
-    pub_HC   = rospy.Publisher('Heading_controller_values', heading_control)
+    pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints,queue_size=10)
+    pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints,queue_size=10)
+    pub_HC   = rospy.Publisher('Heading_controller_values', heading_control,queue_size=10)
     
     rospy.loginfo("Heading controller online")
 

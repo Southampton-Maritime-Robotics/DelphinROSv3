@@ -384,7 +384,7 @@ if __name__ == '__main__':
     rospy.Subscriber('water_temp', Float32, temperature_cb)
     rospy.Subscriber('camera_info', camera_info,camera_cb)
       
-    pub  = rospy.Publisher('position_dead', position)
-    pub2 = rospy.Publisher('dead_reckoner', dead_reckoner)
+    pub  = rospy.Publisher('position_dead', position, queue_size=3)
+    pub2 = rospy.Publisher('dead_reckoner', dead_reckoner, queue_size=3)
 
     reckoner()

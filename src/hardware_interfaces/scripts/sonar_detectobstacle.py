@@ -82,7 +82,7 @@ def detectObstacle():
     rospy.init_node('sonar_detectObstacle', anonymous = True)
     rospy.Subscriber('sonar_output', String, callback)
     rospy.Subscriber('dead_reckoner', dead_reckoner, DR_callback)
-    pub  = rospy.Publisher('sonar_processed', sonar_data)
+    pub  = rospy.Publisher('sonar_processed', sonar_data, queue_size=3)
 
     #sonarFile = open('sonarlog.csv','w')
     #csvWriter = csv.writer(sonarFile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)

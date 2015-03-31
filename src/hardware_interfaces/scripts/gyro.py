@@ -83,7 +83,7 @@ if __name__ == '__main__':
     rospy.init_node('Rate_gyro')
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
 
-    pub = rospy.Publisher('rate_gyro', gyro)
+    pub = rospy.Publisher('rate_gyro', gyro, queue_size=3)
     
     port_status = setUpSerial()
     serialPort.flushInput()

@@ -78,13 +78,14 @@ class pathFollowingLOS(smach.State):
                 los_p = p_inter + xe*vecAlong/vecAlongLen
 
             los_vec = los_p-eta
-            los_a = atan2(los_vec[0],los_vec[1])*180/pi # TODO: should also consider the side slip angle
-            if los_a<0: # confine the los_a within [0,2pi)
-                los_a = los_a+360
+            los_a = mod(atan2(los_vec[0],los_vec[1])*180/pi,360) # TODO: should also consider the side slip angle
+#            if los_a<0: # confine the los_a within [0,2pi)
+#                los_a = los_a+360
 
             # determine heading error
             errHeading = self.__uti.computeHeadingError(los_a,heading)
-            u = self.__uMax*exp(-self.__uGain*abs(errHeading))
+            u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__gGain,errHeading)
+#            u = self.__uMax*exp(-self.__uGain*abs(errHeading))
             
             # publish heading demand
             self.__controller.setHeading(los_a)

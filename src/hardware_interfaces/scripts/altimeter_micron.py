@@ -111,8 +111,8 @@ def shutdown():
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online    
     rospy.init_node('MicronEchoSounder')
-    pub = rospy.Publisher('altimeter_out', altitude)
-    pubStatus = rospy.Publisher('status', status)
+    pub = rospy.Publisher('altimeter_out', altitude, queue_size=3)
+    pubStatus = rospy.Publisher('status', status, queue_size=3)
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
     
     global array_length

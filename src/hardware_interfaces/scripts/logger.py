@@ -463,8 +463,8 @@ if __name__ == '__main__':
     stringtime = datetime.now()
     stringtime = stringtime.strftime('%Y-%m-%d_%H-%M-%S')
     rospy.loginfo('Logger started at %s.'%(stringtime))
-    pub_folder = rospy.Publisher('folder', String)
-    pub_vidfolder = rospy.Publisher('vidfolder', String)
+    pub_folder = rospy.Publisher('folder', String, queue_size=10)
+    pub_vidfolder = rospy.Publisher('vidfolder', String, queue_size=10)
     
     global heading_demand
     global depth_demand

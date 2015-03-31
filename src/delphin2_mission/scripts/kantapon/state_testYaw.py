@@ -46,7 +46,8 @@ class testYaw(smach.State):
                     time.sleep(self.__timeDelay) # allow the auv motion to decay
                     break
                 errHeading = self.__uti.computeHeadingError(bear,heading)
-                u = 0.5*self.__uMax*exp(-self.__uGain*abs(errHeading)) # determine an appropriate speed demand based on the heading error
+                u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__gGain,errHeading)
+#                u = self.__uMax*exp(-self.__uGain*abs(errHeading)) # determine an appropriate speed demand based on the heading error
                 self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
                 self.__controller.setHeading(bear)
 

@@ -274,8 +274,8 @@ if __name__ == '__main__':
     }
   
     #Define Publishers
-    pubStatus = rospy.Publisher('status', status)
-    pub = rospy.Publisher('gps_out', gps) 
+    pubStatus = rospy.Publisher('status', status, queue_size=3)
+    pub = rospy.Publisher('gps_out', gps, queue_size=3) 
     time.sleep(1)
     #Setup serial port and check its status
     port_status = setUpSerial()    

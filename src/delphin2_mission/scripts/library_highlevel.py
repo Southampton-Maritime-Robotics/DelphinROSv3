@@ -34,25 +34,25 @@ class library_highlevel:
         #constructor method - creates objects of type 'HighLevelController'
         
         #set up publishers (stored as object variables)
-        self.pub_sway_demand               = rospy.Publisher('sway_demand', Float32)
-        self.pub_prop_demand               = rospy.Publisher('prop_demand',Int8)                #tail_section.py currently expecting uint8
-        self.pub_heading_demand            = rospy.Publisher('heading_demand', Float32) 
-        self.pub_depth_demand              = rospy.Publisher('depth_demand', Float32) 
-        self.pub_speed                     = rospy.Publisher('speed_demand', Float32)
-        self.pub_pitch_demand              = rospy.Publisher('pitch_demand', Float32) 
-        self.pub_tsl_onOff_horizontal      = rospy.Publisher('TSL_onOff_horizontal', Bool)      #turns thrusters on and off 
-        self.pub_tsl_onOff_vertical        = rospy.Publisher('TSL_onOff_vertical', Bool)        #turns thrusters on and off
-        self.pub_tail_setpoints_vertical   = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
-        self.pub_tail_setpoints_horizontal = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
-        self.pub_tsl_heading               = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
-        self.pub_tsl_depth                 = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
-        self.pub_heading_control_onOff     = rospy.Publisher('Heading_onOFF', Bool)             #turns heading controller on and off
-        self.pub_depth_control_onOff       = rospy.Publisher('Depth_onOFF', Bool)               #turns depth controller on and off
-        self.pub_camera                    = rospy.Publisher('Camera', camera)
-        self.pub_pitch_control_onOff       = rospy.Publisher('Pitch_onOFF', Bool)
-        self.Mission_pub                   = rospy.Publisher('MissionStrings', String)
-        self.pub_SMS                       = rospy.Publisher('SMS_message', String)
-        self.pub_light                     = rospy.Publisher('light_onOff', Bool)
+        self.pub_sway_demand               = rospy.Publisher('sway_demand', Float32, queue_size=3)
+        self.pub_prop_demand               = rospy.Publisher('prop_demand',Int8, queue_size=3)                #tail_section.py currently expecting uint8
+        self.pub_heading_demand            = rospy.Publisher('heading_demand', Float32, queue_size=3) 
+        self.pub_depth_demand              = rospy.Publisher('depth_demand', Float32, queue_size=3) 
+        self.pub_speed                     = rospy.Publisher('speed_demand', Float32, queue_size=3)
+        self.pub_pitch_demand              = rospy.Publisher('pitch_demand', Float32, queue_size=3) 
+        self.pub_tsl_onOff_horizontal      = rospy.Publisher('TSL_onOff_horizontal', Bool, queue_size=3)      #turns thrusters on and off 
+        self.pub_tsl_onOff_vertical        = rospy.Publisher('TSL_onOff_vertical', Bool, queue_size=3)        #turns thrusters on and off
+        self.pub_tail_setpoints_vertical   = rospy.Publisher('tail_setpoints_vertical', tail_setpoints, queue_size=3)
+        self.pub_tail_setpoints_horizontal = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints, queue_size=3)
+        self.pub_tsl_heading               = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints, queue_size=3)
+        self.pub_tsl_depth                 = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints, queue_size=3)
+        self.pub_heading_control_onOff     = rospy.Publisher('Heading_onOFF', Bool, queue_size=3)             #turns heading controller on and off
+        self.pub_depth_control_onOff       = rospy.Publisher('Depth_onOFF', Bool, queue_size=3)               #turns depth controller on and off
+        self.pub_camera                    = rospy.Publisher('Camera', camera, queue_size=3)
+        self.pub_pitch_control_onOff       = rospy.Publisher('Pitch_onOFF', Bool, queue_size=3)
+        self.Mission_pub                   = rospy.Publisher('MissionStrings', String, queue_size=3)
+        self.pub_SMS                       = rospy.Publisher('SMS_message', String, queue_size=3)
+        self.pub_light                     = rospy.Publisher('light_onOff', Bool, queue_size=3)
         
         #set up subscribers
         rospy.Subscriber('compass_out', compass, self.callback_compass)                         #compass data
