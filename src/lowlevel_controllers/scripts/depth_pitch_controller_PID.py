@@ -67,6 +67,9 @@ def set_params():
 ##### CONTROL SURFACE CONTROLLER ################################################
 #################################################################################
 
+
+#asdf
+
 #def CS_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch):
 #    global HC
 #    HC.CS_Pterm      = error*HC.CS_Pgain
