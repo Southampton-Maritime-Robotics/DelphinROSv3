@@ -6,8 +6,4 @@
 	
 	<node pkg="xsens_driver" type="mtdevice.py" name="xsens_driver" output="screen" respawn="true" />
 	
-	<!-- old way of calling xsenx driver, not in used any more -->
-	<!-- <node pkg="xsens_driver" type="mtnode.py" name="xsens_driver" output="screen" > -->
-		<!-- <param name="frame_id" value="/imu" />	-->
-	<!-- </node>-->
 </launch>

@@ -9,7 +9,7 @@ from hardware_interfaces.msg import status
 
 #######################################################
 #Modifications to code
-# 4/4/2015 control rate by rospy.Rate() 
+# 4/4/2015 control rate by rospy.Rate 
 
 ################################################################
 def setUpSerial(): # set up the serial port
@@ -60,7 +60,6 @@ def filter(altitude):
         
     [der, altitude_filt] = numpy.polyfit(Dx, Dy, 1)
     altitude_der = -der
-    
     
     return [altitude_filt, altitude_der]
     
@@ -116,7 +115,7 @@ def shutdown():
     serialPort.flushOutput()
     pubStatus.publish(nodeID = 3, status = False)
     serialPort.close()
-    
+
 ################################################################        
 #     INITIALISE     ###########################################
 ################################################################
@@ -150,4 +149,3 @@ if __name__ == '__main__':
         pubStatus.publish(nodeID = 3, status = status)
     
     listenForData(status)
-    

@@ -55,8 +55,8 @@ scenario_id = 0x29
 LatLonAlt = location.Boldrewood_Campus
 
 ## request data packets
-# available options {'Acc_lin','Vel_ang','Ori','Temp'}
-ReqPacket = {'req.Acc_lin','req.Vel_ang','req.Ori'}
+# available options {'Acc_lin','FreeAcc_lin','Vel_ang','Ori','Temp'}
+ReqPacket = {'req.FreeAcc_lin','req.Vel_ang','req.Ori'}
 
 ################################################################
 # MTDevice class
