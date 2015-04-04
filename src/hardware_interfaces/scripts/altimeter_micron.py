@@ -7,6 +7,10 @@ import numpy
 from hardware_interfaces.msg import altitude
 from hardware_interfaces.msg import status
 
+#######################################################
+#Modifications to code
+# 4/4/2015 control rate by rospy.Rate() 
+
 ################################################################
 def setUpSerial(): # set up the serial port
     global serialPort
@@ -18,7 +22,6 @@ def setUpSerial(): # set up the serial port
     print serialPort.portstr
     print serialPort.isOpen()
     return serialPort.isOpen()
-
 
 ################################################################
 def validDataCheck():
@@ -62,7 +65,7 @@ def filter(altitude):
     return [altitude_filt, altitude_der]
     
 ################################################################
-def listenForData(status):
+def listenForData(status,r,controlPeriod):
     global serialPort
     global Dx
     global Dy
@@ -70,32 +73,42 @@ def listenForData(status):
     sample    = numpy.zeros(20)
     timeout   = 2
     time_zero = time.time()
-       
     
-    while serialPort.inWaiting() > 8:    
-        
-        pubStatus.publish(nodeID = 3, status = status)
-        
-        try:                       # while there is data to be read - read the line
-            data = serialPort.readline()
-            if data[6:7] == 'm':
-                print 'data = ',data[0:6]
-                
-                altitude =  float(data[0:6])
-                [altitude_filt, altitude_der] = filter(altitude)
+    controlRate = 50. # Hz
+    controlPeriod = 1/controlRate
+    r = rospy.Rate(controlRate)
+    
+    while not rospy.is_shutdown():
+    
+        while serialPort.inWaiting() > 8:    
+            
+            pubStatus.publish(nodeID = 3, status = status)
+            
+            try:                       # while there is data to be read - read the line
+                data = serialPort.readline()
+                if data[6:7] == 'm':
+                    print 'data = ',data[0:6]
+                    
+                    altitude =  float(data[0:6])
+                    [altitude_filt, altitude_der] = filter(altitude)
 
-                print 'altitude = ',altitude
-                pub.publish(altitude = altitude, altitude_filt = altitude_filt, altitude_der = altitude_der)
-                time_zero = time.time()
-        except:
-            print 'passed'
-            pass
+                    print 'altitude = ',altitude
+                    pub.publish(altitude = altitude, altitude_filt = altitude_filt, altitude_der = altitude_der)
+                    time_zero = time.time()
+            except:
+                print 'passed'
+                pass
+            
+        if time.time() - time_zero > timeout:
+            pubStatus.publish(nodeID = 3, status = False)
+            rospy.loginfo("Altimeter has gone offline")
         
-    if time.time() - time_zero > timeout:
-        pubStatus.publish(nodeID = 3, status = False)
-        rospy.loginfo("Altimeter has gone offline")
-    
-    time.sleep(0.02)  # Prevents node from using 100% CPU!!
+        timeElapse = time.time()-time_zero
+        if timeElapse<controlPeriod:
+            r.sleep()
+        else:
+            str = "Altimeter_micron rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
         
 ################################################################
 def shutdown():
@@ -103,8 +116,7 @@ def shutdown():
     serialPort.flushOutput()
     pubStatus.publish(nodeID = 3, status = False)
     serialPort.close()
-
-        
+    
 ################################################################        
 #     INITIALISE     ###########################################
 ################################################################
@@ -137,10 +149,5 @@ if __name__ == '__main__':
         status = False
         pubStatus.publish(nodeID = 3, status = status)
     
-    
-    while not rospy.is_shutdown():
-        listenForData(status)
-        
-        
-#        global pubStatus
+    listenForData(status)
     

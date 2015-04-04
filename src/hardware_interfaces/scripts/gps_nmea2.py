@@ -16,7 +16,7 @@ from hardware_interfaces.msg import status
 # 6/1/2012 modified calculation of X and Y variables
 # 6/1/2012 modified code so position is always published
 # 6/1/2012 lat/long origin now read from parameter server
-
+# 4/4/2015 control rate by rospy.Rate() 
 
 ########################################################
 #Notes
@@ -138,6 +138,10 @@ def listenForData(status):
     global      fix
     global      speed
 
+    controlRate = 100. # Hz
+    controlPeriod = 1/controlRate
+    r = rospy.Rate(controlRate)
+
     #Initialise values to zero - important as different messages contain different values
     latitude		=	'0'	
     latitude_decimal	=	0
@@ -164,6 +168,7 @@ def listenForData(status):
             
     while not rospy.is_shutdown():
 
+        timeRef = time.time()
         try:
             while serialPort.inWaiting() > 0 and serialPort.read(1) == '$': #while there is data to be read - read the line...
             
@@ -215,13 +220,15 @@ def listenForData(status):
                 #Publish data to gps_out
                 pub.publish(latitude = latitude_decimal, longitude = longitude_decimal, time = time_gps, number_of_satelites = number_of_satelites, fix = fix, speed = speed, x = X, y = Y)
                 
-                
         except:
             print 'read error'
-        
-        #print 'sleeping...'
-        time.sleep(0.01)
-        
+
+        timeElapse = time.time()-timeRef
+        if timeElapse < controlPeriod:
+            r.sleep()
+        else:
+            str = "gps_nmea2 rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
 
 def distanceTwoLatLong(lat1,lat2,lon1,lon2): #returns distance between two locations in lat/long in meters.
 # Code from http://www.movable-type.co.uk/scripts/latlong.html
@@ -248,8 +255,6 @@ def bearingTwoLatLong(lat1,lat2,lon1,lon2): #returns bearing between two locatio
 	brng= math.degrees(brng)
 
   	return brng
-
-
 
 ################### SHUTDOWN FUNCTION ################### 
 def shutdown():
@@ -294,7 +299,5 @@ if __name__ == '__main__':
         status = False
         pubStatus.publish(nodeID = 4, status = status)    
 
-
     listenForData(status)                     #Main loop for receiving data
 
-    

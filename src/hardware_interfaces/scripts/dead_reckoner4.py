@@ -32,8 +32,7 @@ global cur_prop
 
 ########## LOW LEVEL CONTROL ############################################################
 def reckoner():
-        
-        
+                
     #### CONSTANTS ####
         mass     = 167.5
         massX    = 90.0
