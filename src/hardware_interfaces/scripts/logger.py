@@ -320,7 +320,7 @@ def reckoner_callback(data):
 def headingPID_callback(data): 
     stringtime = time.time()-time_zero
         
-    headingPIDList = [stringtime, data.heading, data.speed, data.heading_demand, data.sway_demand, data.error, data.int_error, data.der_error, data.deadzone, data.CS_Pgain, data.CS_Smax , data.CS_Pterm, data.CSt, data.CSb, data.Thrust_Pgain, data.Thrust_Igain, data.Thrust_Dgain, data.Thrust_Smax, data.Thrust_Pterm, data.Thrust_Iterm, data.Thrust_Dterm, data.Thrust_heading, data.thruster0, data.thruster1]
+    headingPIDList = [stringtime, data.heading, data.speed, data.heading_demand, data.sway_demand, data.error, data.int_error, data.der_error, data.deadzone, data.CS_Pgain, data.CS_Igain, data.CS_Dgain, data.CS_Smax , data.CS_Pterm , data.CS_Iterm , data.CS_Dterm, data.CS_demand, data.Thrust_Pgain, data.Thrust_Igain, data.Thrust_Dgain, data.Thrust_Smax, data.Thrust_Pterm, data.Thrust_Iterm, data.Thrust_Dterm, data.Thrust_heading, data.thruster0, data.thruster1]
     
     with open('%s/headingPIDLog.csv' %(dirname), "a") as f:
         try:
@@ -332,7 +332,7 @@ def headingPID_callback(data):
 def depth_pitch_PID_callback(data): 
     stringtime = time.time()-time_zero
         
-    depth_pitch_PIDList = [stringtime, data.speed, data.depth, data.depth_demand, data.error_depth, data.int_error_depth, data.der_error_depth, data.deadzone_Depth, data.Depth_Pgain, data.Depth_Igain, data.Depth_Dgain, data.Depth_Pterm, data.Depth_Iterm, data.Depth_Dterm, data.Depth_Thrust, data.pitch, data.pitch_demand, data.error_pitch, data.int_error_pitch, data.der_error_pitch, data.deadzone_Pitch, data.Pitch_Pgain, data.Pitch_Igain, data.Pitch_Dgain, data.Pitch_Pterm, data.Pitch_Iterm, data.Pitch_Dterm, data.cr, data.crMax, data.Thrust_Smax, data.thruster0, data.thruster1]
+    depth_pitch_PIDList = [stringtime, data.depth, data.depth_demand, data.error_depth, data.int_error_depth, data.der_error_depth, data.deadzone_Depth, data.Depth_Pgain, data.Depth_Igain, data.Depth_Dgain, data.Depth_Pterm, data.Depth_Iterm, data.Depth_Dterm, data.Depth_Thrust, data.pitchBiasMax, data.pitchBiasGain, data.pitch, data.pitch_demand, data.error_pitch, data.int_error_pitch, data.der_error_pitch, data.deadzone_Pitch, data.Pitch_Pgain, data.Pitch_Igain, data.Pitch_Dgain, data.Pitch_Pterm, data.Pitch_Iterm, data.Pitch_Dterm, data.cr, data.crMax, data.Thrust_Smax, data.thruster0, data.thruster1, data.CS_Pgain, data.CS_Igain, data.CS_Dgain, data.CS_Pterm, data.CS_Iterm, data.CS_Dterm, data.CS_demand]
     
     with open('%s/depthPitchPIDLog.csv' %(dirname), "a") as f:
         try:

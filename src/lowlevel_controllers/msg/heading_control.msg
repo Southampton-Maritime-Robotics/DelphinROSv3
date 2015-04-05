@@ -13,8 +13,7 @@ float32 CS_Smax
 float32 CS_Pterm
 float32 CS_Iterm
 float32 CS_Dterm
-float32 CSt
-float32 CSb
+int32 CS_demand
 float32 Thrust_Pgain
 float32 Thrust_Igain
 float32 Thrust_Dgain

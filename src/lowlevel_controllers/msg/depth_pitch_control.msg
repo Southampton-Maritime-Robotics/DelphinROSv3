@@ -1,5 +1,3 @@
-float32 speed
-
 ###################
 ## depth parameters
 
@@ -18,6 +16,9 @@ float32 Depth_Pterm
 float32 Depth_Iterm
 float32 Depth_Dterm
 float32 Depth_Thrust
+
+float32 pitchBiasMax
+float32 pitchBiasGain
 
 ###################
 ## pitch parameters
@@ -43,3 +44,13 @@ float32 crMax
 float32 Thrust_Smax
 int32 thruster0
 int32 thruster1
+
+###################
+## control surfaces
+float32 CS_Pgain
+float32 CS_Igain
+float32 CS_Dgain
+float32 CS_Pterm
+float32 CS_Iterm
+float32 CS_Dterm
+int32 CS_demand

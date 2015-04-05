@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-# import roslib; roslib.load_manifest('lowlevel_controllers')
 import rospy
 import serial
 import time
@@ -11,6 +10,13 @@ from hardware_interfaces.msg    import compass
 from lowlevel_controllers.msg   import depth_pitch_control
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Bool
+
+# This node control pitch and depth based on the PI-D strategy.
+
+######################################
+#Modifications
+# 2 Feb 2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
+# 5 Apr 2015: makesure CS and thruster demands are Integer32
 
 #### from kantapon's folder
 import sys
@@ -29,7 +35,6 @@ def set_params():
     global L_th
     global cr_approx
     global Ltf_nose
-    global controlRate
     global myUti
     global timeLastDemandMax
     global timeLastCallback
@@ -39,11 +44,17 @@ def set_params():
     timeLastDemandMax = 1 # [sec] if there is no onOff flag updated within this many seconds, controller will be turnned off
     timeLastCallback = time.time()
 
-    controlRate = 10. # [Hz]
-
     DPC.deadzone_Depth = 0   # deadzone of the depth error [metre]
     DPC.deadzone_Pitch = 0      # deadzone of the pitch error [degree]
     
+    # control surfaces
+    DPC.CS_Pgain = 0. # P gain for control surface
+    DPC.CS_Igain = 0. # I gain for control surface
+    DPC.CS_Dgain = 0. # D gain for control surface
+    
+    DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
+    
+    # thruster
     DPC.Depth_Pgain = 500000.00 # FIXME: tune me kantapon
     DPC.Depth_Igain = 4000.00 # FIXME: tune me kantapon
     DPC.Depth_Dgain = -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
@@ -53,6 +64,9 @@ def set_params():
     DPC.Pitch_Dgain = -1.00 # D gain has to be negative (c.f. PI-D),FIXME: tune me kantapon
     
     DPC.Thrust_Smax = 1000       # maximum thruster setpoint # FIXME: unleash me kantapon
+
+    DPC.pitchBiasMax = 5. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
+    DPC.pitchBiasGain = -5. # p gain to compute bias
 
     ### determine relative arm lengths for thrust allocation ###
     L_th = 1.06        # distance between two vertical thrusters [metre]: measured
@@ -67,24 +81,18 @@ def set_params():
 ##### CONTROL SURFACE CONTROLLER ################################################
 #################################################################################
 
+def CS_controller(error_pitch, int_error_pitch, der_error_pitch):
+    global DPC
+    DPC.CS_Pterm      = error*DPC.CS_Pgain
+    DPC.CS_Iterm      = 0 # TODO int_error*DPC.CS_Igain
+    DPC.CS_Dterm      = 0 # TODO der_err*DPC.CS_Dgain
 
-#asdf
+    CS_demand = DPC.CS_Pterm + DPC.CS_Iterm + DPC.CS_Dterm
+    CS_demand = myUti.limits(CS_demand,-DPC.CS_Smax,DPC.CS_Smax)
+    
+    DPC.CS_demand = int(round(CS_demand))
 
-#def CS_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch):
-#    global HC
-#    HC.CS_Pterm      = error*HC.CS_Pgain
-#    HC.CS_Iterm      = 0 # TODO int_error*HC.CS_Igain
-#    HC.CS_Dterm      = 0 # TODO der_err*HC.CS_Dgain
-## TODO may incorporate a forward speed into a consideration using gain schedualing
-## TODO other option: divide the gains by u^2. If the speed is less than a threshold, all gain will be set to zero
-
-#    CS_demand = HC.CS_Pterm + HC.CS_Iterm + HC.CS_Dterm
-#    CS_demand  = myUti.limits(CS_demand,-HC.CS_Smax,HC.CS_Smax)
-#    
-#    HC.CSt = CS_demand
-#    HC.CSb = CS_demand
-
-#    return [HC.CSt, HC.CSb]
+    return DPC.CS_demand
     
 ################################################################################
 ########## THRUST CONTROLLER ###################################################
@@ -126,22 +134,27 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
         thruster0 = float(DPC.Depth_Thrust)/float(Ltf)
         thruster1 = float(DPC.Depth_Thrust)/float(Ltr)
 
-        DPC.thruster0 = int(numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5) # according to a relationship between thrust and rpm
-        DPC.thruster1 = int(numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5) # according to a relationship between thrust and rpm
+        thruster0 = numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5 # according to a relationship between thrust and rpm
+        thruster1 = numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5 # according to a relationship between thrust and rpm
         # if a setpoint of one thruster goes beyond the limit. it will be saturated and the other one will be scaled down proportionally in order to scale down torque.
-        if numpy.abs(DPC.thruster0) > DPC.Thrust_Smax:
-            scale_factor = float(DPC.Thrust_Smax)/float(numpy.abs(DPC.thruster0))
-            DPC.thruster0 = int(DPC.thruster0*scale_factor)
-            DPC.thruster1 = int(DPC.thruster1*scale_factor)
+        thruster0 = round(thruster0)
+        thruster1 = round(thruster1)
+        if numpy.abs(thruster0) > DPC.Thrust_Smax:
+            scale_factor = float(DPC.Thrust_Smax)/float(numpy.abs(thruster0))
+            thruster0 = thruster0*scale_factor
+            thruster1 = thruster1*scale_factor
         if numpy.abs(DPC.thruster1) > DPC.Thrust_Smax:
-            scale_factor = float(DPC.Thrust_Smax)/float(numpy.abs(DPC.thruster1))
-            DPC.thruster0 = int(DPC.thruster0*scale_factor) 
-            DPC.thruster1 = int(DPC.thruster1*scale_factor)
+            scale_factor = float(DPC.Thrust_Smax)/float(numpy.abs(thruster1))
+            thruster0 = thruster0*scale_factor 
+            thruster1 = thruster1*scale_factor
     else:
     
-        DPC.thruster0 = 0
-        DPC.thruster1 = 0
-        
+        DPC.thruster0 = 0.
+        DPC.thruster1 = 0.
+    
+    DPC.thruster0 = int(round(thruster0))
+    DPC.thruster1 = int(round(thruster1))
+    
     return [DPC.thruster0, DPC.thruster1]
 
 ################################################################################
@@ -152,21 +165,19 @@ def main_control_loop():
 
     #### SETUP ####
         global controller_onOff
-        global speed
         global DPC
         global depth_der # depth derivative from PT-type filter in compass_oceanserver.py
         
-        speed            = 0
         controller_onOff = Bool()
-        delta_t          = 0.1
         set_params()
         
+        controlRate = 10. # [Hz]
         r = rospy.Rate(controlRate)
         controlPeriod = 1/controlRate # [sec]
         
         # On first loop, initialize relevant parameters in system_state updaters
         [error_depth, int_error_depth] = system_state_depth(-1,0,0,0)
-        [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(-1,0,0)
+        [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(-1,0,0,0)
         
         while not rospy.is_shutdown():
             
@@ -182,12 +193,15 @@ def main_control_loop():
                 pitch_demand = DPC.pitch_demand
                 
                 # Get system state #
+                DPC.pitchBias = determinePitchBias(depth_current,depth_demand)
                 [error_depth, int_error_depth] = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
-                [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand)
+                [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
                 
+                [CS_demand] = CS_controller(error_pitch, int_error_pitch, der_error_pitch):
                 [thruster0, thruster1] = thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch)
                 
                 # update the heading_control.msg, and this will be subscribed by the logger.py
+                pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
                 pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
                 pub_DPC.publish(DPC)
                 
@@ -222,6 +236,16 @@ def main_control_loop():
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
 ################################################################################
 
+def determinePitchBias(depth_current,depth_demand):
+    
+    if propDemand > 10:
+        pitchBias = DPC.pitchBiasGain*(depth_demand-depth_current)
+        myUti.limits(pitchBias,0,DPC.pitchBiasMax)
+    else:
+        pitchBias = 0
+        
+    return pitchBias
+
 def system_state_depth(dt,depth_current,depth_demand,der_error_depth):
     global DPC
     global int_error_depth
@@ -248,7 +272,7 @@ def system_state_depth(dt,depth_current,depth_demand,der_error_depth):
 
 ################################################################################
 
-def system_state_pitch(dt,pitch_current,pitch_demand):
+def system_state_pitch(dt,pitch_current,pitch_demand,pitchBias):
     global DPC
     global int_error_pitch
     global sample_pitch
@@ -260,7 +284,7 @@ def system_state_pitch(dt,pitch_current,pitch_demand):
         int_error_pitch = 0               
     else:
         ### ERROR ###
-        error_pitch  = pitch_demand - pitch_current
+        error_pitch  = pitch_demand - pitch_current + pitchBias
         ### INTEGRAL ###
         int_error_pitch += dt*error_pitch
         ### DERIVATIVE ###
@@ -301,12 +325,10 @@ def depth_demand_callback(depthd):
 def pitch_demand_callback(pitchd):
     global DPC
     DPC.pitch_demand = pitchd.data
-
-def speed_callback(data):
-    global speed
-    global DPC
-    speed = data.forward_vel
-    DPC.speed = speed
+    
+def prop_demand_callback(propd)
+    global propDemand
+    propDemand = propd
 
 ################################################################################
 ######## INITIALISATION ########################################################
@@ -321,11 +343,12 @@ if __name__ == '__main__':
     rospy.Subscriber('depth_demand', Float32, depth_demand_callback)
     rospy.Subscriber('pitch_demand', Float32, pitch_demand_callback)
     rospy.Subscriber('compass_out', compass, compass_callback)
-    rospy.Subscriber('position_dead', position, speed_callback)
     rospy.Subscriber('Depth_onOFF', Bool, depth_onOff_callback)
-
-    pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints,queue_size=10)
-    pub_DPC   = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control,queue_size=10)
+    rospy.Subscriber('prop_demand', Int8, prop_demand_cb)
+    
+    pub_tail = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints, queue_size=3)
+    pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints, queue_size=3)
+    pub_DPC   = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control, queue_size=3)
     
     rospy.loginfo("Depth-Pitch controller online")
 

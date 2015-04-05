@@ -2,10 +2,9 @@
 
 ## this code lets ROS node communicate with an arduino in which then talks with maxon motor control board. It is a modified version of the "tsl_customer_mission.py" that was originally used to control thrusters via TSL motor control board
 
-## developer: Kantapon
-
-## date last modify:
-#  - 12 June 2014
+## modification:
+#  - 12 June 2014:
+#  - 5 April 2015: make this node work at 10Hz. Rate is control by rospy.Rate()
 
 ## usage
 #  - get voltage: "faVcs"

@@ -1,16 +1,12 @@
 #!/usr/bin/python
-# update: 23 October 2014 by Kantapon
-# - In "CS_controller", incorporate a constant into HC.CS_Pgain
-# - In "CS_controller", remove "cur_compass" from an input argument
-# - In "thrust_controller", remove a seperate "limit" for P, I and D term
-# - In "inverse_model", take a Moment arm of front thruster into a consideration before superposition with sway_demand
-# - In "inverse_model", apply a saturation to a thruster setpoint and scale other setpoint down correspondingly.
-# - if the thruster setpoint is within [0-10) of a maximum of 2300, the setpoint will be forced to 10.
-# - in "system_state", remove the filter of the devirative term as the measurement took by xsens is amazingly smooth
-# - simplify the structure of the heading_control.msg. this will affects set_params and logger.py
 
 # TODO - make the "CS_controller" less agressive at high forward speeds
 # TODO - check if the sway force distribution have been done correctly
+
+######################################
+#Modifications
+# 2 Feb 2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
+# 5 Apr 2015: makesure CS and thruster demands are Integer32
 
 import roslib; roslib.load_manifest('lowlevel_controllers')
 import rospy
@@ -42,7 +38,6 @@ def set_params():
     global Ltf
     global Ltr
     global myUti
-    global controlRate
     global timeLastDemandMax
     global timeLastCallback
     
@@ -51,7 +46,6 @@ def set_params():
 
     ### General ###
     HC.deadzone   = 1   # deadzone of the heading error [degree]
-    controlRate = 10.   # [Hz]
     
     ### CS Controller ###
     HC.CS_Pgain       = 0.5 # FIXME: tune me kantapon
@@ -91,10 +85,9 @@ def CS_controller(error, int_error, der_error):
     CS_demand = HC.CS_Pterm + HC.CS_Iterm + HC.CS_Dterm
     CS_demand  = myUti.limits(CS_demand,-HC.CS_Smax,HC.CS_Smax)
     
-    HC.CSt = CS_demand
-    HC.CSb = CS_demand
+    HC.CS_demand = int(round(CS_demand))
 
-    return [HC.CSt, HC.CSb]
+    return [HC.CS_demand]
     
 ################################################################################
 ########## THRUST CONTROLLER ###################################################
@@ -115,21 +108,26 @@ def thrust_controller(error, int_error, der_error):
         thruster0 = float(HC.Thrust_heading)/float(Ltf) + float(HC.sway_demand)
         thruster1 = -float(HC.Thrust_heading)/float(Ltr) + float(HC.sway_demand)    
     
-        HC.thruster0 = int(numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5) # according to a relationship between thrust and rpm
-        HC.thruster1 = int(numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5) # according to a relationship between thrust and rpm
+        thruster0 = numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5 # according to a relationship between thrust and rpm
+        thruster1 = numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5 # according to a relationship between thrust and rpm
         # if a setpoint of one thruster goes beyond the limit. it will be saturated and the other one will be scaled down proportionally in order to scale down torque.
-        if numpy.abs(HC.thruster0) > HC.Thrust_Smax:
-            scale_factor = float(HC.Thrust_Smax)/float(numpy.abs(HC.thruster0))
-            HC.thruster0 = int(HC.thruster0*scale_factor)
-            HC.thruster1 = int(HC.thruster1*scale_factor)
-        if numpy.abs(HC.thruster1) > HC.Thrust_Smax:
-            scale_factor = float(HC.Thrust_Smax)/float(numpy.abs(HC.thruster1))
-            HC.thruster0 = int(HC.thruster0*scale_factor) 
-            HC.thruster1 = int(HC.thruster1*scale_factor)
+        thruster0 = round(HC.thruster0)
+        thruster1 = round(HC.thruster1)
+        if numpy.abs(thruster0) > HC.Thrust_Smax:
+            scale_factor = float(HC.Thrust_Smax)/float(numpy.abs(thruster0))
+            thruster0 = thruster0*scale_factor
+            thruster1 = thruster1*scale_factor
+        if numpy.abs(thruster1) > HC.Thrust_Smax:
+            scale_factor = float(HC.Thrust_Smax)/float(numpy.abs(thruster1))
+            thruster0 = thruster0*scale_factor 
+            thruster1 = thruster1*scale_factor
     else:
     
-        HC.thruster0 = 0
-        HC.thruster1 = 0
+        thruster0 = 0.
+        thruster1 = 0.
+        
+    HC.thruster0 = int(round(thruster0))
+    HC.thruster1 = int(round(thruster1))
         
     return [HC.thruster0, HC.thruster1]
 
@@ -148,6 +146,7 @@ def main_control_loop():
         controller_onOff = Bool()
         set_params()
 
+        controlRate = 10. # [Hz]
         r = rospy.Rate(controlRate)
         controlPeriod = 1/controlRate # [sec]
         
@@ -167,12 +166,12 @@ def main_control_loop():
                 [error, int_error, der_error] = system_state(controlPeriod,heading_current,heading_demand)
 
                 # Control Surface Controller # Nb CSp = Sternplane port, CSt = Rudder top
-                [CSt, CSb] = CS_controller(error, int_error, der_error)
+                CS_demand = CS_controller(error, int_error, der_error)
                 # Thruster controller # 
                 [thruster0, thruster1] = thrust_controller(error, int_error, der_error)
                 
                 # update the heading_control.msg, and this will be subscribed by the logger.py
-                pub_tail.publish(cs0 =CSt, cs1 = CSb)
+                pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
                 pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
                 pub_HC.publish(HC)
                 
@@ -280,9 +279,9 @@ if __name__ == '__main__':
     rospy.Subscriber('position_dead', position, speed_callback)
     rospy.Subscriber('Heading_onOFF', Bool, onOff_cb)
     
-    pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints,queue_size=10)
-    pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints,queue_size=10)
-    pub_HC   = rospy.Publisher('Heading_controller_values', heading_control,queue_size=10)
+    pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints, queue_size=3)
+    pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints, queue_size=3)
+    pub_HC   = rospy.Publisher('Heading_controller_values', heading_control, queue_size=3)
     
     rospy.loginfo("Heading controller online")
 
