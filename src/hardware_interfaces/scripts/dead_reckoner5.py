@@ -3,11 +3,11 @@
 import rospy
 import time
 from numpy import *
+from math import *
 from hardware_interfaces.msg import compass
 from hardware_interfaces.msg import position
 from hardware_interfaces.msg import gps
 from hardware_interfaces.msg import altitude
-#import math
 
 ######################################
 # this node give an estimation of AUV position in earth-fixed frame relative to the origin specified in launch file 
@@ -16,8 +16,9 @@ from hardware_interfaces.msg import altitude
 # XY measure from GPS when it available. Otherwise calculate from FreeAccelerations in body-fixed frame measured by xsens
 
 # TODO
+# check the rate of this node
 # verify this node
-#    -turn-off GPS and drag the vehicle around, 
+#    -turn-off GPS, drag the vehicle around then check the trace this node made
 
 ######################################
 #Modifications
@@ -47,6 +48,8 @@ def reckoner():
     velZ    = 0
     X   = 0
     Y   = 0
+    Xref = 0
+    Yref = 0
     
     latitude  = lat_orig
     longitude = long_orig
@@ -59,33 +62,38 @@ def reckoner():
     while not rospy.is_shutdown():
         
         timeRef = time.time()
-        #### COMPASS DATA ##################################################
-        ## orientation in earth fixed frame: filtered by xsens
+        
+        #### IMU DATA (xsens MTi-30) ##################################################
+        ## orientation in earth fixed frame
         heading = cur_compass.heading   # [deg]
         roll    = cur_compass.roll      # [deg]
         pitch   = cur_compass.pitch     # [deg]
-        
-        ## translational accelerations in body-fixed frame FIXME: check the reference frame convention and g force
+        ## linear FreeAccelerations in body-fixed frame FIXME: check the reference frame convention and g force
         accX    = cur_compass.ax
         accY    = cur_compass.ay
         accZ    = cur_compass.az
         
         #### DETERMINE VEHICLE STATE #######################################
-        ## translational velocities in body-fixed frame
-        velX    = velX + accX*controlPeriod
-        velY    = velY + accY*controlPeriod
-        velZ    = velZ + accZ*controlPeriod
-    
-        ## position Z
+        ## position Z (read from the pressure transducer and filterred with PT-filter)
         Z   = cur_compass.depth_filt
         ## position XY
         # Use XY from GPS when it is possible, otherwise, estimate from motion sensor
         if GPS.fix == 1 and GPS.number_of_satelites >= 5:
+            # get the gps reading
             X = GPS.x # location in Earth-fixed frame relative to the origin: +ve East
             Y = GPS.y # location in Earth-fixed frame relative to the origin: +ve North
             latitude  = float(GPS.latitude)
             longitude = float(GPS.longitude)
+            # translational velocities in body-fixed frame
+            velMag = GPS.speed # velocity magnitude measured from GPS
+            velDir = atan2((X-Xref),(Y-Yref))-heading*pi/180 # [rad] direction of speed relative to the AUV heading +ve CW
+            velX = velMag*cos(velDir)
+            velY = velMag*sin(velDir)
         else:
+            # translational velocities in body-fixed frame
+            velX    = velX + accX*controlPeriod
+            velY    = velY + accY*controlPeriod
+            velZ    = velZ + accZ*controlPeriod
             # displacement in body-fixed frame
             disX    = velX*controlPeriod
             disY    = velY*controlPeriod
@@ -97,6 +105,8 @@ def reckoner():
             # XY LOCATION: Euler angle rotation sequrnce using zyx convention (roll motion is ignore)
             X = X + cos(headingR)*cos(pitchR)*disX - sin(headingR)*disY + cos(headingR)*sin(pitchR)*disZ # TODO need double-check
             Y = Y + sin(headingR)*cos(pitchR)*disX + cos(headingR)*disY + sin(pitchR)*sin(headingR)*disZ # TODO need double-check
+        Xref = X
+        Yref = Y
             
     #### PUBLISH #######################################################
         output.X = X # position w.r.t. Earth-fixed frame relative to the origin

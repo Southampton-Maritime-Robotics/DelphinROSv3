@@ -16,7 +16,7 @@ from std_msgs.msg               import Bool
 ######################################
 #Modifications
 # 2 Feb 2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
-# 5 Apr 2015: makesure CS and thruster demands are Integer32
+# 5 Apr 2015: force CS and thruster demands to become Integer32
 
 #### from kantapon's folder
 import sys

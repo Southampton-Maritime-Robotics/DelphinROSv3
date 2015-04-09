@@ -8,7 +8,6 @@
 # 2 Feb 2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
 # 5 Apr 2015: makesure CS and thruster demands are Integer32
 
-import roslib; roslib.load_manifest('lowlevel_controllers')
 import rospy
 import serial
 import time

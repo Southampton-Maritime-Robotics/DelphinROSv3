@@ -1,5 +1,4 @@
 #!/usr/bin/python
-import roslib; roslib.load_manifest('hardware_interfaces')
 import rospy
 import serial
 import time
@@ -16,7 +15,7 @@ from hardware_interfaces.msg import status
 # 6/1/2012 modified calculation of X and Y variables
 # 6/1/2012 modified code so position is always published
 # 6/1/2012 lat/long origin now read from parameter server
-# 4/4/2015 control rate by rospy.Rate() 
+# 4/4/2015 control rate by rospy.Rate()
 
 ########################################################
 #Notes
@@ -208,14 +207,14 @@ def listenForData(status):
                     pass
                     
                 ##Check in order to understand read error
-                print 'Lat: ', latitude_decimal
-                print 'Long: ', longitude_decimal
-                print 'Time: ', time_gps
-                print 'No. sat.:', number_of_satelites
-                print 'Fix:',   fix
-                print 'Speed:', speed
-                print 'x:', X
-                print 'y:', Y
+#                print 'Lat: ', latitude_decimal
+#                print 'Long: ', longitude_decimal
+#                print 'Time: ', time_gps
+#                print 'No. sat.:', number_of_satelites
+#                print 'Fix:',   fix
+#                print 'Speed:', speed
+#                print 'x:', X
+#                print 'y:', Y
                 
                 #Publish data to gps_out
                 pub.publish(latitude = latitude_decimal, longitude = longitude_decimal, time = time_gps, number_of_satelites = number_of_satelites, fix = fix, speed = speed, x = X, y = Y)

@@ -1,5 +1,4 @@
 #!/usr/bin/python
-import roslib; roslib.load_manifest('hardware_interfaces')
 import rospy
 import numpy
 import serial
@@ -9,8 +8,16 @@ from re import findall
 from hardware_interfaces.msg import compass
 from hardware_interfaces.msg import status
 
-global serialPort
+######################################
+# This node used to play an important role for publishing the compass_out topic
+# Since we have xsens installed to the Delphin2, this node only responsible for producing a filtered depth and its derivative.
+# The actual node that publish to compass_out topic is xsens.
 
+######################################
+#Modifications
+# 9 Apr 2015: alter the way to control sampling rate with rospy.rate()
+
+global serialPort
 
 ################################################################
 def setUpSerial():
@@ -31,7 +38,11 @@ def setUpSerial():
 def listenForData(status):
     global serialPort
     
-    time_zero = time.time()
+    controlRate = 100. # [Hz]
+    controlPeriod = 1/controlRate
+    r = rospy.Rate(controlRate)
+    
+#    time_zero = time.time()
   
     #### FILTER INFO ####
     depth_array_length = 20
@@ -53,8 +64,10 @@ def listenForData(status):
     
     
     while not rospy.is_shutdown():    
+        timeRef = time.time()
+        com = compass()
         try:
-            time.sleep(0.01)  # Prevents node from using 100% CPU!!
+#            time.sleep(0.01)  # Prevents node from using 100% CPU!!
             while serialPort.inWaiting() > 0 and serialPort.read(1) == '$':     #while there is data to be read - read the line...
                 
                 pubStatus.publish(nodeID = 5, status = status)
@@ -64,91 +77,84 @@ def listenForData(status):
                 data = numpy.array((findall('[-]*\d+.\d+',dataRaw)), numpy.float)
                 try:
 
-                    dt = time.time() - time_zero
-                    print dt
-                    time_zero = time.time()
+#                    dt = time.time() - time_zero
+#                    print dt
+#                    time_zero = time.time()
                     
-                    
-                    pitch_raw   = data[2]
-                    
-                    pitch       = pitch_raw-180
-                    if pitch <-180:
-                        pitch=pitch%360
-                        
-                    #pitch = pitch_raw
-                    
-                    roll_raw    = data[1]    
-                    roll        =-roll_raw     
+#                    pitch_raw   = data[2]
+#                    
+#                    pitch       = pitch_raw-180
+#                    if pitch <-180:
+#                        pitch=pitch%360
+#                        
+#                    #pitch = pitch_raw
+#                    
+#                    roll_raw    = data[1]    
+#                    roll        =-roll_raw     
                     
                     #roll = roll_raw
                               
-                    temperature = data[3]          
-                    depth       = (data[4]*42.045)- 0.84+0.53  -0.21  -0.05   #Convert ADC value to depth value
+#                    temperature = data[3]          
+#                    depth       = (data[4]*42.045)- 0.84+0.53  -0.21  -0.05   #Convert ADC value to depth value
                     
 #                    if (abs(depth - depth_old)) > 1.0:
 #                        depth = depth_old
                                         
-                    m           = data[5]
-                    mx          = data[7]
-                    my          =-data[6]  
-                    mz          =-data[8]  
-                    
-                    mx_raw      = data[6]
-                    my_raw      = data[7]
-                    mz_raw      = data[8]
-                    
-                    mx = mx_raw
-                    my = my_raw
-                    mz = mz_raw
-                    
-                                        
-                    heading     = calibrate(mx_raw,my_raw,mz_raw, pitch_raw, roll_raw)
-                    
-                    a           = data[9]
-                    ax          = data[11]
-                    ay          =-data[10]
-                    az          =-data[12]
+#                    m           = data[5]
+#                    mx          = data[7]
+#                    my          =-data[6]  
+#                    mz          =-data[8]  
+#                    
+#                    mx_raw      = data[6]
+#                    my_raw      = data[7]
+#                    mz_raw      = data[8]
+#                    
+#                    mx = mx_raw
+#                    my = my_raw
+#                    mz = mz_raw
+#                    
+#                                        
+#                    heading     = calibrate(mx_raw,my_raw,mz_raw, pitch_raw, roll_raw)
+#                    
+#                    a           = data[9]
+#                    ax          = data[11]
+#                    ay          =-data[10]
+#                    az          =-data[12]
                                         
                     #### DEPTH FILTER ####
-                    Dx_real = Dx * dt
+                    Dx_real = Dx * controlPeriod
                     
                     Dy[1:depth_array_length] = Dy[0:(depth_array_length-1)]
                     Dy[0] = depth
                     [der, depth_filt] = numpy.polyfit(Dx_real, Dy, 1)
                     depth_der = -der
                     
+                    com.depth = depth
+                    com.depth_filt = depth_filt
+                    com.depth_der = depth_der
+                    
                     #depth_filt = depth
-                    
-                    
-                    #### PITCH FILTER ####
-                    Px_real = Px * dt
-                    Py[1:pitch_array_length] = Py[0:(pitch_array_length-1)]
-                    Py[0] = pitch
-                    [der, pitch_filt] = numpy.polyfit(Px_real, Py, 1)
-                    pitch_der = -der
-                    
                                         
-                    print '*******'
-                    print 'heading %f' %(heading)
-#                    print 'pitch %f' %(pitch)                    
-                    print 'pitch (filtered) %f' %(pitch)
-#                    print 'pitch_der (filtered) %f' %(pitch_der)
-                    print 'roll %f' %(roll)
-                    print 'temperature %f' %(temperature)
-#                    print 'depth %f' %(depth)
-                    print 'depth (filtered) %f' %(depth)
-#                    print 'depth_der (filtered) %f' %(depth_der)
-#                    print 'm %f' %(m)
-#                    print 'mx %f' %(mx)
-#                    print 'my %f' %(my)
-#                    print 'mz %f' %(mz)
-#                    print 'a %f' %(a)
-#                    print 'ax %f' %(ax)
-#                    print 'ay %f' %(ay)
-#                    print 'az %f' %(az)
+                    #### PITCH FILTER ####
+#                    Px_real = Px * controlPeriod
+#                    Py[1:pitch_array_length] = Py[0:(pitch_array_length-1)]
+#                    Py[0] = pitch
+#                    [der, pitch_filt] = numpy.polyfit(Px_real, Py, 1)
+#                    pitch_der = -der                    
+                                        
+#                    print '*******'
+#                    print 'heading %f' %(heading)
+##                    print 'pitch %f' %(pitch)                    
+#                    print 'pitch (filtered) %f' %(pitch)
+##                    print 'pitch_der (filtered) %f' %(pitch_der)
+#                    print 'roll %f' %(roll)
+#                    print 'temperature %f' %(temperature)
+##                    print 'depth %f' %(depth)
+#                    print 'depth (filtered) %f' %(depth)
      
                     #Publish data to compass_out
-                    pub.publish(heading=heading,pitch=pitch,roll=roll,temperature=temperature,depth=depth,m=m,mx=mx,my=my,mz=mz,a=a,ax=ax,ay=ay,az=az,depth_filt=depth_filt,depth_der=depth_der,pitch_filt=pitch_filt,pitch_der=pitch_der)
+                    pub.publish(com)
+#                    pub.publish(heading=heading,pitch=pitch,roll=roll,temperature=temperature,depth=depth,m=m,mx=mx,my=my,mz=mz,a=a,ax=ax,ay=ay,az=az,depth_filt=depth_filt,depth_der=depth_der,pitch_filt=pitch_filt,pitch_der=pitch_der)
                     
                 except ValueError: 
                     print 'not a float'
@@ -156,8 +162,12 @@ def listenForData(status):
         except:
             print 'read error'
         
-        #print 'sleeping'
-        
+        timeElapse = time.time()-timeRef
+        if timeElapse < controlPeriod:
+            r.sleep()
+        else:
+            str = "compass_oceanserver rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
 
 ################################################################
 
@@ -184,9 +194,7 @@ def calibrate(mx,my,mz, pitch, roll):
     
     heading3 = (-heading2 + 90)%360
     
-    
     return heading3
-    
     
 ################################################################
 
@@ -247,8 +255,5 @@ if __name__ == '__main__':
     else:
         status = False
         pubStatus.publish(nodeID = 5, status = status)
-      
     
     listenForData(status)   #Main loop for receiving data
-    
-    

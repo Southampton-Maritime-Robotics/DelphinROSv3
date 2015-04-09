@@ -23,7 +23,6 @@
 ## convention
 #    [+ve demand] gives [-ve thrust and +ve sway motion] relative to the front-east-down body fix frame
 
-import roslib; roslib.load_manifest('hardware_interfaces')
 import rospy
 import serial
 import time
