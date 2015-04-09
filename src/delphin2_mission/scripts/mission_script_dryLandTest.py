@@ -11,7 +11,7 @@ import smach
 import smach_ros
 import time
 
-from library_highlevel            import library_highlevel
+from delphin2_mission             import library_highlevel
 from state_initialise             import Initialise
 from state_importWaypoints        import ImportWaypoints
 from state_stop                   import Stop
@@ -27,7 +27,7 @@ from state_N                      import N
 from state_dryLandTest            import dryLandTest
 from state_setTail                import setTail
 from state_actionserver_goToDepth import GoToDepthServer
-from delphin2_mission.msg             import compass
+from hardware_interfaces.msg             import compass
 from delphin2_mission.msg             import GoToDepthAction, GoToDepthGoal
 from actionlib                    import *
 from actionlib.msg                import *
@@ -62,7 +62,7 @@ def main():
     rospy.init_node('smach_example_state_machine')
     
     # Define an instance of highlevelcontrollibrary to pass to all action servers
-    lib = library_highlevel()
+    lib = library_highlevel.library_highlevel()
     
     #Set Up Publisher for Mission Control Log
     pub = rospy.Publisher('MissionStrings', String)
