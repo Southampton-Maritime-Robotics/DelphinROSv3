@@ -5,9 +5,7 @@ import time
 from std_msgs.msg import Int8
 from std_msgs.msg import String
 
-import sys
-sys.path.append('/home/delphin2/DelphinROSv3/src/delphin2_mission/scripts')
-from library_highlevel import library_highlevel
+from delphin2_mission.library_highlevel import library_highlevel
 
 
 
