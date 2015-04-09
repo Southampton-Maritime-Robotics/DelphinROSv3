@@ -5,13 +5,8 @@ import time
 from std_msgs.msg import Int8
 from std_msgs.msg import String
 
-import sys
-import os.path
-basepath = os.path.dirname(__file__)
-filepath = os.path.abspath(os.path.join(basepath,'..','..','delphin2_mission/scripts'))
-sys.path.append(filepath)
+from delphin2_mission.library_highlevel import library_highlevel
 
-from library_highlevel import library_highlevel
 
 """
 ######################################
