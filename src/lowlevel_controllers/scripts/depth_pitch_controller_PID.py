@@ -1,5 +1,15 @@
 #!/usr/bin/python
 
+"""
+# This node control pitch and depth based on the PI-D strategy.
+
+######################################
+#Modifications
+# 2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
+# 5/4/2015: force CS and thruster demands to become Integer32
+
+"""
+
 import rospy
 import serial
 import time
@@ -10,13 +20,6 @@ from hardware_interfaces.msg    import compass
 from lowlevel_controllers.msg   import depth_pitch_control
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Bool
-
-# This node control pitch and depth based on the PI-D strategy.
-
-######################################
-#Modifications
-# 2 Feb 2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
-# 5 Apr 2015: force CS and thruster demands to become Integer32
 
 #### from kantapon's folder
 import sys

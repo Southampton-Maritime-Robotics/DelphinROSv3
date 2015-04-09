@@ -1,12 +1,15 @@
 #!/usr/bin/python
 
+"""
 # TODO - make the "CS_controller" less agressive at high forward speeds
 # TODO - check if the sway force distribution have been done correctly
 
 ######################################
 #Modifications
-# 2 Feb 2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
-# 5 Apr 2015: makesure CS and thruster demands are Integer32
+2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
+5/4/2015: makesure CS and thruster demands are Integer32
+
+"""
 
 import rospy
 import serial

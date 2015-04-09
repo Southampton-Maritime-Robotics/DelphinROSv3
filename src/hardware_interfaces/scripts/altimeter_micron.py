@@ -1,14 +1,18 @@
 #!/usr/bin/python
+
+"""
+#######################################################
+# Modifications to code
+4/4/2015: control rate by rospy.Rate()
+
+"""
+
 import rospy
 import serial
 import time
 import numpy
 from hardware_interfaces.msg import altitude
 from hardware_interfaces.msg import status
-
-#######################################################
-#Modifications to code
-# 4/4/2015 control rate by rospy.Rate 
 
 ################################################################
 def setUpSerial(): # set up the serial port

@@ -1,5 +1,4 @@
 #!/usr/bin/python
-import roslib; roslib.load_manifest('DelphinROSv2')
 import rospy
 import serial
 import time

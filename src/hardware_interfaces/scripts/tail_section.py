@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import roslib; roslib.load_manifest('hardware_interfaces')
+
 import rospy
 import serial
 import time

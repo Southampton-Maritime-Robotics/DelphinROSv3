@@ -1,4 +1,20 @@
 #!/usr/bin/python
+
+"""
+#######################################################
+#Modifications to code
+15/2/2012 converted speed to m/s
+6/1/2012 modified calculation of X and Y variables
+6/1/2012 modified code so position is always published
+6/1/2012 lat/long origin now read from parameter server
+4/4/2015 control rate by rospy.Rate()
+
+########################################################
+#Notes
+X corresponds to East
+Y corresponds to North
+"""
+
 import rospy
 import serial
 import time
@@ -8,19 +24,6 @@ import string
 from pylab import *
 from hardware_interfaces.msg import gps
 from hardware_interfaces.msg import status
-
-#######################################################
-#Modifications to code
-# 15/2/2012 converted speed to m/s
-# 6/1/2012 modified calculation of X and Y variables
-# 6/1/2012 modified code so position is always published
-# 6/1/2012 lat/long origin now read from parameter server
-# 4/4/2015 control rate by rospy.Rate()
-
-########################################################
-#Notes
-#X corresponds to East
-#Y corresponds to North
 
 ################### GLOBAL VARIABLES ################### 
 

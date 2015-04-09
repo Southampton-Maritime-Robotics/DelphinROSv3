@@ -1,27 +1,30 @@
 #!/usr/bin/python
 
-## this code lets ROS node communicate with an arduino in which then talks with maxon motor control board. It is a modified version of the "tsl_customer_mission.py" that was originally used to control thrusters via TSL motor control board
+"""
+# this code lets ROS node communicate with an arduino in which then talks with maxon motor control board. It is a modified version of the "tsl_customer_mission.py" that was originally used to control thrusters via TSL motor control board
 
-## modification:
-#  - 12 June 2014:
-#  - 5 April 2015: make this node work at 10Hz. Rate is control by rospy.Rate()
+# modification:
+  - 12 June 2014:
+  - 5 April 2015: make this node work at 10Hz. Rate is control by rospy.Rate()
 
-## usage
-#  - get voltage: "faVcs"
-#  - get current: "faIcs"
-#  - get RPM: "faRcs" (20Hz approximately)
-#  - set thrusterSetpoint: "faPspeed_1,direction_1@speed_2,direction_2@speed_3,direction_3@speed_4,direction_4@cs"
+# usage
+  - get voltage: "faVcs"
+  - get current: "faIcs"
+  - get RPM: "faRcs" (20Hz approximately)
+  - set thrusterSetpoint: "faPspeed_1,direction_1@speed_2,direction_2@speed_3,direction_3@speed_4,direction_4@cs"
 
 # the smallest value that setpoint in arduino world could be is 1 in whih correspoinds to a RPM of 138 approximately 
 
-## define
-# thruster numbering
-#    0 vert_front
-#    1 vert_rear
-#    2 hor_front
-#    3 hor_rear
-## convention
-#    [+ve demand] gives [-ve thrust and +ve sway motion] relative to the front-east-down body fix frame
+# define
+ thruster numbering
+    0 vert_front
+    1 vert_rear
+    2 hor_front
+    3 hor_rear
+# convention
+    [+ve demand] gives [-ve thrust and +ve sway motion] relative to the front-east-down body fix frame
+
+"""
 
 import rospy
 import serial

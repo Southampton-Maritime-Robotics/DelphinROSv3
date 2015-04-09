@@ -1,13 +1,6 @@
 #!/usr/bin/python
-import rospy
-import numpy
-import serial
-import time
-import math
-from re import findall
-from hardware_interfaces.msg import compass
-from hardware_interfaces.msg import status
 
+"""
 ######################################
 # This node used to play an important role for publishing the compass_out topic
 # Since we have xsens installed to the Delphin2, this node only responsible for producing a filtered depth and its derivative.
@@ -16,6 +9,16 @@ from hardware_interfaces.msg import status
 ######################################
 #Modifications
 # 9 Apr 2015: alter the way to control sampling rate with rospy.rate()
+"""
+
+import rospy
+import numpy
+import serial
+import time
+import math
+from re import findall
+from hardware_interfaces.msg import compass
+from hardware_interfaces.msg import status
 
 global serialPort
 

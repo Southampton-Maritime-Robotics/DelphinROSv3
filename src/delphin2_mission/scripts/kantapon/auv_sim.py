@@ -1,4 +1,11 @@
 #!/usr/bin/python
+
+"""
+# this node subscribe to a motion demand, e.g. speed, heading, depth
+# A state vector of the virtual AUV is updated accordingly
+# The current state is then published as dummy messages of compass_out and position_dead
+"""
+
 import rospy
 import numpy
 import time
@@ -11,10 +18,6 @@ from pylab import *
 
 #### from kantapon's folder
 from utilities                    import uti
-
-# this node subscribe to a motion demand, e.g. speed, heading, depth
-# A state vector of the virtual AUV is updated accordingly
-# The current state is then published as dummy messages of compass_out and position_dead
 
 ################################################################
 ################################################################
@@ -51,7 +54,7 @@ def listenForData():
     speedMax = 1 # [m/s] maximum surge speed
     swayMax = 0.5 # [m/s] maximum sway speed
     depthMax = rospy.get_param('over-depth') # [m] maximum depth
-    dt = 0.1 # [sec] time step size
+    dt = 0.01 # [sec] time step size
     
     # nu: velocity vector
     u = 0 # [m/s] initial surge velocity

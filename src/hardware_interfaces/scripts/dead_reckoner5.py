@@ -1,14 +1,6 @@
 #!/usr/bin/python
 
-import rospy
-import time
-from numpy import *
-from math import *
-from hardware_interfaces.msg import compass
-from hardware_interfaces.msg import position
-from hardware_interfaces.msg import gps
-from hardware_interfaces.msg import altitude
-
+"""
 ######################################
 # this node give an estimation of AUV position in earth-fixed frame relative to the origin specified in launch file 
 # convention for position is [X:+veEast,Y:+veNorth,Z:+veDown]
@@ -22,7 +14,17 @@ from hardware_interfaces.msg import altitude
 
 ######################################
 #Modifications
+9/4/2015: estimate surge and sway speed from GPS when it is available
+"""
 
+import rospy
+import time
+from numpy import *
+from math import *
+from hardware_interfaces.msg import compass
+from hardware_interfaces.msg import position
+from hardware_interfaces.msg import gps
+from hardware_interfaces.msg import altitude
 
 ########## LOW LEVEL CONTROL ############################################################
 def reckoner():
