@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# Dry Land Test:
+# test of all sensors and actuators before the vehicle is run in water
+# - run thrusters and propeller at lower RPM
+
+
 import rospy
 import smach
 import smach_ros
