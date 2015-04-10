@@ -1,4 +1,9 @@
 #!/usr/bin/python
+# OUTDATED!
+# We now use xsens driver package
+# with the new xsens sensor
+#
+# read and publish sensor values from gyroscope
         
 from hardware_interfaces.gyro import *
 
