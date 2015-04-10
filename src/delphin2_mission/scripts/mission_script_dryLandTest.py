@@ -5,7 +5,6 @@
 # - run thrusters and propeller at lower RPM
 
 
-import roslib; roslib.load_manifest('delphin2_mission')
 import rospy
 import smach
 import smach_ros
