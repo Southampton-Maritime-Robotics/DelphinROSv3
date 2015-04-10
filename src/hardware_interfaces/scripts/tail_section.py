@@ -41,7 +41,7 @@ def tail_section_loop(status):
     global e_port
     global prop
     
-    freq = 10
+    freq = 10.
     dt = 0
     prop_full_time = 1.0
     prop_on = 0
@@ -264,8 +264,8 @@ if __name__ == '__main__':
     
     [b, c, d, e] = (0, 0, 0, 0)
     
-    pub = rospy.Publisher('tail_output', tail_feedback, queue_size=3)
-    pubStatus = rospy.Publisher('status', status, queue_size=3)
+    pub = rospy.Publisher('tail_output', tail_feedback)
+    pubStatus = rospy.Publisher('status', status)
     
     prop_demand = 0
     

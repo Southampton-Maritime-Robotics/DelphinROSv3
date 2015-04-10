@@ -17,7 +17,7 @@ def sonarTalker():
    
 if __name__ == '__main__':
     rospy.init_node('sonar_updateParams')
-    pub = rospy.Publisher('sonar_update', sonar, queue_size=3)
+    pub = rospy.Publisher('sonar_update', sonar)
     time.sleep(0.25)
     #while not rospy.is_shutdown():
     sonarTalker()

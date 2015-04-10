@@ -18,7 +18,7 @@ class pathFollowingLOS(smach.State):
         self.__uGain = uGain
         self.__uMax = uMax
         self.__wp_R = wp_R
-        self.__r = rospy.Rate(10) # [Hz] set the control rate
+        self.__r = rospy.Rate(100) # [Hz] set the control rate
 
     def execute(self, userdata):
         
@@ -44,6 +44,8 @@ class pathFollowingLOS(smach.State):
         
         # move back and forth between two waypoint with different demandProp
         while not rospy.is_shutdown():
+            
+            time_ref = time.time()
             
             X = self.__controller.getX()
             Y = self.__controller.getY()
@@ -84,12 +86,15 @@ class pathFollowingLOS(smach.State):
 
             # determine heading error
             errHeading = self.__uti.computeHeadingError(los_a,heading)
-            u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__gGain,errHeading)
+            u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__uGain,errHeading)
 #            u = self.__uMax*exp(-self.__uGain*abs(errHeading))
-            
+####            
             # publish heading demand
             self.__controller.setHeading(los_a)
             # turn speedDemand into propeller demand and send
             self.__controller.setRearProp(round(u*22.))
             
-            self.__r.sleep()
+            self.__controller.setDepth(1)
+            
+#            self.__r.sleep()
+            print time.time()-time_ref

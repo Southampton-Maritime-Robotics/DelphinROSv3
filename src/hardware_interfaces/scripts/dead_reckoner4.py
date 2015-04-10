@@ -1,5 +1,4 @@
 #!/usr/bin/python
-import roslib; roslib.load_manifest('hardware_interfaces')
 import rospy
 import time
 import numpy as np
@@ -15,7 +14,6 @@ from hardware_interfaces.msg import heading_MPC
 from hardware_interfaces.msg import dead_reckoner
 from hardware_interfaces.msg import camera_info
 import math
-
 
 ######################################
 #Modifications
@@ -383,7 +381,7 @@ if __name__ == '__main__':
     rospy.Subscriber('water_temp', Float32, temperature_cb)
     rospy.Subscriber('camera_info', camera_info,camera_cb)
       
-    pub  = rospy.Publisher('position_dead', position, queue_size=3)
-    pub2 = rospy.Publisher('dead_reckoner', dead_reckoner, queue_size=3)
+    pub  = rospy.Publisher('position_dead', position)
+    pub2 = rospy.Publisher('dead_reckoner', dead_reckoner)
 
     reckoner()

@@ -59,8 +59,6 @@ class windtunnel(smach.State):
                 rospy.loginfo(str)
                 self.__controller.setRearProp(0)
 
-            
-            
             return 'succeeded'
                 
             #return 'preempted'

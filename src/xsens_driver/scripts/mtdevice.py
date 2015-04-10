@@ -560,7 +560,7 @@ class XSensDriver(object):
 
 		# initialize topics
 #		self.IMU_pub = rospy.Publisher('IMU_information',IMU_msg)
-		self.COMPASS_pub = rospy.Publisher('compass_out',compass,queue_size=1)
+		self.COMPASS_pub = rospy.Publisher('compass_out',compass)
         
 		self.depth = 0.0
 		self.depth_filt = 0.0
@@ -667,9 +667,9 @@ class XSensDriver(object):
 #			imu.linear_acceleration_x = -out_Acc['accX']
 #			imu.linear_acceleration_y = out_Acc['accY']
 #			imu.linear_acceleration_z = out_Acc['accZ']
-			com.ax = -out_Acc['accX']
-			com.ay = out_Acc['accY']
-			com.az = out_Acc['accZ']
+			com.ax = -out_Acc['freeAccX']
+			com.ay = out_Acc['freeAccX']
+			com.az = out_Acc['freeAccX']
 			pub_IMU = True
 			
 		def callback_COMPASS_msg(com_old):

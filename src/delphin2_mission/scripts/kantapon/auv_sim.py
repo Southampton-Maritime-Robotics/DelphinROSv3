@@ -161,8 +161,8 @@ if __name__ == '__main__':
     
     global pubCompass
     
-    pubCompass = rospy.Publisher('compass_out', compass, queue_size=3)
-    pubPosition = rospy.Publisher('position_dead', position, queue_size=3)
+    pubCompass = rospy.Publisher('compass_out', compass)
+    pubPosition = rospy.Publisher('position_dead', position)
     
     rospy.Subscriber('heading_demand', Float32, heading_demand_cb)
     rospy.Subscriber('depth_demand', Float32, depth_demand_cb)

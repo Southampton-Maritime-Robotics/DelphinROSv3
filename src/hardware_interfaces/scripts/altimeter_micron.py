@@ -67,7 +67,7 @@ def filter(altitude):
     return [altitude_filt, altitude_der]
     
 ################################################################
-def listenForData(status,r,controlPeriod):
+def listenForData(status):
     global serialPort
     global Dx
     global Dy
@@ -76,7 +76,7 @@ def listenForData(status,r,controlPeriod):
     timeout   = 2
     time_zero = time.time()
     
-    controlRate = 50. # Hz
+    controlRate = 1. # Hz
     controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
     
@@ -125,8 +125,8 @@ def shutdown():
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online    
     rospy.init_node('MicronEchoSounder')
-    pub = rospy.Publisher('altimeter_out', altitude, queue_size=3)
-    pubStatus = rospy.Publisher('status', status, queue_size=3)
+    pub = rospy.Publisher('altimeter_out', altitude)
+    pubStatus = rospy.Publisher('status', status)
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
     
     global array_length

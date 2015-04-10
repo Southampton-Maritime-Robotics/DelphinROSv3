@@ -140,7 +140,7 @@ def listenForData(status):
     global      fix
     global      speed
 
-    controlRate = 100. # Hz
+    controlRate = 5. # Hz
     controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
 
@@ -281,8 +281,8 @@ if __name__ == '__main__':
     }
   
     #Define Publishers
-    pubStatus = rospy.Publisher('status', status, queue_size=3)
-    pub = rospy.Publisher('gps_out', gps, queue_size=3) 
+    pubStatus = rospy.Publisher('status', status)
+    pub = rospy.Publisher('gps_out', gps) 
     time.sleep(1)
     #Setup serial port and check its status
     port_status = setUpSerial()    

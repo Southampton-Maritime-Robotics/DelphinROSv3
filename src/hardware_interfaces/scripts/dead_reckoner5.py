@@ -2,19 +2,20 @@
 
 """
 ######################################
-# this node give an estimation of AUV position in earth-fixed frame relative to the origin specified in launch file 
-# convention for position is [X:+veEast,Y:+veNorth,Z:+veDown]
-# Z is measured directly from depth sensor
-# XY measure from GPS when it available. Otherwise calculate from FreeAccelerations in body-fixed frame measured by xsens
+this node give an estimation of AUV position in earth-fixed frame relative to the origin specified in launch file 
+convention for position is [X:+veEast,Y:+veNorth,Z:+veDown]
+Z is measured directly from depth sensor
+XY measure from GPS when it available. Otherwise calculate from FreeAccelerations in body-fixed frame measured by xsens
 
 # TODO
-# check the rate of this node
-# verify this node
-#    -turn-off GPS, drag the vehicle around then check the trace this node made
+check the rate of this node
+verify this node
+    -turn-off GPS, drag the vehicle around then check the trace this node made
 
 ######################################
 #Modifications
 9/4/2015: estimate surge and sway speed from GPS when it is available
+
 """
 
 import rospy
@@ -33,7 +34,7 @@ def reckoner():
     global GPS
     global alt
 
-    controlRate = 100. # Hz FIXME: make this value as high as gps and altimeter node can be
+    controlRate = 100. # Hz FIXME: make this value as high as gps and xsens node can be
     controlPeriod = 1/controlRate # sec
     r = rospy.rate(controlRate) # as high as the gps rate could be
     
@@ -122,8 +123,6 @@ def reckoner():
         output.altitude    = alt.altitude
         pub.publish(output)
         
-        output2
-        
         timeElapse = time.time()-timeRef
         if timeElapse < controlPeriod:
             r.sleep()
@@ -165,7 +164,7 @@ if __name__ == '__main__':
     rospy.Subscriber('compass_out', compass, compass_cb)
     rospy.Subscriber('gps_out', gps, gps_callback)
     
-    pub  = rospy.Publisher('position_dead', position, queue_size=3)
-#    pub2 = rospy.Publisher('dead_reckoner', dead_reckoner, queue_size=3)
+    pub  = rospy.Publisher('position_dead', position)
+#    pub2 = rospy.Publisher('dead_reckoner', dead_reckoner)
 
     reckoner()

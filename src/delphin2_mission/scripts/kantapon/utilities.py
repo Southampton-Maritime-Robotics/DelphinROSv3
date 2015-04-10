@@ -83,6 +83,6 @@ class uti:
            value = max
         return value
         
-    del surgeVelFromHeadingError(uMax,gGain,errHeading)
+    def surgeVelFromHeadingError(self,uMax,uGain,errHeading):
         u = uMax*exp(-uGain*abs(errHeading))
         return u

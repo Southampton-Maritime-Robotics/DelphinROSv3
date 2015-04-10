@@ -157,8 +157,9 @@ def headingdemand_callback(data):
         
 def depthdemand_callback(data):
     #updates depth_demand - to be included in vertical thruster log file
-    global depth_demand
-    depth_demand = data.data
+    pass
+#    global depth_demand
+#    depth_demand = data.data
 
 def propdemand_callback(data):
     #updates prop_demand - to be included in tail section log file
@@ -463,8 +464,8 @@ if __name__ == '__main__':
     stringtime = datetime.now()
     stringtime = stringtime.strftime('%Y-%m-%d_%H-%M-%S')
     rospy.loginfo('Logger started at %s.'%(stringtime))
-    pub_folder = rospy.Publisher('folder', String, queue_size=10)
-    pub_vidfolder = rospy.Publisher('vidfolder', String, queue_size=10)
+    pub_folder = rospy.Publisher('folder', String)
+    pub_vidfolder = rospy.Publisher('vidfolder', String)
     
     global heading_demand
     global depth_demand
@@ -555,34 +556,31 @@ if __name__ == '__main__':
 ######## SUBSCRIBERS ###########################################################
 ################################################################################
 
-    rospy.Subscriber('compass_out', compass, callback_compass)
-    rospy.Subscriber('TSL_feedback', tsl_feedback, tsl_feedback_callback)        
+#    rospy.Subscriber('compass_out', compass, callback_compass)
+#    rospy.Subscriber('TSL_feedback', tsl_feedback, tsl_feedback_callback)        
     rospy.Subscriber('heading_demand', Float32, headingdemand_callback)
-    rospy.Subscriber('depth_demand', Float32, depthdemand_callback)
+#    rospy.Subscriber('depth_demand', Float32, depthdemand_callback)
     rospy.Subscriber('prop_demand', Int8, propdemand_callback)
-    rospy.Subscriber('tail_output', tail_feedback, tail_feedback_callback)
-    rospy.Subscriber('position_dead', position, position_callback)
-    rospy.Subscriber('gps_out', gps, gps_callback)
-    rospy.Subscriber('altimeter_out',altitude, altimeter_callback)
-    rospy.Subscriber('sonar_processed', sonar_data, sonar_callback)
+#    rospy.Subscriber('tail_output', tail_feedback, tail_feedback_callback)
+#    rospy.Subscriber('position_dead', position, position_callback)
+#    rospy.Subscriber('gps_out', gps, gps_callback)
+#    rospy.Subscriber('altimeter_out',altitude, altimeter_callback)
+#    rospy.Subscriber('sonar_processed', sonar_data, sonar_callback)
+#        
+#    rospy.Subscriber('MissionStrings', String, mission_callback)
+#    rospy.Subscriber('DepthandSpeed_MPC_values', depthandspeed_MPC, depthandspeedMPC_callback)
+#    rospy.Subscriber('Heading_MPC_values', heading_MPC, headingMPC_callback)
+#    rospy.Subscriber('DepthandPitch_MPC_values', depthandpitch_MPC, depthandpitchMPC_callback)
+#    rospy.Subscriber('dead_reckoner', dead_reckoner, reckoner_callback) 
+#    rospy.Subscriber('Heading_controller_values', heading_control, headingPID_callback)
+#    rospy.Subscriber('Depth_pitch_controller_values', depth_pitch_control, depth_pitch_PID_callback)
+#    
+#    rospy.Subscriber('camera_info', camera_info, camera_callback)
+#    rospy.Subscriber('SMS_info', SMS, SMS_callback)
+#    rospy.Subscriber('water_temp', Float32, temp_callback)
+#    rospy.Subscriber('Model_ForcesAndMoments',ForcesAndMoments, FandM_callback)
+#    rospy.Subscriber('rate_gyro', gyro, gyro_callback)    
     
-    
-    rospy.Subscriber('MissionStrings', String, mission_callback)
-    rospy.Subscriber('DepthandSpeed_MPC_values', depthandspeed_MPC, depthandspeedMPC_callback)
-    rospy.Subscriber('Heading_MPC_values', heading_MPC, headingMPC_callback)
-    rospy.Subscriber('DepthandPitch_MPC_values', depthandpitch_MPC, depthandpitchMPC_callback)
-    rospy.Subscriber('dead_reckoner', dead_reckoner, reckoner_callback) 
-    rospy.Subscriber('Heading_controller_values', heading_control, headingPID_callback)
-    rospy.Subscriber('Depth_pitch_controller_values', depth_pitch_control, depth_pitch_PID_callback)
-    
-    rospy.Subscriber('camera_info', camera_info, camera_callback)
-    rospy.Subscriber('SMS_info', SMS, SMS_callback)
-    rospy.Subscriber('water_temp', Float32, temp_callback)
-    rospy.Subscriber('Model_ForcesAndMoments',ForcesAndMoments, FandM_callback)
-    rospy.Subscriber('rate_gyro', gyro, gyro_callback)    
-    
-#    rospy.Subscriber('IMU_information', IMU_msg, callback_IMU_msg)
-
     str = "Logger online - output directory: %s" %(dirname)
     rospy.loginfo(str)
     

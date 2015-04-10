@@ -349,9 +349,9 @@ if __name__ == '__main__':
     rospy.Subscriber('Depth_onOFF', Bool, depth_onOff_callback)
     rospy.Subscriber('prop_demand', Int8, prop_demand_cb)
     
-    pub_tail = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints, queue_size=3)
-    pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints, queue_size=3)
-    pub_DPC   = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control, queue_size=3)
+    pub_tail = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
+    pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
+    pub_DPC   = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control)
     
     rospy.loginfo("Depth-Pitch controller online")
 

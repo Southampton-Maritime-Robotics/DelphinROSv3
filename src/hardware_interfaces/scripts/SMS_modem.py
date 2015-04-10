@@ -415,9 +415,9 @@ if __name__ == '__main__':
     rospy.Subscriber('TSL_feedback', tsl_feedback, tsl_callback)        
     rospy.Subscriber('SMS_message', String, new_message_callback)        
 
-    pubStatus  = rospy.Publisher('status', status, queue_size=3)
-    pubSMSinfo = rospy.Publisher('SMS_info', SMS, queue_size=3)
-    pubOnOff   = rospy.Publisher('phone_onOff', Bool, queue_size=3)
+    pubStatus  = rospy.Publisher('status', status)
+    pubSMSinfo = rospy.Publisher('SMS_info', SMS)
+    pubOnOff   = rospy.Publisher('phone_onOff', Bool)
     time.sleep(0.5)
     
     print 'Switching on phone...'

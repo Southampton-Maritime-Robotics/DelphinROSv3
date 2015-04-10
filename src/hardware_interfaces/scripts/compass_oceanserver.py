@@ -41,7 +41,7 @@ def setUpSerial():
 def listenForData(status):
     global serialPort
     
-    controlRate = 100. # [Hz]
+    controlRate = 50. # [Hz]
     controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
     
@@ -64,7 +64,6 @@ def listenForData(status):
     depth_old = 0.0
     
     #####################   
-    
     
     while not rospy.is_shutdown():    
         timeRef = time.time()
@@ -240,8 +239,8 @@ if __name__ == '__main__':
     global pub
     global serialPort
     
-    pub = rospy.Publisher('compass_old', compass, queue_size=3)   
-    pubStatus = rospy.Publisher('status', status, queue_size=3)
+    pub = rospy.Publisher('compass_old', compass)   
+    pubStatus = rospy.Publisher('status', status)
     
     rospy.on_shutdown(shutdown)
     

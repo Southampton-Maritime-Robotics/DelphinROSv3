@@ -122,7 +122,7 @@ if __name__ == '__main__':
 
   
     #Define Publishers
-    pub = rospy.Publisher('water_temp', Float32, queue_size=3) 
+    pub = rospy.Publisher('water_temp', Float32) 
     time.sleep(1)
     #Setup serial port and check its status
     port_status = setUpSerial()    

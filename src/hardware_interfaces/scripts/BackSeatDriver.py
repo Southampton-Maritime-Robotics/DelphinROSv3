@@ -22,8 +22,8 @@ from library_highlevel import library_highlevel
 
 def main(controller):
     rospy.init_node('back_seat_driver')
-    pub=rospy.Publisher('back_seat_flag',Int8, queue_size=3)
-    pub2 = rospy.Publisher('MissionStrings', String, queue_size=3)
+    pub=rospy.Publisher('back_seat_flag',Int8)
+    pub2 = rospy.Publisher('MissionStrings', String)
     
     # Store Initial Time
     time_zero = time.time()    

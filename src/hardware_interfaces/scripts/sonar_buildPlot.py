@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     rospy.init_node('sonar_buildPlot')
     
-    pub = rospy.Publisher('sonar_cartesianRanges', sonar_pingPlot, queue_size=3)
+    pub = rospy.Publisher('sonar_cartesianRanges', sonar_pingPlot)
     rospy.Subscriber('sonar_polarRange', sonar_polarRange, callback)
     rospy.spin()
 
