@@ -77,7 +77,7 @@ class dryLandTest(smach.State):
             self.__controller.setArduinoThrusterVertical(-600,-600)
             time.sleep(3)
             
-            if (numpy.abs(self.__controller.getT0rpm()) < 400):
+            if (numpy.abs(self.__controller.getT0rpm()) < 150):
                 str = "Problem with thruster 0. Speed = %s" %self.__controller.getT0rpm()
                 rospy.logerr(str)
                 #return 'aborted' #need to uncomment  
@@ -85,7 +85,7 @@ class dryLandTest(smach.State):
                 str = "Thruster 0 - working"
                 rospy.loginfo(str)
             
-            if (numpy.abs(self.__controller.getT1rpm()) < 400):
+            if (numpy.abs(self.__controller.getT1rpm()) < 150):
                 str = "Problem with thruster 1. Speed = %s" %self.__controller.getT1rpm()
                 rospy.logerr(str)
                 #return 'aborted' #need to comment 

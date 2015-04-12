@@ -605,7 +605,6 @@ class XSensDriver(object):
 	def spin_once(self):
 	
 		# create messages and default values
-#		imu = IMU_msg()		# Temperature, orientation, angular_velocity, linear_acceleration
 		com = compass()
 		
 		has_Temp = False
@@ -645,28 +644,17 @@ class XSensDriver(object):
 				out_Ori['Yaw'] = 360-out_Ori['Yaw']
 			else:
 				out_Ori['Yaw'] = -out_Ori['Yaw']
-####			# correct a pitch representation
-####			out_Ori['Pitch'] = out_Ori['Pitch']
-		
-#			imu.orientation_roll = -out_Ori['Roll']
-#			imu.orientation_pitch = out_Ori['Pitch']
-#			imu.orientation_yaw = out_Ori['Yaw']
+				
 			com.roll = -out_Ori['Roll']
 			com.pitch = out_Ori['Pitch']
 			com.heading = out_Ori['Yaw']
 			pub_IMU = True
 		if has_AngVel:
-#			imu.angular_velocity_x = -out_AngVel['gyrX']
-#			imu.angular_velocity_y = out_AngVel['gyrY']
-#			imu.angular_velocity_z = out_AngVel['gyrZ']
 			com.angular_velocity_x = -out_AngVel['gyrX']
 			com.angular_velocity_y = out_AngVel['gyrY']
 			com.angular_velocity_z = -out_AngVel['gyrZ']
 			pub_IMU = True
 		if has_Acc:
-#			imu.linear_acceleration_x = -out_Acc['accX']
-#			imu.linear_acceleration_y = out_Acc['accY']
-#			imu.linear_acceleration_z = out_Acc['accZ']
 			com.ax = -out_Acc['freeAccX']
 			com.ay = out_Acc['freeAccX']
 			com.az = out_Acc['freeAccX']
@@ -683,8 +671,6 @@ class XSensDriver(object):
 			
 		# publish available information #
 		if pub_IMU:
-#			imu.header = h
-#			self.IMU_pub.publish(imu)
 			# add a depth measurement of old device into the new compass_out topic
 			com.depth = self.depth
 			com.depth_filt = self.depth_filt
