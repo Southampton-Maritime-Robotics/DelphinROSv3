@@ -15,10 +15,12 @@ import serial
 import time
 import numpy
 from hardware_interfaces.msg    import tsl_setpoints
+from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import position
 from hardware_interfaces.msg    import compass
 from lowlevel_controllers.msg   import depth_pitch_control
 from std_msgs.msg               import Float32
+from std_msgs.msg               import Int8
 from std_msgs.msg               import Bool
 
 #### from kantapon's folder
@@ -200,7 +202,7 @@ def main_control_loop():
                 [error_depth, int_error_depth] = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
                 [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
                 
-                [CS_demand] = CS_controller(error_pitch, int_error_pitch, der_error_pitch):
+                [CS_demand] = CS_controller(error_pitch, int_error_pitch, der_error_pitch)
                 [thruster0, thruster1] = thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch)
                 
                 # update the heading_control.msg, and this will be subscribed by the logger.py
@@ -227,10 +229,8 @@ def main_control_loop():
                     controller_onOff = False
     
                 timeElapse = time.time()-timeRef
-
                 if timeElapse < controlPeriod:
                     r.sleep()
-                    print timeElapse
                 else:
                     str = "Pitch-Depth control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse)
                     rospy.logwarn(str)
@@ -329,7 +329,7 @@ def pitch_demand_callback(pitchd):
     global DPC
     DPC.pitch_demand = pitchd.data
     
-def prop_demand_callback(propd)
+def prop_demand_callback(propd):
     global propDemand
     propDemand = propd
 
@@ -347,7 +347,7 @@ if __name__ == '__main__':
     rospy.Subscriber('pitch_demand', Float32, pitch_demand_callback)
     rospy.Subscriber('compass_out', compass, compass_callback)
     rospy.Subscriber('Depth_onOFF', Bool, depth_onOff_callback)
-    rospy.Subscriber('prop_demand', Int8, prop_demand_cb)
+    rospy.Subscriber('prop_demand', Int8, prop_demand_callback)
     
     pub_tail = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
     pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)

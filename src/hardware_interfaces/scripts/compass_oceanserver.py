@@ -41,7 +41,7 @@ def setUpSerial():
 def listenForData(status):
     global serialPort
     
-    controlRate = 50. # [Hz]
+    controlRate = 20. # [Hz]
     controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
     
@@ -53,7 +53,6 @@ def listenForData(status):
     Dy = numpy.zeros([depth_array_length],float)
     for i in range(0,depth_array_length): 
         Dx[i] = i
-            
     
     pitch_array_length = 10
     Px = numpy.zeros([pitch_array_length],float)
@@ -62,6 +61,7 @@ def listenForData(status):
         Px[i] = i
         
     depth_old = 0.0
+    rateOK = True
     
     #####################   
     
@@ -97,8 +97,9 @@ def listenForData(status):
                     #roll = roll_raw
                               
 #                    temperature = data[3]          
-#                    depth       = (data[4]*42.045)- 0.84+0.53  -0.21  -0.05   #Convert ADC value to depth value
+                    depth       = (data[4]*42.045)- 0.84+0.53  -0.21  -0.05   #Convert ADC value to depth value
                     
+                    # maybe, this help to remove spike
 #                    if (abs(depth - depth_old)) > 1.0:
 #                        depth = depth_old
                                         
@@ -124,7 +125,11 @@ def listenForData(status):
 #                    az          =-data[12]
                                         
                     #### DEPTH FILTER ####
-                    Dx_real = Dx * controlPeriod
+                    if rateOK:
+                        T = controlPeriod
+                    else:
+                        T = timeElapse
+                    Dx_real = Dx * T
                     
                     Dy[1:depth_array_length] = Dy[0:(depth_array_length-1)]
                     Dy[0] = depth
@@ -156,7 +161,6 @@ def listenForData(status):
      
                     #Publish data to compass_out
                     pub.publish(com)
-#                    pub.publish(heading=heading,pitch=pitch,roll=roll,temperature=temperature,depth=depth,m=m,mx=mx,my=my,mz=mz,a=a,ax=ax,ay=ay,az=az,depth_filt=depth_filt,depth_der=depth_der,pitch_filt=pitch_filt,pitch_der=pitch_der)
                     
                 except ValueError: 
                     print 'not a float'
@@ -166,8 +170,10 @@ def listenForData(status):
         
         timeElapse = time.time()-timeRef
         if timeElapse < controlPeriod:
+            rateOK = True
             r.sleep()
         else:
+            rateOK = False
             str = "compass_oceanserver rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
             rospy.logwarn(str)
 

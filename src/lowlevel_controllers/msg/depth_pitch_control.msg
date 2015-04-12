@@ -47,6 +47,7 @@ int32 thruster1
 
 ###################
 ## control surfaces
+int8 CS_Smax
 float32 CS_Pgain
 float32 CS_Igain
 float32 CS_Dgain

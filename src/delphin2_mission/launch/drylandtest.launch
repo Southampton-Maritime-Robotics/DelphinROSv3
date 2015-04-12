@@ -21,7 +21,6 @@
     
     <!--Easleigh North lat_orig=50.95702499999999 long_orig=-1.36675104 -->
     <!--Coordinates are for south pier, middle south of lake (X,Y) = (-24.6,30.0) -->
-    
 
     <node name="mission_script" pkg="delphin2_mission" type="mission_script_dryLandTest.py"  output="screen" required="true" /> 
     
@@ -31,7 +30,7 @@
 	
     <!-- <node name="compass_dummy" pkg="hardware_interfaces" type="compass_dummy.py" /> -->
     <node name="arduino" pkg="hardware_interfaces" type="arduino.py" /> 
-    <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py" /> 
+    <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py"  output="screen" /> 
     <!-- <node name="temp_sensor" pkg="hardware_interfaces" type="temp_sensor.py" /> --> 
     <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py" /> 
     <node name="altimeter" pkg="hardware_interfaces" type="altimeter_micron.py" />
@@ -39,7 +38,7 @@
     <!-- <node name="SMS_modem" pkg="hardware_interfaces" type="SMS_modem.py" /> -->
     <!--include file="$(find delphin2_mission)/launch/sonar_system.launch" /> -->
     
-    <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner4.py"  /> 
+    <!-- <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner4.py"  /> -->
     
     <!-- <node name="depth_controller" pkg="DelphinROSv2" type="depth_controller.py" output = "screen"/> -->
     <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py"/>
