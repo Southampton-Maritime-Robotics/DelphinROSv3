@@ -323,7 +323,7 @@ class library_highlevel:
         return self.__compass.roll
     
     def getPitch(self):
-        return self.__compass.pitch_filt
+        return self.__compass.pitch
     
     def getTemperature(self):
         return self.__compass.temperature

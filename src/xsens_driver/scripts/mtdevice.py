@@ -1,44 +1,45 @@
 #!/usr/bin/env python
 
+"""
 ## this code lets ROS node communicate with an arduino in which then talks with maxon motor control board. It is a modified version of the "tsl_customer_mission.py" that was originally used to control thrusters via TSL motor control board
 
-## developer: Kantapon
+# developer: Kantapon
 
-## date last modify:
-#  - 4 November 2014
+# date last modify:
+  - 4 November 2014
 
-## usage
-#  - set a proper filter profile, location and data packet in "set a configuration"
+# usage
+  - set a proper filter profile, location and data packet in "set a configuration"
 
-## define
-#    roll
-#        - follow the convention of ned-frame
-#    pitch
-#        - follow the convention of ned-frame
-#    yaw:
-#        - [0-360] degree
-#        - 0 towards North
-#        - value increase when move CW and vice versa
-#    linear_acceleration:
-#        - follow the convention of ned-frame
-#    angula_velocity:
-#        - follow the convention of ned-frame
+# define
+    roll
+        - follow the convention of ned-frame
+    pitch
+        - follow the convention of ned-frame
+    yaw:
+        - [0-360] degree
+        - 0 towards North
+        - value increase when move CW and vice versa
+    linear_acceleration:
+        - follow the convention of ned-frame
+    angula_velocity:
+        - follow the convention of ned-frame
 
-## note
-#    - It is highly recommend that a Magnetif Field Mapping (MFM) must be done when
-#        - the xsens has been unmounted from the sub
-#        - or another device has been removed or added to the sub
+# note
+    - It is highly recommend that a Magnetif Field Mapping (MFM) must be done when
+        - the xsens has been unmounted from the sub
+        - or another device has been removed or added to the sub
+"""
 
 import serial
 import struct
 import select
 import rospy
 
-import sys, getopt, time, glob#, traceback
+import sys, getopt, time, glob
 
 from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName
 from std_msgs.msg import Header
-from xsens_driver.msg import IMU_msg        # IMU_msg is only used in a development of the driver and is not required by the delphin2 (Kantapon: 05/11/14)
 from hardware_interfaces.msg import compass # compass is a message that is originally used by delphin2.
 from custom_def import location, req
 
@@ -559,9 +560,10 @@ class XSensDriver(object):
 		self.mt.RestoreFactoryDefaults()
 
 		# initialize topics
-#		self.IMU_pub = rospy.Publisher('IMU_information',IMU_msg)
 		self.COMPASS_pub = rospy.Publisher('compass_out',compass)
-        
+		#set up subscribers
+		rospy.Subscriber('compass_old', compass, self.callback_COMPASS_msg)
+		
 		self.depth = 0.0
 		self.depth_filt = 0.0
 		self.depth_der = 0.0
@@ -602,6 +604,11 @@ class XSensDriver(object):
 		except KeyboardInterrupt:
 			pass
 
+	def callback_COMPASS_msg(self,data):
+		self.depth = data.depth
+		self.depth_filt = data.depth_filt
+		self.depth_der = data.depth_der
+
 	def spin_once(self):
 	
 		# create messages and default values
@@ -633,7 +640,6 @@ class XSensDriver(object):
 		
 		# fill information where it's due #
 		if has_Temp:
-#			imu.temperature = out_Temp['Temp']
 			com.temperature = out_Temp['Temp']
 			pub_IMU = True
 		if has_Ori:
@@ -655,20 +661,16 @@ class XSensDriver(object):
 			com.angular_velocity_z = -out_AngVel['gyrZ']
 			pub_IMU = True
 		if has_Acc:
-			com.ax = -out_Acc['freeAccX']
-			com.ay = out_Acc['freeAccX']
-			com.az = out_Acc['freeAccX']
+			if out_Acc.has_key('freeAccX'):
+				com.ax = out_Acc['freeAccX']
+				com.ay = out_Acc['freeAccY']
+				com.az = out_Acc['freeAccZ']
+			elif out_Acc.has_key('accX'):
+				com.ax = out_Acc['accX']
+				com.ay = out_Acc['accY']
+				com.az = out_Acc['accZ']
 			pub_IMU = True
-			
-		def callback_COMPASS_msg(com_old):
-			self.depth = com_old.depth
-			self.depth_filt = com_old.depth_filt
-			self.depth_der = com_old.depth_der
-			
-			
-		# get a depth measurement from compass_old topic
-		rospy.Subscriber('compass_old', compass, callback_COMPASS_msg)
-			
+
 		# publish available information #
 		if pub_IMU:
 			# add a depth measurement of old device into the new compass_out topic
@@ -680,5 +682,6 @@ class XSensDriver(object):
 if __name__=='__main__':
 	rospy.init_node('xsens_driver')
 	driver = XSensDriver()
+	
 	rospy.loginfo("xsens_driver online")
 	driver.spin()

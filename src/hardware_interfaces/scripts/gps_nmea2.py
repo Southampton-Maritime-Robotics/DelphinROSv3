@@ -46,7 +46,7 @@ def setUpSerial():
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    print "Initialised GPS Serial."
+    print "Initialised GPS Sgpggaerial."
     print serialPort.portstr
     print serialPort.isOpen()
     return serialPort.isOpen()
@@ -69,7 +69,7 @@ def gpgga(string):
         longitude = string[4]
         long_WorE = string[5]
         number_of_satelites = int(string[7])
-	fix       = int(string[6])
+        fix = int(string[6])
     except: 
         pass
 
@@ -83,6 +83,9 @@ def gprmc(string):
     global long_WorE
     global time_gps
     global speed #in m/s
+    global getAll
+    
+    getAll = True
 
     try:
         time_gps  = float(string[1])
@@ -100,7 +103,7 @@ def gprmc(string):
 def gpgsv(string):
     global number_of_satelites
     if len(string[3]) == 1:
-	number_of_satelites = int(string[3])
+        number_of_satelites = int(string[3])
 
 ################### MAIN LOOP ################### 
 
@@ -131,7 +134,7 @@ def validDataCheck():
 def listenForData(status):
 
     #Establish Global Variables
-    global	latitude
+    global      latitude
     global      lat_NorS
     global      longitude
     global      long_WorE
@@ -139,10 +142,9 @@ def listenForData(status):
     global      number_of_satelites 
     global      fix
     global      speed
+    global      getAll
 
-    controlRate = 5. # Hz
-    controlPeriod = 1/controlRate
-    r = rospy.Rate(controlRate)
+    gpsOut = gps() # initialise message structure
 
     #Initialise values to zero - important as different messages contain different values
     latitude		=	'0'	
@@ -167,15 +169,18 @@ def listenForData(status):
 
     first_reading = True
     mean_earth_radius = 6370973.27862					#metres
-            
+    
     while not rospy.is_shutdown():
 
         timeRef = time.time()
         try:
+
+            # reset the "get all data" flag
+            getAll = False
+            
             while serialPort.inWaiting() > 0 and serialPort.read(1) == '$': #while there is data to be read - read the line...
             
                 pubStatus.publish(nodeID = 4, status = status)
-                        
                 data = serialPort.readline() 		#Read in line of data
                 split_data = string.split(data,',')				#Split message by comma separator
                 print 'Data: ', data
@@ -208,55 +213,47 @@ def listenForData(status):
                     Y = Range*cos(BearingRad)
                 except:
                     pass
-                    
-                ##Check in order to understand read error
-#                print 'Lat: ', latitude_decimal
-#                print 'Long: ', longitude_decimal
-#                print 'Time: ', time_gps
-#                print 'No. sat.:', number_of_satelites
-#                print 'Fix:',   fix
-#                print 'Speed:', speed
-#                print 'x:', X
-#                print 'y:', Y
                 
                 #Publish data to gps_out
-                pub.publish(latitude = latitude_decimal, longitude = longitude_decimal, time = time_gps, number_of_satelites = number_of_satelites, fix = fix, speed = speed, x = X, y = Y)
-                
+                if getAll:
+                    gpsOut.latitude = latitude_decimal 
+                    gpsOut.longitude = longitude_decimal 
+                    gpsOut.time = time_gps
+                    gpsOut.number_of_satelites = number_of_satelites
+                    gpsOut.fix = fix
+                    gpsOut.speed = speed
+                    gpsOut.x = X
+                    gpsOut.y = Y
+                    pub.publish(gpsOut)
+                    print "========= get all =========="
         except:
             print 'read error'
 
-        timeElapse = time.time()-timeRef
-        if timeElapse < controlPeriod:
-            r.sleep()
-        else:
-            str = "gps_nmea2 rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
-            rospy.logwarn(str)
-
 def distanceTwoLatLong(lat1,lat2,lon1,lon2): #returns distance between two locations in lat/long in meters.
 # Code from http://www.movable-type.co.uk/scripts/latlong.html
-	R = 6371000 #Radius of the earth in m
-	dLat = math.radians(lat2-lat1)
-	dLon = math.radians(lon2-lon1)
-	lat1 = math.radians(lat1)
-	lat2 = math.radians(lat2)
+    R = 6371000 #Radius of the earth in m
+    dLat = math.radians(lat2-lat1)
+    dLon = math.radians(lon2-lon1)
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
 
-	a = math.sin(dLat/2)*math.sin(dLat/2)+math.sin(dLon/2)*math.sin(dLon/2)*math.cos(lat1)*math.cos(lat2)
-	c = 2*math.atan2(math.sqrt(a),math.sqrt(1-a)) 
-	d = R*c
-	return d
+    a = math.sin(dLat/2)*math.sin(dLat/2)+math.sin(dLon/2)*math.sin(dLon/2)*math.cos(lat1)*math.cos(lat2)
+    c = 2*math.atan2(math.sqrt(a),math.sqrt(1-a)) 
+    d = R*c
+    return d
 
 def bearingTwoLatLong(lat1,lat2,lon1,lon2): #returns bearing between two locations in lat/long in degrees.
 # Code from http://www.movable-type.co.uk/scripts/latlong.html
-	dLat = math.radians(lat2-lat1)
-	dLon = math.radians(lon2-lon1)
-	lat1 = math.radians(lat1)
-	lat2 = math.radians(lat2)
-	y = math.sin(dLon) * math.cos(lat2)
-	x = math.cos(lat1)*math.sin(lat2) - math.sin(lat1)*math.cos(lat2)*math.cos(dLon);
-	brng = math.atan2(y, x)
-	brng= math.degrees(brng)
+    dLat = math.radians(lat2-lat1)
+    dLon = math.radians(lon2-lon1)
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    y = math.sin(dLon) * math.cos(lat2)
+    x = math.cos(lat1)*math.sin(lat2) - math.sin(lat1)*math.cos(lat2)*math.cos(dLon);
+    brng = math.atan2(y, x)
+    brng= math.degrees(brng)
 
-  	return brng
+    return brng
 
 ################### SHUTDOWN FUNCTION ################### 
 def shutdown():

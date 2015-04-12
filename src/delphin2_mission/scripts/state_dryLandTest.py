@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('delphin2_mission')
 import rospy
 import numpy
 import smach
@@ -71,55 +70,76 @@ class dryLandTest(smach.State):
             ####################################################################
             
             #### Thruster 0 and 1 ####
-            self.__controller.switchVerticalThrusters(1)
-            self.__controller.setArduinoThrusterVertical(600,600)
-            time.sleep(3)
-            self.__controller.setArduinoThrusterVertical(-600,-600)
-            time.sleep(3)
+            N = 0
+            rpmT0_avg = 0
+            rpmT1_avg = 0
+            time_ref = time.time()
+            while time.time()-time_ref < 3:    
+                self.__controller.setArduinoThrusterVertical(600,600)
+                rpmT0_avg += numpy.abs(self.__controller.getT0rpm())
+                rpmT1_avg += numpy.abs(self.__controller.getT1rpm())
+                N += 1
+            self.__controller.setArduinoThrusterVertical(0,0)
             
-            if (numpy.abs(self.__controller.getT0rpm()) < 150):
-                str = "Problem with thruster 0. Speed = %s" %self.__controller.getT0rpm()
-                rospy.logerr(str)
-                #return 'aborted' #need to uncomment  
-            else:
-                str = "Thruster 0 - working"
-                rospy.loginfo(str)
-            
-            if (numpy.abs(self.__controller.getT1rpm()) < 150):
-                str = "Problem with thruster 1. Speed = %s" %self.__controller.getT1rpm()
-                rospy.logerr(str)
-                #return 'aborted' #need to comment 
-            else:
-                str = "Thruster 1 - working"
-                rospy.loginfo(str)
+            time_ref = time.time()
+            while time.time()-time_ref < 3:    
+                self.__controller.setArduinoThrusterVertical(-600,-600)
+                rpmT0_avg += numpy.abs(self.__controller.getT0rpm())
+                rpmT1_avg += numpy.abs(self.__controller.getT1rpm())
+                N += 1
+            self.__controller.setArduinoThrusterVertical(0,0)
                 
-            self.__controller.switchVerticalThrusters(0)
-
+            rpmT0_avg = rpmT0_avg/float(N)
+            rpmT1_avg = rpmT1_avg/float(N)
+            
+            if (rpmT0_avg < 100):
+                str = "Problem with thruster 0. Average speed = %s" %rpmT0_avg
+                rospy.logerr(str)
+                return 'aborted'
+            if (rpmT1_avg < 100):
+                str = "Problem with thruster 1. Average speed = %s" %rpmT1_avg
+                rospy.logerr(str)
+                return 'aborted'
+            str = "Thruster 0 - working"
+            rospy.loginfo(str)
+            str = "Thruster 1 - working"
+            rospy.loginfo(str)
             
             #### Thruster 2 and 3 ####
-            self.__controller.switchHorizontalThrusters(1)
-            self.__controller.setArduinoThrusterHorizontal(600,600)
-            time.sleep(3)
-            self.__controller.setArduinoThrusterHorizontal(-600,-600)
-            time.sleep(3)
+            N = 0
+            rpmT2_avg = 0
+            rpmT3_avg = 0
+            time_ref = time.time()
+            while time.time()-time_ref < 3:    
+                self.__controller.setArduinoThrusterHorizontal(600,600)
+                rpmT2_avg += numpy.abs(self.__controller.getT2rpm())
+                rpmT3_avg += numpy.abs(self.__controller.getT3rpm())
+                N += 1
+            self.__controller.setArduinoThrusterHorizontal(0,0)
             
-            if (numpy.abs(self.__controller.getT2rpm()) < 400):
-                str = "Problem with thruster 2. Speed = %s" %self.__controller.getT2rpm()
-                rospy.logerr(str)
-                #return 'aborted' #need to uncomment 
-            else:
-                str = "Thruster 2 - working"
-                rospy.loginfo(str)
+            time_ref = time.time()
+            while time.time()-time_ref < 3:    
+                self.__controller.setArduinoThrusterHorizontal(-600,-600)
+                rpmT2_avg += numpy.abs(self.__controller.getT2rpm())
+                rpmT3_avg += numpy.abs(self.__controller.getT3rpm())
+                N += 1
+            self.__controller.setArduinoThrusterHorizontal(0,0)
+                
+            rpmT2_avg = rpmT2_avg/float(N)
+            rpmT3_avg = rpmT3_avg/float(N)
             
-            if (numpy.abs(self.__controller.getT3rpm()) < 400):
-                str = "Problem with thruster 3. Speed = %s" %self.__controller.getT3rpm()
+            if (rpmT2_avg < 100):
+                str = "Problem with thruster 2. Average speed = %s" %rpmT2_avg
                 rospy.logerr(str)
-                #return 'aborted' #need to uncomment  
-            else:
-                str = "Thruster 3 - working"
-                rospy.loginfo(str)
-
-            self.__controller.switchHorizontalThrusters(0)
+                return 'aborted'
+            if (rpmT3_avg < 100):
+                str = "Problem with thruster 3. Average speed = %s" %rpmT3_avg
+                rospy.logerr(str)
+                return 'aborted'
+            str = "Thruster 2 - working"
+            rospy.loginfo(str)
+            str = "Thruster 3 - working"
+            rospy.loginfo(str)
             
             ####################################################################
             ### TAIL SECTION ###################################################
@@ -128,8 +148,9 @@ class dryLandTest(smach.State):
             angles = [-30.0, 0.0, 30.0]
 
             for a in angles:
-                self.__controller.setControlSurfaceAngle(a,a,a,a)
-                time.sleep(3)
+                time_ref = time.time()
+                while time.time()-time_ref<3:
+                    self.__controller.setControlSurfaceAngle(a,a,a,a)
                 
                 if numpy.abs(self.__controller.getCS_b() - a) > 10.0:
                     str = "Problem with top control surface. Feedback = %d",self.__controller.getCS_b()
@@ -151,12 +172,20 @@ class dryLandTest(smach.State):
             self.__controller.setControlSurfaceAngle(0,0,0,0)
             str = "Control surfaces - working"
             rospy.loginfo(str)
+            time.sleep(1) # allow the control surfaces to get back to the neutral position
             
-            self.__controller.setRearProp(10)
-            time.sleep(2)
-            
-            if self.__controller.getPropRPM() < 190:
-                str = "Problem with rear prop"
+            N = 0
+            RPM_avg = 0
+            time_ref = time.time()
+            while time.time()-time_ref<2:
+                self.__controller.setRearProp(10)
+                RPM_avg += self.__controller.getPropRPM()
+                N += 1
+            RPM_avg = RPM_avg/float(N)
+            self.__controller.setRearProp(0)
+
+            if RPM_avg < 130:
+                str = "Problem with rear prop - average rpm = %s" %RPM_avg
                 rospy.logerr(str)
                 self.__controller.setRearProp(0)
                 return 'aborted'
@@ -165,8 +194,6 @@ class dryLandTest(smach.State):
                 rospy.loginfo(str)
                 self.__controller.setRearProp(0)
 
-            
-            
             return 'succeeded'
                 
             #return 'preempted'
