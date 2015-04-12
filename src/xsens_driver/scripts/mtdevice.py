@@ -556,7 +556,7 @@ class XSensDriver(object):
 			raise MTException("unable to open %s"%device)
 			
 		# restore all the setting to factory devaults
-		self.mt.RestoreFactoryDefaults()	
+		self.mt.RestoreFactoryDefaults()
 
 		# initialize topics
 #		self.IMU_pub = rospy.Publisher('IMU_information',IMU_msg)
