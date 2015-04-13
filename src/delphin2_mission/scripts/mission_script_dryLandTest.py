@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# Dry Land Test:
+# test of all sensors and actuators before the vehicle is run in water
+# - run thrusters and propeller at lower RPM
+
+
 import rospy
 import smach
 import smach_ros
@@ -21,8 +26,6 @@ from state_N                      import N
 from state_dryLandTest            import dryLandTest
 from state_setTail                import setTail
 from state_actionserver_goToDepth import GoToDepthServer
-from delphin2_mission.msg             import compass
-from delphin2_mission.msg             import GoToDepthAction, GoToDepthGoal
 from actionlib                    import *
 from actionlib.msg                import *
 from std_msgs.msg import String
