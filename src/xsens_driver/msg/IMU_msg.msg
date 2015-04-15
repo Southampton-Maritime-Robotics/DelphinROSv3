@@ -1,19 +1,13 @@
-Header header
-
-# internal temperature of the device [degree celsius]
-float64 temperature
-
-# three euler angles that represent the orientation of the MT[degree]
-float64 orientation_roll
-float64 orientation_pitch
-float64 orientation_yaw
-
-# rate of turn of the MT
-float64 angular_velocity_x
-float64 angular_velocity_y
-float64 angular_velocity_z
-
-# calibrated acceleration of the MT
-float64 linear_acceleration_x
-float64 linear_acceleration_y
-float64 linear_acceleration_z
+float32 heading
+float32 roll
+float32 pitch
+float32 temperature
+float32 depth
+float32 ax
+float32 ay
+float32 az
+float32 angular_velocity_x
+float32 angular_velocity_y
+float32 angular_velocity_z
+float32 depth_filt
+float32 depth_der

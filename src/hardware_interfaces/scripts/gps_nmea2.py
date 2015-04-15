@@ -7,12 +7,14 @@
 6/1/2012 modified calculation of X and Y variables
 6/1/2012 modified code so position is always published
 6/1/2012 lat/long origin now read from parameter server
-4/4/2015 control rate by rospy.Rate()
+13/4/2014 publish only once when get all data packets
 
 ########################################################
 #Notes
 X corresponds to East
 Y corresponds to North
+GPS update is constrains to be prercisely 1Hz. It can be less frequence if required.
+
 """
 
 import rospy

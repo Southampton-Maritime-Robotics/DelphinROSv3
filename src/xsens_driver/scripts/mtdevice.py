@@ -1,34 +1,23 @@
 #!/usr/bin/env python
 
 """
-## this code lets ROS node communicate with an arduino in which then talks with maxon motor control board. It is a modified version of the "tsl_customer_mission.py" that was originally used to control thrusters via TSL motor control board
+## This code is adapted from xsens_driver written by Francis Colas.
+Aims to provide a communication with xsens product (mainly MTi-30) using MTData2 message structure.
 
-# developer: Kantapon
+user adjust 
+	-ReqPacket to choose the combination of outputs (this may affect the sampling frequency)
+	-the scenario_id to modify the filtering technique used in xsens devices
+	
+## MODIFICATION ##
+25/11/1014 apply configuration to the sensor everytime the driver is run
+10/4/2015 control sampling rate with rospy.Rate()
+14/4/2015 get FreeAcceleration (exclude g) instead of acceleration
+15/4/2015 adjust baudrate
+		-> open the device with a default baudrate of 115200 
+		-> RestoreFactoryDefaults 
+		-> close devide
+		-> open the device with a prefered baudrate
 
-# date last modify:
-  - 4 November 2014
-
-# usage
-  - set a proper filter profile, location and data packet in "set a configuration"
-
-# define
-    roll
-        - follow the convention of ned-frame
-    pitch
-        - follow the convention of ned-frame
-    yaw:
-        - [0-360] degree
-        - 0 towards North
-        - value increase when move CW and vice versa
-    linear_acceleration:
-        - follow the convention of ned-frame
-    angula_velocity:
-        - follow the convention of ned-frame
-
-# note
-    - It is highly recommend that a Magnetif Field Mapping (MFM) must be done when
-        - the xsens has been unmounted from the sub
-        - or another device has been removed or added to the sub
 """
 
 import serial
@@ -36,10 +25,9 @@ import struct
 import select
 import rospy
 
-import sys, getopt, time, glob
+import sys, time
 
 from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName
-from std_msgs.msg import Header
 from hardware_interfaces.msg import compass # compass is a message that is originally used by delphin2.
 from custom_def import location, req
 
@@ -57,7 +45,10 @@ LatLonAlt = location.Boldrewood_Campus
 
 ## request data packets
 # available options {'Acc_lin','FreeAcc_lin','Vel_ang','Ori','Temp'}
-ReqPacket = {'req.FreeAcc_lin','req.Vel_ang','req.Ori'}
+ReqPacket = {'req.Acc_lin','req.Vel_ang','req.Ori'}
+
+_baudrate = 115200
+_controlRate = 50.
 
 ################################################################
 # MTDevice class
@@ -65,7 +56,7 @@ ReqPacket = {'req.FreeAcc_lin','req.Vel_ang','req.Ori'}
 ## XSens MT device communication object.
 class MTDevice(object):
 	"""XSens MT device communication object."""
-	def __init__(self, port, baudrate=115200, timeout=0.001, autoconf=True,
+	def __init__(self, port, baudrate=230400, timeout=0.001, autoconf=True,
 			config_mode=False):
 		"""Open device."""
 		
@@ -76,7 +67,7 @@ class MTDevice(object):
 		self.device.flushOutput()	# flush to make sure the port is ready 
 		
 		## timeout for communication.
-		self.timeout = 200*timeout
+		self.timeout = 10*timeout
 
 	############################################################
 	# Low-level communication
@@ -108,7 +99,6 @@ class MTDevice(object):
 		HeaderMTData2 = '\xFA\xFF\x36'# [Pre][Bid][MID] of MTData2
 		HeaderLength = len(HeaderMTData2) # length of header;
 		TotLength = HeaderLength+1+dataLength+1 # [HeaderLength]+[LEN]+[dataLength]+[CS]
-		bufLength = 2*TotLength
 
 		start = time.time()		
 		self.device.flushInput()		# ensure the data is of this moment
@@ -119,7 +109,6 @@ class MTDevice(object):
 			new_start = time.time()
 
 			# Makes sure the buffer(of computer not of this driver) has 'size' bytes.
-			
 			def waitfor(size=1):
 				while self.device.inWaiting() < size:
 					pass
@@ -127,64 +116,60 @@ class MTDevice(object):
 #						if not rospy.is_shutdown():
 #							raise MTException("timeout waiting for message.")
 			
-			waitfor(bufLength-3)			
+			waitfor(TotLength)			
 			
-			while len(buf)<bufLength: # read output and store in buffer
-				buf.extend(self.device.read(bufLength-len(buf)))				
+			while len(buf)<TotLength: # read output and store in buffer
+				buf.extend(self.device.read(TotLength-len(buf)))
 
 			preamble_ind = buf.find(HeaderMTData2)
 			if preamble_ind==-1: # header not found
-#				print "header not found"
-				del buf[:-3] 	# delete everything except last three pieces of data
+				del buf[:-HeaderLength] 	# delete everything except last three pieces of data
 				continue		# go back to "while time.time..." to get a new set of output
 			else:				# header found
-				length_dummy = int(str(buf[preamble_ind+3])) 	# length of unwanted data
-				
+
 				# trim unwanted data at the front end
 				del buf[:preamble_ind] 		# junk before [Header]
-				length_dummy = int(str(buf[3]))					# length of wanted data
-		
 				
-				# trim unwanted data at the rear end
-				del buf[3+1+length_dummy+1:] # [Header]+[LEN]+[Data]+[CS]
-
-			
+				# fill the missing data in the buffer
+				while len(buf)<TotLength:
+					buf.extend(self.device.read(TotLength-len(buf)))
+				
 				if 0xFF&sum(buf[1:]):
-					#sys.stderr.write("MT: invalid checksum; discarding data and "\
-					#		"waiting for next message.\n")
-#					print "incorrect checksum"
-					del buf[:buf.find(HeaderMTData2)-2]
+					sys.stderr.write("MT: invalid checksum; discarding data and "\
+							"waiting for next message.\n")
+					del buf[:-HeaderLength]
 					continue
 
-				data = str(buf[-length_dummy-1:-1])
+				data = str(buf[HeaderLength+1:-1])
 				return data
 		else:
-			raise MTException("could not find MTData message.")		
-
+			raise MTException("could not find MTData message.")
+			
 	## Low-level message receiving function.
 	def read_msg(self):
 		"""Low-level message receiving function."""
+		__timeout = self.timeout*200 # give extra time for the sensor to response
 		start = time.time()
-		while (time.time()-start)<self.timeout:
+		while (time.time()-start)<__timeout:
 			new_start = time.time()
 
 			# Makes sure the buffer has 'size' bytes.
 			def waitfor(size=1):
 				while self.device.inWaiting() < size:
-					if time.time()-new_start >= self.timeout:
+					if time.time()-new_start >= __timeout:
 						raise MTException("timeout waiting for message.")
 
 			c = self.device.read()
-			while (not c) and ((time.time()-new_start)<self.timeout):
+			while (not c) and ((time.time()-new_start)<__timeout):
 				c = self.device.read()
 			if not c:
 				raise MTException("timeout waiting for message.")
 			if ord(c)<>0xFA: # search for a begining of package
-				continue # go back to "while (time.time()-start)<self.timeout:"
+				continue # go back to "while (time.time()-start)<__timeout:"
 			# second part of preamble
 			waitfor(3) # make sure that there are enought pieces of data to be collected
 			if ord(self.device.read())<>0xFF:	# we assume no timeout anymore
-				continue # go back to "while (time.time()-start)<self.timeout:"
+				continue # go back to "while (time.time()-start)<__timeout:"
 			
 			# read message id and length of message
 			#msg = self.device.read(2)
@@ -196,7 +181,7 @@ class MTDevice(object):
 			# read contents and checksum
 			waitfor(length+1)
 			buf = self.device.read(length+1)
-			while (len(buf)<length+1) and ((time.time()-start)<self.timeout):
+			while (len(buf)<length+1) and ((time.time()-start)<__timeout):
 				buf+= self.device.read(length+1-len(buf))
 			if (len(buf)<length+1):
 				continue
@@ -227,6 +212,7 @@ class MTDevice(object):
 					" (after 100 tries)."%(mid+1, mid_ack))
 			pass
 		return data_ack	
+
 	############################################################
 	# High-level functions	############################################################
 
@@ -278,6 +264,13 @@ class MTDevice(object):
 		self.GoToConfig()
 		self.write_ack(MID.SetLatLonAlt, LatLonAlt)
 		self.GoToMeasurement()
+		
+	def SetBaudrate(self,new_baudrate):
+		self.GoToConfig()
+		brid = Baudrates.get_BRID(new_baudrate)
+		self.write_ack(MID.SetBaudrate,(brid,))
+		self.device.baudrate = new_baudrate
+		time.sleep(0.01)
 
 	def ReqLatLonAlt(self):
 		"""Request the reference location.
@@ -313,6 +306,8 @@ class MTDevice(object):
 		self.GoToConfig()
 		self.write_ack(MID.RestoreFactoryDef)
 		self.GoToMeasurement()
+
+
 	############################################################
 	# High-level utility functions	############################################################
 
@@ -548,17 +543,25 @@ class XSensDriver(object):
 	def __init__(self):
 		
 		device = '/dev/usbxsens' #ttyUSB0
-		baudrate = 115200
-
-		# open device
+		self.__baudrate = _baudrate # get the baudrate defined globally at the top
+		
+		# open device with a default baudrate
 		try:
-			self.mt = MTDevice(device, baudrate)
+			self.mt = MTDevice(device, 115200)
 		except serial.SerialException:
 			raise MTException("unable to open %s"%device)
+		self.mt.RestoreFactoryDefaults() # restore all the setting to factory defaults. 
+		# By this point, sensor baudrate is definitely 115200.
+		# If the sensor baudrate does not match the desired value, Set the baudrate and reopen the sensor.
+		if self.__baudrate != 115200:
+			self.mt.SetBaudrate(self.__baudrate) # apply the preferred baudrate to the sensor
+			# re-open device after applying the new baudrate
+			try:
+				self.mt.device.close()
+				self.mt = MTDevice(device, self.__baudrate)
+			except serial.SerialException:
+				raise MTException("unable to open %s"%device)
 			
-		# restore all the setting to factory devaults
-		self.mt.RestoreFactoryDefaults()	
-
 		# initialize topics
 		self.COMPASS_pub = rospy.Publisher('compass_out',compass)
 		#set up subscribers
@@ -569,6 +572,10 @@ class XSensDriver(object):
 		self.depth_der = 0.0
 
 	def spin(self):
+
+#		controlRate = 100. # Hz
+		r = rospy.Rate(_controlRate)
+		controlPeriod = 1./_controlRate
 
 		# make a configuration
 		try:
@@ -589,13 +596,23 @@ class XSensDriver(object):
 			# request a current configuration on the xsens
 			self.mt.GoToConfig()
 			print "Current scenario: %s (id: %d)"%self.mt.ReqCurrentScenario()[::-1]
-			print "Current baudrate: (id: %s)"%self.mt.ReqBaudrate()
-			print "Current location : (id: %s)"%self.mt.ReqLatLonAlt()
+			
+			brid = self.mt.ReqBaudrate()
+			print "Current baudrate: %s (id: %s)"%(Baudrates.get_BR(int(brid)),brid)
+#			print "Current location : (id: %s)"%self.mt.ReqLatLonAlt()
 			self.mt.GoToMeasurement()
 			
 			try:
 				while not rospy.is_shutdown():
+					timeRef = time.time()
 					self.spin_once()
+					timeElapse = time.time()-timeRef
+					if timeElapse < controlPeriod:
+						r.sleep()
+					else:
+						str = "xsens rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(_controlRate,1/timeElapse) 
+						rospy.logwarn(str)
+
 			# Ctrl-C signal interferes with select with the ROS signal handler
 			# should be OSError in python 3.?
 			except select.error:
@@ -618,10 +635,7 @@ class XSensDriver(object):
 		has_Ori = False
 		has_AngVel = False
 		has_Acc = False
-
-		# common header
-		h = Header()
-		h.stamp = rospy.Time.now()
+		pub_IMU = False
 
 		# get data and split it into particular variables
 		output = self.mt.read_measurement2(self.dataLength)
@@ -649,25 +663,27 @@ class XSensDriver(object):
 			if out_Ori['Yaw']>0:
 				out_Ori['Yaw'] = 360-out_Ori['Yaw']
 			else:
-				out_Ori['Yaw'] = -out_Ori['Yaw']
-				
+				out_Ori['Yaw'] = -out_Ori['Yaw']			
+			# b-frame convension base on the orientation of sensor mounted on delphin2	
 			com.roll = -out_Ori['Roll']
 			com.pitch = out_Ori['Pitch']
 			com.heading = out_Ori['Yaw']
 			pub_IMU = True
 		if has_AngVel:
+			# b-frame convension base on the orientation of sensor mounted on delphin2
 			com.angular_velocity_x = -out_AngVel['gyrX']
 			com.angular_velocity_y = out_AngVel['gyrY']
 			com.angular_velocity_z = -out_AngVel['gyrZ']
 			pub_IMU = True
-		if has_Acc:
+		if has_Acc: 
+			# b-frame convension base on the orientation of sensor mounted on delphin2
 			if out_Acc.has_key('freeAccX'):
 				com.ax = out_Acc['freeAccX']
-				com.ay = out_Acc['freeAccY']
+				com.ay = -out_Acc['freeAccY']
 				com.az = out_Acc['freeAccZ']
 			elif out_Acc.has_key('accX'):
 				com.ax = out_Acc['accX']
-				com.ay = out_Acc['accY']
+				com.ay = -out_Acc['accY']
 				com.az = out_Acc['accZ']
 			pub_IMU = True
 
