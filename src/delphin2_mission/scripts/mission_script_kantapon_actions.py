@@ -5,7 +5,11 @@ import smach
 import smach_ros
 import time
 
+<<<<<<< HEAD
 from delphin2_mission.library_highlevel             import library_highlevel
+=======
+from delphin2_mission.library_highlevel            import library_highlevel
+>>>>>>> 19b973cd0d50985e72a645360c50d434224ef58e
 from state_initialise             import Initialise
 from state_importWaypoints        import ImportWaypoints
 from state_stop                   import Stop

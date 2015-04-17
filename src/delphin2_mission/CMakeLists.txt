@@ -87,7 +87,8 @@ catkin_python_setup()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES delphin2_mission
-  CATKIN_DEPENDS actionlib actionlib_msgs roscpp rospy std_msgs
+#  CATKIN_DEPENDS actionlib actionlib_msgs roscpp rospy std_msgs
+   CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 

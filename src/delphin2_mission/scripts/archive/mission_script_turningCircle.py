@@ -6,7 +6,7 @@ import smach
 import smach_ros
 import time
 
-from library_highlevel            import library_highlevel
+from delphin2_mission.library_highlevel      import library_highlevel
 from state_initialise             import Initialise
 from state_TestHeading            import TestHeading
 from state_importWaypoints        import ImportWaypoints

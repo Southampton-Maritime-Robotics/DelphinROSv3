@@ -5,7 +5,12 @@ import time
 from std_msgs.msg import Int8
 from std_msgs.msg import String
 
+<<<<<<< HEAD
 from delphin2_mission.library_highlevel  import library_highlevel
+=======
+from delphin2_mission.library_highlevel import library_highlevel
+
+>>>>>>> 19b973cd0d50985e72a645360c50d434224ef58e
 
 """
 ######################################
