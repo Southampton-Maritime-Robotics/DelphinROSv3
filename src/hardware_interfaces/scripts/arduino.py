@@ -1,4 +1,10 @@
 #!/usr/bin/python
+
+"""
+This node is a driver for LED torch.
+
+"""
+
 import rospy
 import serial
 import time

@@ -1,4 +1,11 @@
 #!/usr/bin/python
+
+"""
+Possibly, this node is a driver for GSM module to send the information back to the operator in a form of text message.
+In that case, it will be used only when the AUV is at the surface and the operator laptop is outside a WiFi range.
+
+"""
+
 import rospy
 import serial
 import time

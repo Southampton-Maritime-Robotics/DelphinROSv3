@@ -1,13 +1,16 @@
 #!/usr/bin/python
 
 """
+The gps device works at 1Hz by default. Within one cycle, it provices an information via a number of message type (see variable named "identifier" in this file). The driver is written in a way that it will publish only once in one cycle when the getAll flag is raise.
+
 #######################################################
 #Modifications to code
 15/2/2012 converted speed to m/s
 6/1/2012 modified calculation of X and Y variables
 6/1/2012 modified code so position is always published
 6/1/2012 lat/long origin now read from parameter server
-4/4/2015 control rate by rospy.Rate()
+10/4/2015 have this node publish only when the getAll flag is raise. 
+16/4/2015 control rate by rospy.Rate()
 
 ########################################################
 #Notes

@@ -1,10 +1,15 @@
 #!/usr/bin/python
-#ABP Made single logger
 
-# update: 31 October 2014 by Kantapon
-# - remove some parameters from "headingPID_callback". For more information, see "heading_controller_P_PID.py"
+"""
+The one and only logger node that subscribe to all topics. 
+When the new message is receive it will be kept in the .csv file for post-processing.
 
-import roslib; roslib.load_manifest('hardware_interfaces')
+To log new topic
+-import the message
+-initialise a subscriber that subscribe to a particular topic with a particular message structure
+-create a callback function that open, write and close the corresponding .csv file.
+
+"""
 import rospy
 import csv
 import time
