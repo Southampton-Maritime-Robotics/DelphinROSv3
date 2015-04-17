@@ -16,26 +16,28 @@ global time_zero
 global pathFile
 global log_folder
 
-
 ##############################################################
-def callback_IMU_msg(imu):
+def callback_IMU_msg(compass_data):
     stringtime = time.time()-time_zero
-    lineList = [stringtime,
-    			imu.temperature,
-    			imu.orientation_roll,
-    			imu.orientation_pitch,
-    			imu.orientation_yaw,
-    			imu.angular_velocity_x,
-    			imu.angular_velocity_y,
-    			imu.angular_velocity_z,
-    			imu.linear_acceleration_x,
-    			imu.linear_acceleration_y,
-    			imu.linear_acceleration_z]
+    compassList = [stringtime, 
+                   compass_data.heading, 
+                   compass_data.roll, 
+                   compass_data.pitch, 
+                   compass_data.temperature, 
+                   compass_data.depth, 
+                   compass_data.ax, 
+                   compass_data.ay, 
+                   compass_data.az, 
+                   compass_data.angular_velocity_x, 
+                   compass_data.angular_velocity_y, 
+                   compass_data.angular_velocity_z, 
+                   compass_data.depth_filt, 
+                   compass_data.depth_der]
 
     with open('%s/IMU_Log.csv' %(dirname), "a") as f:
         try:
             Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            Writer.writerow(lineList)
+            Writer.writerow(compassList)
         except ValueError:
             print 'writerow error'
 
@@ -93,7 +95,7 @@ if __name__ == '__main__':
 ################################################################################
 ######## KML POSITION HEADER ###################################################
 ################################################################################
-
+    
     with open('%s/path.kml' %(dirname), "a") as f:
             try:  
                 f.write('<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n')
@@ -126,7 +128,7 @@ if __name__ == '__main__':
 ######## SUBSCRIBERS ###########################################################
 ################################################################################
 
-    rospy.Subscriber('IMU_information', IMU_msg, callback_IMU_msg)
+    rospy.Subscriber('compass_out', IMU_msg, callback_IMU_msg)
 
     str = "Logger online - output directory: %s" %(dirname)
     rospy.loginfo(str)

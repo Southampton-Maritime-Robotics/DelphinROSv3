@@ -41,7 +41,7 @@ from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import SMS
 from hardware_interfaces.msg import gyro
 
-from hardware_interfaces.msg import ForcesAndMoments	#Only temporary
+from hardware_interfaces.msg import ForcesAndMoments    #Only temporary
 
 global tempWriter
 global tempFile
@@ -73,9 +73,22 @@ global log_folder
 ##############################################################
 
 def callback_compass(compass_data):
-    #outputs compass data to file: time, heading, roll, pitch, temperature, depth, m, mx, my, mz, a, ax, ay, az 
+
     stringtime = time.time()-time_zero
-    compassList = [stringtime, compass_data.heading, compass_data.roll, compass_data.pitch, compass_data.temperature, compass_data.depth, compass_data.ax, compass_data.ay, compass_data.az, compass_data.angular_velocity_x, compass_data.angular_velocity_y, compass_data.angular_velocity_z, compass_data.depth_filt, compass_data.depth_der]
+    compassList = [stringtime, 
+                   compass_data.heading, 
+                   compass_data.roll, 
+                   compass_data.pitch, 
+                   compass_data.temperature, 
+                   compass_data.depth, 
+                   compass_data.ax, 
+                   compass_data.ay, 
+                   compass_data.az, 
+                   compass_data.angular_velocity_x, 
+                   compass_data.angular_velocity_y, 
+                   compass_data.angular_velocity_z, 
+                   compass_data.depth_filt, 
+                   compass_data.depth_der]
 
     with open('%s/compassLog.csv' %(dirname), "a") as f:
         try:
@@ -118,7 +131,20 @@ def callback_compass(compass_data):
 def tsl_feedback_callback(data):
     
     stringtime = time.time()-time_zero
-    tslList = [stringtime, data.setpoint0, data.setpoint1, data.setpoint2, data.setpoint3, data.speed0, data.speed1, data.speed2, data.speed3, data.current0, data.current1, data.current2, data.current3, data.voltage]
+    tslList = [stringtime, 
+               data.setpoint0, 
+               data.setpoint1, 
+               data.setpoint2, 
+               data.setpoint3, 
+               data.speed0, 
+               data.speed1, 
+               data.speed2, 
+               data.speed3, 
+               data.current0, 
+               data.current1, 
+               data.current2, 
+               data.current3, 
+               data.voltage]
     
     with open('%s/thrusterLog.csv' %(dirname), "a") as f:
         try:
@@ -132,7 +158,18 @@ def tsl_feedback_callback(data):
 def tail_feedback_callback(data):
 
     stringtime = time.time()-time_zero
-    tailList = [stringtime, data.bsp, data.b, data.csp, data.c, data.dsp, data.d, data.esp, data.e, prop_demand, data.current, data.rpm]
+    tailList = [stringtime, 
+                data.bsp, 
+                data.b, 
+                data.csp, 
+                data.c, 
+                data.dsp, 
+                data.d, 
+                data.esp, 
+                data.e, 
+                prop_demand, 
+                data.current, 
+                data.rpm]
         
     with open('%s/tailLog.csv' %(dirname), "a") as f:
         try:
@@ -150,9 +187,8 @@ def headingdemand_callback(data):
         
 def depthdemand_callback(data):
     #updates depth_demand - to be included in vertical thruster log file
-    pass
-#    global depth_demand
-#    depth_demand = data.data
+    global depth_demand
+    depth_demand = data.data
 
 def propdemand_callback(data):
     #updates prop_demand - to be included in tail section log file
@@ -164,7 +200,16 @@ def propdemand_callback(data):
 def position_callback(position):
     
     stringtime = time.time()-time_zero
-    positionList = [stringtime, position.X, position.Y, position.Z, position.forward_vel, position.sway_vel, position.lat, position.long, position.altitude, position.ValidGPSfix]
+    positionList = [stringtime, 
+                    position.X, 
+                    position.Y, 
+                    position.Z, 
+                    position.forward_vel, 
+                    position.sway_vel, 
+                    position.lat, 
+                    position.long, 
+                    position.altitude, 
+                    position.ValidGPSfix]
     
     with open('%s/positionLog.csv' %(dirname), "a") as f:
         try:
@@ -190,7 +235,13 @@ def mission_callback(HC):
 
 def gps_callback(gps):
     stringtime = time.time()-time_zero
-    gpsList = [stringtime, gps.latitude, gps.longitude, gps.time, gps.number_of_satelites, gps.fix,gps.speed,gps.x,gps.y]  
+    gpsList = [stringtime, 
+               gps.latitude, 
+               gps.longitude, 
+               gps.time, 
+               gps.number_of_satelites, 
+               gps.fix,gps.speed,
+               gps.x,gps.y]  
     
     with open('%s/gpsLog.csv' %(dirname), "a") as f:
         try:
@@ -203,7 +254,10 @@ def gps_callback(gps):
 
 def altimeter_callback(altimeter):
     stringtime = time.time()-time_zero
-    altimeterList=[stringtime, altimeter.altitude, altimeter.altitude_filt, altimeter.altitude_der]
+    altimeterList=[stringtime, 
+                   altimeter.altitude, 
+                   altimeter.altitude_filt, 
+                   altimeter.altitude_der]
     
     with open('%s/altimeterLog.csv' %(dirname), "a") as f:
         try:
@@ -240,6 +294,7 @@ def sonar_callback(sonar): ## Problem with logging raw data
                 
     except ValueError:
         print 'Problem with sonar logger!!!'
+        
 ##############################################################
         
 #def headingMPC_callback(data): 
@@ -306,7 +361,7 @@ def reckoner_callback(data):
                 f.write(pathLine)
             except ValueError:
                 print 'writerow error'
-	
+    
         KMLtime=time.time()
         
 ##############################################################
@@ -402,16 +457,16 @@ def SMS_callback(data):
 ####def callback_IMU_msg(imu):
 ####    stringtime = time.time()-time_zero
 ####    lineList = [stringtime,
-####    			imu.temperature,
-####    			imu.orientation_roll,
-####    			imu.orientation_pitch,
-####    			imu.orientation_yaw,
-####    			imu.angular_velocity_x,
-####    			imu.angular_velocity_y,
-####    			imu.angular_velocity_z,
-####    			imu.linear_acceleration_x,
-####    			imu.linear_acceleration_y,
-####    			imu.linear_acceleration_z]
+####                imu.temperature,
+####                imu.orientation_roll,
+####                imu.orientation_pitch,
+####                imu.orientation_yaw,
+####                imu.angular_velocity_x,
+####                imu.angular_velocity_y,
+####                imu.angular_velocity_z,
+####                imu.linear_acceleration_x,
+####                imu.linear_acceleration_y,
+####                imu.linear_acceleration_z]
 
 ####    with open('%s/IMU_Log.csv' %(dirname), "a") as f:
 ####        try:
@@ -423,11 +478,11 @@ def SMS_callback(data):
 ####def callback_GPS_msg(gps):
 ####    stringtime = time.time()-time_zero
 ####    lineList = [stringtime, 
-####    			gps.status,
-####    			gps.latitude,
-####    			gps.longitude,
-####    			gps.X,
-####    			gps.Y    			]
+####                gps.status,
+####                gps.latitude,
+####                gps.longitude,
+####                gps.X,
+####                gps.Y                ]
 
 ####    with open('%s/GPS_Log.csv' %(dirname), "a") as f:
 ####        try:
