@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-## from: docs.ros.org/api/catkin/html/howto/installing_python.html
-
-from distutils.core import setup
-from catkin_pkg.python_setup import generate_distutils_setup
-# fetch values from package.xml
-setup_args = generate_distutils_setup(
-packages=['delphin2_mission'],
-package_dir={'': 'src'})
-=======
 ## ! DO NOT MANUALLY INVOKE THIS setup.py, USE CATKIN INSTEAD
 ## http://docs.ros.org/api/catkin/html/howto/format2/installing_python.html
 ## pdf download of the page in sources folder:
@@ -20,5 +10,4 @@ setup_args = generate_distutils_setup(
     packages=['delphin2_mission'],
     package_dir={'': 'src'})
 
->>>>>>> 19b973cd0d50985e72a645360c50d434224ef58e
 setup(**setup_args)
