@@ -9,8 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
-  actionlib
-  actionlib_msgs
+  #actionlib
+  #actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -61,17 +61,17 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate actions in the 'action' folder
- add_action_files(
-   FILES
-   GoToDepth.action
+# add_action_files(
+#   FILES
+#   GoToDepth.action
 #   Action1.action
 #   Action2.action
- )
+# )
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   actionlib_msgs  
+   #actionlib_msgs  
    std_msgs
  )
 
@@ -87,7 +87,8 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES delphin2_mission
-  CATKIN_DEPENDS actionlib actionlib_msgs roscpp rospy std_msgs
+#  CATKIN_DEPENDS actionlib actionlib_msgs roscpp rospy std_msgs
+   CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
