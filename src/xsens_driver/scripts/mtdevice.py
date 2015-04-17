@@ -47,8 +47,8 @@ LatLonAlt = location.Boldrewood_Campus
 # available options {'Acc_lin','FreeAcc_lin','Vel_ang','Ori','Temp'}
 ReqPacket = {'req.Acc_lin','req.Vel_ang','req.Ori'}
 
-_baudrate = 230400
-_controlRate = 50.
+_baudrate = 115200
+_controlRate = 40.
 
 ################################################################
 # MTDevice class
@@ -116,8 +116,7 @@ class MTDevice(object):
 #						if not rospy.is_shutdown():
 #							raise MTException("timeout waiting for message.")
 			
-			waitfor(TotLength)			
-			
+			waitfor(TotLength-len(buf))
 			while len(buf)<TotLength: # read output and store in buffer
 				buf.extend(self.device.read(TotLength-len(buf)))
 
@@ -131,6 +130,7 @@ class MTDevice(object):
 				del buf[:preamble_ind] 		# junk before [Header]
 				
 				# fill the missing data in the buffer
+				waitfor(TotLength-len(buf))
 				while len(buf)<TotLength:
 					buf.extend(self.device.read(TotLength-len(buf)))
 				
@@ -142,8 +142,8 @@ class MTDevice(object):
 
 				data = str(buf[HeaderLength+1:-1])
 				return data
-		else:
-			raise MTException("could not find MTData message.")
+#		else:
+#			raise MTException("could not find MTData message.")
 			
 	## Low-level message receiving function.
 	def read_msg(self):
@@ -566,6 +566,8 @@ class XSensDriver(object):
 		self.COMPASS_pub = rospy.Publisher('compass_out',compass)
 		#set up subscribers
 		rospy.Subscriber('compass_old', compass, self.callback_COMPASS_msg)
+		# create messages and default values
+		self.com = compass()
 		
 		self.depth = 0.0
 		self.depth_filt = 0.0
@@ -627,9 +629,6 @@ class XSensDriver(object):
 		self.depth_der = data.depth_der
 
 	def spin_once(self):
-	
-		# create messages and default values
-		com = compass()
 		
 		has_Temp = False
 		has_Ori = False
@@ -639,6 +638,7 @@ class XSensDriver(object):
 
 		# get data and split it into particular variables
 		output = self.mt.read_measurement2(self.dataLength)
+
 		if output.has_key('Temperature'):
 			out_Temp = output['Temperature']
 			has_Temp = True
@@ -654,7 +654,7 @@ class XSensDriver(object):
 		
 		# fill information where it's due #
 		if has_Temp:
-			com.temperature = out_Temp['Temp']
+			self.com.temperature = out_Temp['Temp']
 			pub_IMU = True
 		if has_Ori:
 			# compensate a heading offset due to a different in the reference frame
@@ -665,36 +665,36 @@ class XSensDriver(object):
 			else:
 				out_Ori['Yaw'] = -out_Ori['Yaw']			
 			# b-frame convension base on the orientation of sensor mounted on delphin2	
-			com.roll = -out_Ori['Roll']
-			com.pitch = out_Ori['Pitch']
-			com.heading = out_Ori['Yaw']
+			self.com.roll = -out_Ori['Roll']
+			self.com.pitch = out_Ori['Pitch']
+			self.com.heading = out_Ori['Yaw']
 			pub_IMU = True
 		if has_AngVel:
 			# b-frame convension base on the orientation of sensor mounted on delphin2
-			com.angular_velocity_x = -out_AngVel['gyrX']
-			com.angular_velocity_y = out_AngVel['gyrY']
-			com.angular_velocity_z = -out_AngVel['gyrZ']
+			self.com.angular_velocity_x = -out_AngVel['gyrX']
+			self.com.angular_velocity_y = out_AngVel['gyrY']
+			self.com.angular_velocity_z = -out_AngVel['gyrZ']
 			pub_IMU = True
 		if has_Acc: 
 			# b-frame convension base on the orientation of sensor mounted on delphin2
 			if out_Acc.has_key('freeAccX'):
-				com.ax = out_Acc['freeAccX']
-				com.ay = -out_Acc['freeAccY']
-				com.az = out_Acc['freeAccZ']
+				self.com.ax = out_Acc['freeAccX']
+				self.com.ay = -out_Acc['freeAccY']
+				self.com.az = out_Acc['freeAccZ']
 			elif out_Acc.has_key('accX'):
-				com.ax = out_Acc['accX']
-				com.ay = -out_Acc['accY']
-				com.az = out_Acc['accZ']
+				self.com.ax = out_Acc['accX']
+				self.com.ay = -out_Acc['accY']
+				self.com.az = out_Acc['accZ']
 			pub_IMU = True
-
+			
 		# publish available information #
 		if pub_IMU:
 			# add a depth measurement of old device into the new compass_out topic
-			com.depth = self.depth
-			com.depth_filt = self.depth_filt
-			com.depth_der = self.depth_der
-			self.COMPASS_pub.publish(com)
-
+			self.com.depth = self.depth
+			self.com.depth_filt = self.depth_filt
+			self.com.depth_der = self.depth_der
+			self.COMPASS_pub.publish(self.com)
+			
 if __name__=='__main__':
 	rospy.init_node('xsens_driver')
 	driver = XSensDriver()

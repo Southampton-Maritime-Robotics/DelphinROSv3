@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#import roslib; roslib.load_manifest('delphin2_mission')
+
 import rospy
 import numpy
 import math
