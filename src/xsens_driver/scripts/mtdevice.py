@@ -11,8 +11,7 @@ user adjust
 ## MODIFICATION ##
 25/11/1014 apply configuration to the sensor everytime the driver is run
 10/4/2015 control sampling rate with rospy.Rate()
-14/4/2015 get FreeAcceleration (exclude g) instead of acceleration
-15/4/2015 adjust baudrate
+15/4/2015 let users adjust baudrate
 		-> open the device with a default baudrate of 115200 
 		-> RestoreFactoryDefaults 
 		-> close devide
@@ -46,6 +45,7 @@ LatLonAlt = location.Boldrewood_Campus
 ## request data packets
 # available options {'Acc_lin','FreeAcc_lin','Vel_ang','Ori','Temp'}
 ReqPacket = {'req.Acc_lin','req.Vel_ang','req.Ori'}
+# need to check the allignment matrix when using FreeAcc_lin
 
 _baudrate = 115200
 _controlRate = 40.

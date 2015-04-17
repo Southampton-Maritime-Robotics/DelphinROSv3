@@ -5,14 +5,11 @@ import time
 from std_msgs.msg import Int8
 from std_msgs.msg import String
 
-<<<<<<< HEAD
-from delphin2_mission.library_highlevel  import library_highlevel
-=======
 from delphin2_mission.library_highlevel import library_highlevel
 
->>>>>>> 19b973cd0d50985e72a645360c50d434224ef58e
-
 """
+This node keeps an eye on the critical node. It will raise the terminate flag when one of the critical nodes cannot working properly or the critical parameters go beyond the threshold.
+
 ######################################
 #Modifications
 30/4/12 Added total water column check and heading error check

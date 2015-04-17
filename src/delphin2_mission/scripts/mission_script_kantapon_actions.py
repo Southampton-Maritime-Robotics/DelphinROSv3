@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 
+"""
+General purpose mission script that lets the user manages a sequence of tasks in a section "MAIN CODE".
+
+"""
+
 import rospy
 import smach
 import smach_ros
 import time
 
-<<<<<<< HEAD
-from delphin2_mission.library_highlevel             import library_highlevel
-=======
 from delphin2_mission.library_highlevel            import library_highlevel
->>>>>>> 19b973cd0d50985e72a645360c50d434224ef58e
 from state_initialise             import Initialise
 from state_importWaypoints        import ImportWaypoints
 from state_stop                   import Stop
@@ -23,7 +24,6 @@ from state_camera                 import camera
 from state_terminalZ              import terminalZ
 from state_N                      import N
 from state_setTail                import setTail
-#from state_actionserver_goToDepth import GoToDepthServer
 from hardware_interfaces.msg      import compass
 #### from hardware_interfaces.msg      import GoToDepthAction, GoToDepthGoal
 from actionlib                    import *
@@ -43,8 +43,6 @@ from state_actions                import actions
 #Notes
 #
 #X is defined as east, Y is defined as north
-
-
 
 ################################################################################
 #Modifications
@@ -106,43 +104,43 @@ def main():
     #Allow system to come online
     time.sleep(5)
         
-    #Display and Record Starting Location
-    latOrigin = rospy.get_param('lat_orig')
-    longOrigin = rospy.get_param('long_orig')
-    str = 'Origin Loaded, Longitude=%s Latitude=%s' %(longOrigin,latOrigin)
-    pub.publish(str)
-    rospy.loginfo(str)
-    X=lib.getX()
-    Y=lib.getY()
-    str = 'Initial Position X=%s and Y=%s' %(X,Y)
-    rospy.loginfo(str)
-    pub.publish(str)
-    
-    #Load Waypoints
-    ImportWaypoints = rospy.get_param('ImportWaypoints')
-    str='Import Waypoints is set to %r in the launch file' %ImportWaypoints
-    rospy.loginfo(str)
-    pub.publish(str)
-    if ImportWaypoints==True:
-        pathAndFile1='/home/delphin2/DelphinROSv2/Paths/Testwood9.kml'		#Desired Path
-        pub.publish(pathAndFile1)
-        pathAndFile2='/home/delphin2/DelphinROSv2/Paths/TestwoodBoundary.kml'	#Operating Area Outline
-        plot=False#Plot Waypints File
-				
-        (WPlongitude, WPlatitude, Load1)=lib.loadWaypoints(pathAndFile1)
-        (Blongitude, Blatitude, Load2)=lib.loadWaypoints(pathAndFile2)
-        if Load1 ==1 and Load2==1:
-            NosWaypoints=len(WPlongitude)
-            str= 'Waypoints loaded, Nos of Waypoints = %s' %NosWaypoints
-            rospy.loginfo(str)
-            pub.publish(str)
-            for i in xrange(0,NosWaypoints):
-                str='Waypoint %i, Latitude=%s, Longitude=%s' %(NosWaypoints, WPlatitude[i], WPlongitude[i])
-                pub.publish(str)
-            if plot==True:
-                pl=plt.plot(WPlongitude,WPlatitude)
-                pl=plt.plot(Blongitude,Blatitude,'r')
-                plt.show()	
+#    #Display and Record Starting Location
+#    latOrigin = rospy.get_param('lat_orig')
+#    longOrigin = rospy.get_param('long_orig')
+#    str = 'Origin Loaded, Longitude=%s Latitude=%s' %(longOrigin,latOrigin)
+#    pub.publish(str)
+#    rospy.loginfo(str)
+#    X=lib.getX()
+#    Y=lib.getY()
+#    str = 'Initial Position X=%s and Y=%s' %(X,Y)
+#    rospy.loginfo(str)
+#    pub.publish(str)
+#    
+#    #Load Waypoints
+#    ImportWaypoints = rospy.get_param('ImportWaypoints')
+#    str='Import Waypoints is set to %r in the launch file' %ImportWaypoints
+#    rospy.loginfo(str)
+#    pub.publish(str)
+#    if ImportWaypoints==True:
+#        pathAndFile1='/home/delphin2/DelphinROSv2/Paths/Testwood9.kml'		#Desired Path
+#        pub.publish(pathAndFile1)
+#        pathAndFile2='/home/delphin2/DelphinROSv2/Paths/TestwoodBoundary.kml'	#Operating Area Outline
+#        plot=False#Plot Waypints File
+#				
+#        (WPlongitude, WPlatitude, Load1)=lib.loadWaypoints(pathAndFile1)
+#        (Blongitude, Blatitude, Load2)=lib.loadWaypoints(pathAndFile2)
+#        if Load1 ==1 and Load2==1:
+#            NosWaypoints=len(WPlongitude)
+#            str= 'Waypoints loaded, Nos of Waypoints = %s' %NosWaypoints
+#            rospy.loginfo(str)
+#            pub.publish(str)
+#            for i in xrange(0,NosWaypoints):
+#                str='Waypoint %i, Latitude=%s, Longitude=%s' %(NosWaypoints, WPlatitude[i], WPlongitude[i])
+#                pub.publish(str)
+#            if plot==True:
+#                pl=plt.plot(WPlongitude,WPlatitude)
+#                pl=plt.plot(Blongitude,Blatitude,'r')
+#                plt.show()	
 
 
     # ...and an action server for the GoToDepth action
