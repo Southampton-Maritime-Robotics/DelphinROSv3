@@ -47,7 +47,7 @@ LatLonAlt = location.Boldrewood_Campus
 # available options {'Acc_lin','FreeAcc_lin','Vel_ang','Ori','Temp'}
 ReqPacket = {'req.Acc_lin','req.Vel_ang','req.Ori'}
 
-_baudrate = 115200
+_baudrate = 230400
 _controlRate = 50.
 
 ################################################################

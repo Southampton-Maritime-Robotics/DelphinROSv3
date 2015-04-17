@@ -161,6 +161,10 @@ def listenForData(status):
     speed 		= 	0
     X			= 	0
     Y			= 	0
+
+    controlRate = 1. # Hz
+    r = rospy.Rate(controlRate)
+    controlPeriod = 1/controlRate
     
     try: 
         lat_orig = rospy.get_param('lat_orig')
@@ -182,6 +186,10 @@ def listenForData(status):
             
             while serialPort.inWaiting() > 0 and serialPort.read(1) == '$': #while there is data to be read - read the line...
             
+                serialPort.flushInput()
+                
+                timeRef = time.time()
+                
                 pubStatus.publish(nodeID = 4, status = status)
                 data = serialPort.readline() 		#Read in line of data
                 split_data = string.split(data,',')				#Split message by comma separator
@@ -228,6 +236,14 @@ def listenForData(status):
                     gpsOut.y = Y
                     pub.publish(gpsOut)
                     print "========= get all =========="
+                    
+                    timeElapse = time.time()-timeRef
+                    if timeElapse < controlPeriod:
+                        r.sleep()
+                    else:
+                        str = "GPS rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+                        rospy.logwarn(str)
+
         except:
             print 'read error'
 

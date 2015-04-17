@@ -1,6 +1,6 @@
 <launch>
 
-	<node pkg="xsens_driver" type="xsens_logger.py" name="xsens_logger" output="screen" />
+	<!-- <node pkg="xsens_driver" type="xsens_logger.py" name="xsens_logger" output="screen" /> -->
 	
 	<!-- <node pkg="hardware_interfaces" type="compass_oceanserver.py" name="ocean_server" /> -->
 	
