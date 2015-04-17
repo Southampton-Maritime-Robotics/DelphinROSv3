@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+# Goal of test: relation between power consumption and truster demand
+#
+# Operates both vertical thrusters at the same demand
+# demand varies during the test
+# current consumed by trusters is measured
+
 import roslib; roslib.load_manifest('delphin2_mission')
 import rospy
 import smach

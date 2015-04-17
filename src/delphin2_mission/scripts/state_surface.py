@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('delphin2_mission')
 import rospy
 import smach
 import smach_ros
 import time
 from std_msgs.msg import String
-
-
 
 class Surface(smach.State):
     def __init__(self, lib, timeout):

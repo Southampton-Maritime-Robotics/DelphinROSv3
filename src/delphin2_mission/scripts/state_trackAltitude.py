@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('delphin2_mission')
 import rospy
 import smach
 import smach_ros

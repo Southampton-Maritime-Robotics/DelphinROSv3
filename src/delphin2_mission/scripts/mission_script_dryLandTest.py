@@ -10,7 +10,7 @@ import smach
 import smach_ros
 import time
 
-from library_highlevel            import library_highlevel
+from delphin2_mission.library_highlevel             import library_highlevel
 from state_initialise             import Initialise
 from state_importWaypoints        import ImportWaypoints
 from state_stop                   import Stop
@@ -25,7 +25,7 @@ from state_terminalZ              import terminalZ
 from state_N                      import N
 from state_dryLandTest            import dryLandTest
 from state_setTail                import setTail
-from state_actionserver_goToDepth import GoToDepthServer
+#from state_actionserver_goToDepth import GoToDepthServer
 from actionlib                    import *
 from actionlib.msg                import *
 from std_msgs.msg import String

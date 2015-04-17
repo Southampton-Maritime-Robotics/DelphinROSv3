@@ -7,7 +7,7 @@ import time
 from pylab import *
 import numpy
 
-from library_highlevel            import library_highlevel
+from delphin2_mission.library_highlevel             import library_highlevel
 from state_initialise             import Initialise
 from state_importWaypoints        import ImportWaypoints
 from state_stop                   import Stop
