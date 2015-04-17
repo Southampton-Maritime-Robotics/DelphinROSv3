@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 """
-# This node control pitch and depth based on the PI-D strategy.
+This node control pitch and depth based on the PI-D strategy.
+Pitch bias is used to indirectly control the depth of the AUV via control surfaces when undergoing a surge motion.
 
 ######################################
 #Modifications

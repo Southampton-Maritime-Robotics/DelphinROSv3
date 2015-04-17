@@ -1,5 +1,14 @@
 #!/usr/bin/python
 
+"""
+A drive to communicate with a tail unit consisting of control surfaces and propeller
+
+### MODIFICATION
+10/4/2015 automatically shutdown the actuators if there is no new message published on a relevant topic for longer then "timeLastDemandMax".
+11/4/2015 control rate viw rospy.Rate()
+
+"""
+
 import rospy
 import serial
 import time
@@ -74,7 +83,6 @@ def tail_section_loop(status):
             d_bottom = angleToSetpoint(0, 70)
             c_starb = angleToSetpoint(0, 70)
             e_port = angleToSetpoint(0, 70)
-            
 
         
         message = 'b%03dc%03dd%03de%03df%03d' %(b_top, c_starb, d_bottom , e_port, prop)

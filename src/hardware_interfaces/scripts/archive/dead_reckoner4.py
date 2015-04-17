@@ -15,18 +15,12 @@ from hardware_interfaces.msg import dead_reckoner
 from hardware_interfaces.msg import camera_info
 import math
 
-"""
-This node help to estimate the state of the AUV.
-When the GPS is not available, the dead-reckoner will give an estimation of the AUV state based on the actuator demands.
-When the GPS is fixed, this node will use the position and velocity from gps as it is more accurate and can be used to reset the cumulative error produced by dead-reckoner.
-
 ######################################
 #Modifications
-6/1/12 Modified GPS callback to only operate if a valid fix is returned
-9/2/12 Modified definition of X and Y. X is east and Y is north to be consistant with everything else.
-30/4/12 Need to modify code so using heading_control.msg not heading_mpc
+#6/1/12 Modified GPS callback to only operate if a valid fix is returned
+#9/2/12 Modified definition of X and Y. X is east and Y is north to be consistant with everything else.
+#30/4/12 Need to modify code so using heading_control.msh not heading_mpc
 
-"""
 
 #### DEFINE GLOBAL VARIABLES ####
 global flag

@@ -2,13 +2,13 @@
 
 """
 ######################################
-# This node used to play an important role for publishing the compass_out topic
-# Since we have xsens installed to the Delphin2, this node only responsible for producing a filtered depth and its derivative.
-# The actual node that publish to compass_out topic is xsens.
+This node used to play an important role for publishing the compass_out topic
+Since we have xsens installed to the Delphin2, this node only responsible for producing a filtered depth and its derivative.
+The actual node that publish to compass_out topic is xsens which give a more accurate and reliable orientation of the AUV.
 
 ######################################
 #Modifications
-# 9 Apr 2015: alter the way to control sampling rate with rospy.rate()
+9 Apr 2015: alter the way to control sampling rate with rospy.rate()
 """
 
 import rospy

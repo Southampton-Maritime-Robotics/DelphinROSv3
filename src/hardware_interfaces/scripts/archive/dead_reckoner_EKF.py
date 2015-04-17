@@ -2,6 +2,12 @@
 
 """
 ######################################
+
+This node is not functioning yet!!.
+It is found that acceleration along produce a significant error that is not acceptable.
+May need to implement SLAM alongside to provide a correction step when the GPS is not available.
+Otherwise, the estimation is useless.
+
 This node gives an estimation of AUV position in earth-fixed frame relative to the origin specified in launch file.
 Z is measured directly from depth sensor whereas an altitude is measured directly from the altimeter.
 Accommodate XY measure from GPS when it available. Otherwise calculate from FreeAccelerations in body-fixed frame measured by xsens.
