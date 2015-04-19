@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# Functions for Latitude, Longitude calculations
 
 import math
 

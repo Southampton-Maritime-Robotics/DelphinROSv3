@@ -5,11 +5,12 @@ import select
 
 import mtdevice # XXX this mtdevice.py has been modified by kantapon
 
-import LatLon # convert lat, lon to X and Y (referenced from original point)
+from xsens_driver import LatLon # convert lat, lon to X and Y (referenced from original point)
 
 from std_msgs.msg import Header
-from xsens_driver.msg import IMU_msg, GPS_msg
 
+from xsens_driver.msg import GPS_msg
+from xsens_driver.msg import IMU_msg#, GPS_msg
 
 # transform Euler angles or matrix into quaternions
 from math import pi, radians
