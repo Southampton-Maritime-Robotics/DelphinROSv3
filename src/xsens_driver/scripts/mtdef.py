@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Constant and messages definition for MT communication."""
 
 class MID:
