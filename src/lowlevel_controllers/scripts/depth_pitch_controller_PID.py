@@ -44,9 +44,10 @@ def set_params():
     global myUti
     global timeLastDemandMax
     global timeLastCallback
+    global propDemand
     
     ### General ###
-    
+    propDemand = 0
     timeLastDemandMax = 1 # [sec] if there is no onOff flag updated within this many seconds, controller will be turnned off
     timeLastCallback = time.time()
 
@@ -72,7 +73,7 @@ def set_params():
     DPC.Thrust_Smax = 1000       # maximum thruster setpoint # FIXME: unleash me kantapon
 
     DPC.pitchBiasMax = 5. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
-    DPC.pitchBiasGain = -5. # p gain to compute bias
+    DPC.pitchBiasGain = -5. # p gain to compute bias: has to be -VE
 
     ### determine relative arm lengths for thrust allocation ###
     L_th = 1.06        # distance between two vertical thrusters [metre]: measured
@@ -89,7 +90,7 @@ def set_params():
 
 def CS_controller(error_pitch, int_error_pitch, der_error_pitch):
     global DPC
-    DPC.CS_Pterm      = error*DPC.CS_Pgain
+    DPC.CS_Pterm      = error_pitch*DPC.CS_Pgain
     DPC.CS_Iterm      = 0 # TODO int_error*DPC.CS_Igain
     DPC.CS_Dterm      = 0 # TODO der_err*DPC.CS_Dgain
 
@@ -157,7 +158,7 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
     
         DPC.thruster0 = 0.
         DPC.thruster1 = 0.
-    
+        
     DPC.thruster0 = int(round(thruster0))
     DPC.thruster1 = int(round(thruster1))
     
@@ -203,12 +204,12 @@ def main_control_loop():
                 [error_depth, int_error_depth] = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
                 [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
                 
-                [CS_demand] = CS_controller(error_pitch, int_error_pitch, der_error_pitch)
+                CS_demand = CS_controller(error_pitch, int_error_pitch, der_error_pitch)
                 [thruster0, thruster1] = thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch)
                 
                 # update the heading_control.msg, and this will be subscribed by the logger.py
                 pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
-                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+#                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
                 pub_DPC.publish(DPC)
                 
 ##                # verbose activity in thrust_controller
@@ -241,13 +242,11 @@ def main_control_loop():
 ################################################################################
 
 def determinePitchBias(depth_current,depth_demand):
-    
     if propDemand > 10:
         pitchBias = DPC.pitchBiasGain*(depth_demand-depth_current)
-        myUti.limits(pitchBias,0,DPC.pitchBiasMax)
+        myUti.limits(pitchBias,-DPC.pitchBiasMax,DPC.pitchBiasMax)
     else:
         pitchBias = 0
-        
     return pitchBias
 
 def system_state_depth(dt,depth_current,depth_demand,der_error_depth):
@@ -332,7 +331,7 @@ def pitch_demand_callback(pitchd):
     
 def prop_demand_callback(propd):
     global propDemand
-    propDemand = propd
+    propDemand = propd.data
 
 ################################################################################
 ######## INITIALISATION ########################################################

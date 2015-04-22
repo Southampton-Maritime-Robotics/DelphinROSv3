@@ -91,7 +91,7 @@ def CS_controller(error, int_error, der_error):
     
     HC.CS_demand = int(round(CS_demand))
 
-    return [HC.CS_demand]
+    return HC.CS_demand
     
 ################################################################################
 ########## THRUST CONTROLLER ###################################################
@@ -111,12 +111,12 @@ def thrust_controller(error, int_error, der_error):
         ## turn torque into thrust and superposition with sway demand
         thruster0 = float(HC.Thrust_heading)/float(Ltf) + float(HC.sway_demand)
         thruster1 = -float(HC.Thrust_heading)/float(Ltr) + float(HC.sway_demand)    
-    
+        
         thruster0 = numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5 # according to a relationship between thrust and rpm
         thruster1 = numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5 # according to a relationship between thrust and rpm
         # if a setpoint of one thruster goes beyond the limit. it will be saturated and the other one will be scaled down proportionally in order to scale down torque.
-        thruster0 = round(HC.thruster0)
-        thruster1 = round(HC.thruster1)
+        thruster0 = round(thruster0)
+        thruster1 = round(thruster1)
         if numpy.abs(thruster0) > HC.Thrust_Smax:
             scale_factor = float(HC.Thrust_Smax)/float(numpy.abs(thruster0))
             thruster0 = thruster0*scale_factor
@@ -125,8 +125,8 @@ def thrust_controller(error, int_error, der_error):
             scale_factor = float(HC.Thrust_Smax)/float(numpy.abs(thruster1))
             thruster0 = thruster0*scale_factor 
             thruster1 = thruster1*scale_factor
+
     else:
-    
         thruster0 = 0.
         thruster1 = 0.
         
@@ -180,19 +180,19 @@ def main_control_loop():
                 pub_HC.publish(HC)
                 
                 # verbose activity in thrust_controller
-                str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %(heading_demand) 
-                rospy.loginfo(str)  
-                str = ">>>>>>>>>>>>>>>>Current heading is %.2fdeg" %(heading_current) 
-                rospy.loginfo(str)
-                str = ">>>>>>>>>>>>>>>>Heading error is %.2fdeg" %(error) 
-                rospy.loginfo(str)
-                str = ">>>>>>>>>>>>>>>>Control surface demand is %d" %(CSt) 
-                rospy.loginfo(str)
-####                str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(thruster0) 
-####                rospy.loginfo(str)
-####                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
-####                rospy.loginfo(str)
-####                print ''
+#                str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %(heading_demand) 
+#                rospy.loginfo(str)  
+#                str = ">>>>>>>>>>>>>>>>Current heading is %.2fdeg" %(heading_current) 
+#                rospy.loginfo(str)
+#                str = ">>>>>>>>>>>>>>>>Heading error is %.2fdeg" %(error) 
+#                rospy.loginfo(str)
+#                str = ">>>>>>>>>>>>>>>>Control surface demand is %d" %(CS_demand) 
+#                rospy.loginfo(str)
+#                str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(thruster0) 
+#                rospy.loginfo(str)
+#                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
+#                rospy.loginfo(str)
+#                print ''
 
                 if time.time()-timeLastCallback > timeLastDemandMax:
                     controller_onOff = False

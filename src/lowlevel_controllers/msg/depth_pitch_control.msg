@@ -17,6 +17,7 @@ float32 Depth_Iterm
 float32 Depth_Dterm
 float32 Depth_Thrust
 
+float32 pitchBias
 float32 pitchBiasMax
 float32 pitchBiasGain
 

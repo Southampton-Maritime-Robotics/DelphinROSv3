@@ -34,9 +34,13 @@ class actions(smach.State):
         
         flagTest = True
         timeStart = time.time()
+        
+        nSamp = 500
+        a = numpy.zeros([nSamp])
         while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-            pass
-            
+            self.__controller.setRearProp(22)
+            a = numpy.append(a[1:nSamp],[self.__controller.getPropRPM()])
+            print "mean: ", numpy.mean(a), "current: ", self.__controller.getPropRPM()
 #            self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)            
             
 #            if time.time()-timeStart < 10:

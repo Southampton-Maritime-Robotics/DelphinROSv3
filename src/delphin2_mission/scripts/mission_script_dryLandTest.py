@@ -59,7 +59,7 @@ def main():
     rospy.init_node('smach_example_state_machine')
     
     # Define an instance of highlevelcontrollibrary to pass to all action servers
-    lib = library_highlevel.library_highlevel()
+    lib = library_highlevel()
     
     #Set Up Publisher for Mission Control Log
     pub = rospy.Publisher('MissionStrings', String)

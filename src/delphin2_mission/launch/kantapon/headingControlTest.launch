@@ -39,7 +39,7 @@
     <!-- <node name="SMS_modem" pkg="hardware_interfaces" type="SMS_modem.py" /> -->
     <!--include file="$(find delphin2_mission)/launch/sonar_system.launch" /> -->
     
-    <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner4.py"  /> 
+    <!-- <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner4.py"  /> -->
     
     <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py" output = "screen"/>
             

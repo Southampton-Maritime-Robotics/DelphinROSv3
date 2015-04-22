@@ -50,7 +50,7 @@ delaySerial = 0.01 # [sec] just enough for arduino to get a data packet
 timeOut = 0.1 # [sec] timeout to wait for a data packet being sent back from arduino
 
 global ThrusterSetpoint_max
-ThrusterSetpoint_max = 5 # in a range of [0-255]
+ThrusterSetpoint_max = 255 # in a range of [0-255]
 global thrust_dr_ref
 thrust_dr_ref = [0,0,0,1] # a vector to correct thrust_direction
 global timeLastDemand_sat
