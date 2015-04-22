@@ -48,6 +48,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    IMU_msg.msg
+   GPS_msg.msg
  )
 
 ## Generate services in the 'srv' folder
