@@ -66,13 +66,13 @@ def set_params():
     # thruster
     DPC.Depth_Pgain = 500000.00 # FIXME: tune me kantapon
     DPC.Depth_Igain = 4000.00 # FIXME: tune me kantapon
-    DPC.Depth_Dgain = -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Depth_Dgain = -100000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
-    DPC.Pitch_Pgain = 0.1 # FIXME: tune me kantapon
+    DPC.Pitch_Pgain = 0.05 # FIXME: tune me kantapon
     DPC.Pitch_Igain = 0.00 # FIXME: tune me kantapon
-    DPC.Pitch_Dgain = -0.00 # D gain has to be negative (c.f. PI-D),FIXME: tune me kantapon
+    DPC.Pitch_Dgain = -0. # D gain has to be negative (c.f. PI-D),FIXME: tune me kantapon
     
-    DPC.Thrust_Smax = 1000       # maximum thruster setpoint # FIXME: unleash me kantapon
+    DPC.Thrust_Smax = 2000       # maximum thruster setpoint # FIXME: unleash me kantapon
 
     DPC.pitchBiasMax = 5. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
     DPC.pitchBiasGain = -5. # p gain to compute bias: has to be -VE
@@ -222,7 +222,7 @@ def main_control_loop():
                 
                 # update the heading_control.msg, and this will be subscribed by the logger.py
                 pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
-#                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
                 pub_DPC.publish(DPC)
                 
 ##                # verbose activity in thrust_controller

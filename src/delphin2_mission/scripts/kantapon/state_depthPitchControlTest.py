@@ -44,9 +44,9 @@ class depthPitchControlTest(smach.State):
                 self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                 return 'aborted'
             
-            self.__controller.setDepth(0.5) # specified depth demand in [metre]
+            self.__controller.setDepth(0.4) # specified depth demand in [metre]
             self.__controller.setPitch(0) # specified pitch demand in [degree] 
-            self.__controller.setHeading(300)
+            self.__controller.setHeading(290)
         
         # stop all the actuators
         self.__controller.setRearProp(0)
