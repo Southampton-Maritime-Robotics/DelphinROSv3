@@ -448,7 +448,10 @@ def depth_pitch_PID_callback(data):
                            data.CS_Pterm, 
                            data.CS_Iterm, 
                            data.CS_Dterm, 
-                           data.CS_demand]
+                           data.CS_demand,
+                           data.Ltf,                 # no need
+                           data.Ltr,                 # no need
+                           data.crNose]              # no need
     
     with open('%s/depthPitchPIDLog.csv' %(dirname), "a") as f:
         try:

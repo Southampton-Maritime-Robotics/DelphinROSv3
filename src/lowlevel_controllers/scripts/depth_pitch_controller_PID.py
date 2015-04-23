@@ -45,6 +45,8 @@ def set_params():
     global timeLastDemandMax
     global timeLastCallback
     global propDemand
+    global crMax
+    global crMin
     
     ### General ###
     propDemand = 0
@@ -66,9 +68,9 @@ def set_params():
     DPC.Depth_Igain = 4000.00 # FIXME: tune me kantapon
     DPC.Depth_Dgain = -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
-    DPC.Pitch_Pgain = 10.00 # FIXME: tune me kantapon
+    DPC.Pitch_Pgain = 0.1 # FIXME: tune me kantapon
     DPC.Pitch_Igain = 0.00 # FIXME: tune me kantapon
-    DPC.Pitch_Dgain = -1.00 # D gain has to be negative (c.f. PI-D),FIXME: tune me kantapon
+    DPC.Pitch_Dgain = -0.00 # D gain has to be negative (c.f. PI-D),FIXME: tune me kantapon
     
     DPC.Thrust_Smax = 1000       # maximum thruster setpoint # FIXME: unleash me kantapon
 
@@ -76,11 +78,14 @@ def set_params():
     DPC.pitchBiasGain = -5. # p gain to compute bias: has to be -VE
 
     ### determine relative arm lengths for thrust allocation ###
-    L_th = 1.06        # distance between two vertical thrusters [metre]: measured
-    cr_approx = 1.15           # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
-    Ltf_nose = 0.28    # location of the front vertical thruster from nose: measured
-    DPC.crMax = 0.15        # maximum cr diviation [metre]: chosen
+    L_th = 1.06             # distance between two vertical thrusters [metre]: measured
+    cr_approx = 1.12        # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
+    Ltf_nose = 0.28         # location of the front vertical thruster from nose: measured
+#    DPC.crTol = 0.05        # FIXME change the message structure and logger. to bound the cr between front and rear thruster with this gap from the bound [metre]: chosen
     
+    crTol = 0.05
+    crMin = cr_approx - Ltf_nose -L_th + crTol      # length from cr_approx to front thruster
+    crMax = cr_approx - Ltf_nose - crTol            # length from cr_approx to rear thruster
     ### Utility Object ###
     myUti = uti()
     
@@ -119,23 +124,31 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
         
         DPC.Depth_Thrust = DPC.Depth_Pterm + DPC.Depth_Iterm + DPC.Depth_Dterm # determine a required generalised force to bring the AUV down to a desired depth
         
+#        DPC.Depth_Thrust = 4*10**2 # TODO remove me
+        
         if numpy.abs(error_pitch) > DPC.deadzone_Pitch:        
         
             DPC.Pitch_Pterm = error_pitch*DPC.Pitch_Pgain
             DPC.Pitch_Iterm = int_error_pitch*DPC.Pitch_Igain
             DPC.Pitch_Dterm = der_error_pitch*DPC.Pitch_Dgain
 
-            cr = DPC.Pitch_Pterm + DPC.Pitch_Iterm + DPC.Depth_Dterm # determine a deviation of a center of rotation to stabilise the pitching
-            cr = myUti.limits(cr, -DPC.crMax, DPC.crMax)       #Function to contrain within defined limits
+            cr = DPC.Pitch_Pterm + DPC.Pitch_Iterm + DPC.Pitch_Dterm # determine a deviation of a center of rotation to stabilise the pitching
 
         else:
             cr = 0
         
-        # determine relative arm lengths for thrust allocation
+        cr = myUti.limits(-cr, crMin, crMax)       # Function to contrain within defined limits (w.r.t. cr_approx)
+        
         DPC.cr = cr
-        cr = cr_approx + numpy.sign(DPC.Depth_Thrust)*cr           # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
+        cr = cr_approx - cr # TODO check if it can handle the change in depth demand. numpy.sign(DPC.Depth_Thrust)*cr           # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
         Ltf = cr-Ltf_nose   # Moment arm of front vertical thruster from the cr [metre]
         Ltr = L_th-Ltf      # Moment arm of rear vertical thruster from the cr [metre]
+        print [crMax-crMin, cr, Ltf, Ltr]
+        
+        # TODO remove this block
+        DPC.Ltf = Ltf
+        DPC.Ltr = Ltr
+        DPC.crNose = cr
         
         ## distribute a generalised force onto each thruster based on a relative arm length
         thruster0 = float(DPC.Depth_Thrust)/float(Ltf)
@@ -150,7 +163,7 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
             scale_factor = float(DPC.Thrust_Smax)/float(numpy.abs(thruster0))
             thruster0 = thruster0*scale_factor
             thruster1 = thruster1*scale_factor
-        if numpy.abs(DPC.thruster1) > DPC.Thrust_Smax:
+        if numpy.abs(thruster1) > DPC.Thrust_Smax:
             scale_factor = float(DPC.Thrust_Smax)/float(numpy.abs(thruster1))
             thruster0 = thruster0*scale_factor 
             thruster1 = thruster1*scale_factor

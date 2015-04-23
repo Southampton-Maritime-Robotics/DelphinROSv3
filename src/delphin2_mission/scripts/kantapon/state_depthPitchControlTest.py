@@ -11,7 +11,7 @@ class depthPitchControlTest(smach.State):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.delay_thruster = 0 # allow the vehicle to gain a speed (value is specified in second) 
-        self.delay_action = self.delay_thruster+30 # let the vehicle doing those actions for a period of time (value is specified in second)
+        self.delay_action = self.delay_thruster+60 # let the vehicle doing those actions for a period of time (value is specified in second)
             
     def execute(self, userdata):
         outcome = 'aborted' # set exit flag to aborted by default

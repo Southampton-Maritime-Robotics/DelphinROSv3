@@ -229,7 +229,7 @@ def process_feedback(feedback):
      
      if abs(prop_demand) > 0:
         raw = float(feedback[21:24])
-        prop_rpm = ((1-1/numpy.exp(0.05*(raw-340)))*(raw*0.45)-80)*numpy.sign(prop_demand)
+        prop_rpm = ((1-1/numpy.exp(0.05*(raw-340)))*(raw*0.45)-80)*numpy.sign(prop_demand)/20.
      else:
         prop_rpm = 0
         
