@@ -61,10 +61,16 @@ def tail_section_loop(status):
     e_port = 70
     prop = 94
     
+    controlRate = 10. # [Hz]
+    controlPeriod = 1./controlRate
+    r = rospy.Rate(controlRate)
+    
 ################################################################################
 ################################################################################
         
     while not rospy.is_shutdown():
+
+        timeRef = time.time()
         
         pubStatus.publish(nodeID = 2, status = status)
         
@@ -83,7 +89,6 @@ def tail_section_loop(status):
             d_bottom = angleToSetpoint(0, 70)
             c_starb = angleToSetpoint(0, 70)
             e_port = angleToSetpoint(0, 70)
-
         
         message = 'b%03dc%03dd%03de%03df%03d' %(b_top, c_starb, d_bottom , e_port, prop)
         #print 'message: ',message
@@ -91,15 +96,23 @@ def tail_section_loop(status):
             serialPort.write(message)   #POSSIBLE ISSUE STILL FAILS EVEN THIUGH IN TRY!
         except:
             print 'Write error'
-    
+
         try:
             feedback = serialPort.read(25)
             process_feedback(feedback)
+
         except:
             print 'read error'
         
-        dt = time.time() - time_zero
         
+#        timeElapse = time.time()-timeRef
+#        if timeElapse < controlPeriod:
+#            r.sleep()
+#        else:
+#            str = "tail_section rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+#            rospy.logwarn(str)
+        
+        dt = time.time() - time_zero
         while dt < (1/freq):
             dt = time.time() - time_zero
             time.sleep(0.01)
@@ -297,5 +310,3 @@ if __name__ == '__main__':
         pubStatus.publish(nodeID = 2, status = status)
     
     tail_section_loop(status)
- 
-

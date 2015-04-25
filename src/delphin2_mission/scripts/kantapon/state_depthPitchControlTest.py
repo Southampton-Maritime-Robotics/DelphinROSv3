@@ -44,9 +44,43 @@ class depthPitchControlTest(smach.State):
                 self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                 return 'aborted'
             
-            self.__controller.setDepth(0.4) # specified depth demand in [metre]
+            self.__controller.setDepth(0.25) # specified depth demand in [metre]
             self.__controller.setPitch(0) # specified pitch demand in [degree] 
-            self.__controller.setHeading(290)
+            self.__controller.setHeading(280)
+            
+        time_zero=time.time()
+        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
+            
+            # check if the AUV is overdepth
+            if self.__controller.getBackSeatErrorFlag():
+                print "over-depth detected"
+                    # stop all the actuators
+                self.__controller.setRearProp(0)
+                self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
+                self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+                return 'aborted'
+            
+            self.__controller.setDepth(0.5) # specified depth demand in [metre]
+            self.__controller.setPitch(0) # specified pitch demand in [degree] 
+            self.__controller.setHeading(280)
+                       
+        time_zero=time.time()
+        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
+            
+            # check if the AUV is overdepth
+            if self.__controller.getBackSeatErrorFlag():
+                print "over-depth detected"
+                    # stop all the actuators
+                self.__controller.setRearProp(0)
+                self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
+                self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+                return 'aborted'
+            
+            self.__controller.setDepth(0.25) # specified depth demand in [metre]
+            self.__controller.setPitch(0) # specified pitch demand in [degree] 
+            self.__controller.setHeading(280)
         
         # stop all the actuators
         self.__controller.setRearProp(0)

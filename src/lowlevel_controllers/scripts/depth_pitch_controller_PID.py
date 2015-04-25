@@ -64,28 +64,30 @@ def set_params():
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
     # thruster
-    DPC.Depth_Pgain = 500000.00 # FIXME: tune me kantapon
-    DPC.Depth_Igain = 4000.00 # FIXME: tune me kantapon
-    DPC.Depth_Dgain = -100000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Depth_Pgain = 700000.00 # FIXME: tune me kantapon
+    DPC.Depth_Igain = 50000.00 # FIXME: tune me kantapon
+    DPC.Depth_Dgain = -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
-    DPC.Pitch_Pgain = 0.05 # FIXME: tune me kantapon
-    DPC.Pitch_Igain = 0.00 # FIXME: tune me kantapon
-    DPC.Pitch_Dgain = -0. # D gain has to be negative (c.f. PI-D),FIXME: tune me kantapon
+    DPC.Pitch_Pgain = 0.02 # FIXME: tune me kantapon
+    DPC.Pitch_Igain = 0.01 # FIXME: tune me kantapon
+    DPC.Pitch_Dgain = -0.01 # D gain has to be negative (c.f. PI-D),FIXME: tune me kantapon
     
-    DPC.Thrust_Smax = 2000       # maximum thruster setpoint # FIXME: unleash me kantapon
+    DPC.Thrust_Smax = 1800       # maximum thruster setpoint # FIXME: unleash me kantapon
 
     DPC.pitchBiasMax = 5. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
     DPC.pitchBiasGain = -5. # p gain to compute bias: has to be -VE
 
     ### determine relative arm lengths for thrust allocation ###
     L_th = 1.06             # distance between two vertical thrusters [metre]: measured
-    cr_approx = 1.12        # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
+    cr_approx = 0.98        # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
     Ltf_nose = 0.28         # location of the front vertical thruster from nose: measured
 #    DPC.crTol = 0.05        # FIXME change the message structure and logger. to bound the cr between front and rear thruster with this gap from the bound [metre]: chosen
     
-    crTol = 0.05
-    crMin = cr_approx - Ltf_nose -L_th + crTol      # length from cr_approx to front thruster
-    crMax = cr_approx - Ltf_nose - crTol            # length from cr_approx to rear thruster
+    crTol = 0.15
+    crMax = crTol
+    crMin = -crTol
+#    crMin = cr_approx - Ltf_nose -L_th + crTol      # length from cr_approx to front thruster
+#    crMax = cr_approx - Ltf_nose - crTol            # length from cr_approx to rear thruster
     ### Utility Object ###
     myUti = uti()
     
@@ -138,6 +140,8 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
             cr = 0
         
         cr = myUti.limits(-cr, crMin, crMax)       # Function to contrain within defined limits (w.r.t. cr_approx)
+        
+#        cr = 0 # FIXME remove this line
         
         DPC.cr = cr
         cr = cr_approx - cr # TODO check if it can handle the change in depth demand. numpy.sign(DPC.Depth_Thrust)*cr           # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
@@ -221,8 +225,8 @@ def main_control_loop():
                 [thruster0, thruster1] = thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch)
                 
                 # update the heading_control.msg, and this will be subscribed by the logger.py
-                pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
-                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+#                pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
+#                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
                 pub_DPC.publish(DPC)
                 
 ##                # verbose activity in thrust_controller

@@ -262,8 +262,8 @@ def motor_control(status):
     timeStart_rpm = [timeStart_vol,timeStart_vol,timeStart_vol,timeStart_vol]
     timeLim_rpm = timeLim_vol
     
-    controlRate = 20. # [Hz]
-    controlPeriod = 1/controlRate
+    controlRate = 10. # [Hz]
+    controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
     while not rospy.is_shutdown():      
@@ -361,7 +361,7 @@ def motor_control(status):
             speed0 = speed0, speed1 = speed1, speed2 = speed2, speed3 = speed3, 
             current0 = current0, current1 = current1, current2 = current2, current3 = current3, 
             voltage = voltage)
-          
+        
         timeElapse = time.time()-timeRef
         if timeElapse < controlPeriod:
             r.sleep()

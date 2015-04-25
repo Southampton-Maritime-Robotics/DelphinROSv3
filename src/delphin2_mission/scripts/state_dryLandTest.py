@@ -184,7 +184,7 @@ class dryLandTest(smach.State):
             RPM_avg = RPM_avg/float(N)
             self.__controller.setRearProp(0)
 
-            if RPM_avg < 130:
+            if RPM_avg < 3: # just an arbitrary integer that is not zero
                 str = "Problem with rear prop - average rpm = %s" %RPM_avg
                 rospy.logerr(str)
                 self.__controller.setRearProp(0)
