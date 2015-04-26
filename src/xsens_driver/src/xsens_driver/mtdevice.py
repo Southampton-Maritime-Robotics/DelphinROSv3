@@ -26,6 +26,7 @@ import sys, time
 
 from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName
 from hardware_interfaces.msg import compass # compass is a message that is originally used by delphin2.
+from xsens_driver.msg import Magnetometer_msg
 from custom_def import location, req
 
 ################################################################
