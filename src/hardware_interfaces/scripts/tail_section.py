@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
 """
-A drive to communicate with a tail unit consisting of control surfaces and propeller
+A driver to communicate with a tail unit that consists of control surfaces and propeller.
 
 ### MODIFICATION
-10/4/2015 automatically shutdown the actuators if there is no new message published on a relevant topic for longer then "timeLastDemandMax".
+10/4/2015 add watchdog to automatically shutdown the actuators if there is no new message published on a relevant topic for longer then "timeLastDemandMax".
 11/4/2015 control rate via rospy.Rate()
 
 """

@@ -4,6 +4,10 @@
 This node control pitch and depth based on the PI-D strategy.
 Pitch bias is used to indirectly control the depth of the AUV via control surfaces when undergoing a surge motion.
 
+Note:
+- control surface and pitchBias are not in use yet. This will be very important part when the AUV operates at non-zero speeds.
+- pitch_Dgain makes the system becomes worse possibly due to the delay response of the thruster control boards
+
 ######################################
 #Modifications
 # 2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
@@ -69,8 +73,8 @@ def set_params():
     DPC.Depth_Dgain = -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
     DPC.Pitch_Pgain = 0.02 # FIXME: tune me kantapon
-    DPC.Pitch_Igain = 0.01 # FIXME: tune me kantapon
-    DPC.Pitch_Dgain = -0.01 # D gain has to be negative (c.f. PI-D),FIXME: tune me kantapon
+    DPC.Pitch_Igain = 0.001 # FIXME: tune me kantapon
+    DPC.Pitch_Dgain = -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
     DPC.Thrust_Smax = 1800       # maximum thruster setpoint # FIXME: unleash me kantapon
 
@@ -225,8 +229,8 @@ def main_control_loop():
                 [thruster0, thruster1] = thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch)
                 
                 # update the heading_control.msg, and this will be subscribed by the logger.py
-#                pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
-#                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+                pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
+                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
                 pub_DPC.publish(DPC)
                 
 ##                # verbose activity in thrust_controller
@@ -312,7 +316,7 @@ def system_state_pitch(dt,pitch_current,pitch_demand,pitchBias):
         # PI-D strategy (compute the derivative of pitch)
         sample_pitch[1] = sample_pitch[0]	                # Shift old values up in the array
         sample_pitch[0] = error_pitch				        # Set first array term to new error value
-        der_error_pitch = (sample_pitch[0]-sample_pitch[1])/dt    # Calculate the derivative error
+        der_error_pitch = -(sample_pitch[0]-sample_pitch[1])/dt    # Calculate the derivative error: need a negative at front because the coordinate convention
         
     # update the error terms. These will be subscribed by the logger node.
     DPC.error_pitch = error_pitch
