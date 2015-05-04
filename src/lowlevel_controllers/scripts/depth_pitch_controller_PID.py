@@ -68,13 +68,13 @@ def set_params():
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
     # thruster
-    DPC.Depth_Pgain = 700000.00 # FIXME: tune me kantapon
-    DPC.Depth_Igain = 50000.00 # FIXME: tune me kantapon
-    DPC.Depth_Dgain = -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Depth_Pgain = 10000.00 # 700000.00 # FIXME: tune me kantapon
+    DPC.Depth_Igain = 0.00 # 50000.00 # FIXME: tune me kantapon
+    DPC.Depth_Dgain = -0.00 # -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
-    DPC.Pitch_Pgain = 0.02 # FIXME: tune me kantapon
-    DPC.Pitch_Igain = 0.001 # FIXME: tune me kantapon
-    DPC.Pitch_Dgain = -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Pitch_Pgain = 0.02 # 0.02 # FIXME: tune me kantapon
+    DPC.Pitch_Igain = 0.02 # 0.001 # FIXME: tune me kantapon
+    DPC.Pitch_Dgain = -0.02 # -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
     DPC.Thrust_Smax = 1800       # maximum thruster setpoint # FIXME: unleash me kantapon
 
