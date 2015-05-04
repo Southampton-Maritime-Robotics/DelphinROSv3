@@ -50,7 +50,6 @@ def tail_section_loop(status):
     global e_port
     global prop
     
-    freq = 10.
     dt = 0
     prop_full_time = 1.0
     prop_on = 0
@@ -61,8 +60,8 @@ def tail_section_loop(status):
     e_port = 70
     prop = 94
     
-    controlRate = 10. # [Hz]
-    controlPeriod = 1./controlRate
+    controlRate = 5. # [Hz]
+    controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
     
 ################################################################################
@@ -71,12 +70,11 @@ def tail_section_loop(status):
     while not rospy.is_shutdown():
 
         timeRef = time.time()
-        
-        pubStatus.publish(nodeID = 2, status = status)
-        
         time_zero = time.time()
         prop_on = prop_on + dt
         
+        pubStatus.publish(nodeID = 2, status = status)
+                
         if time.time()-timeLastDemandProp>timeLastDemandMax:
             [prop, prop_on] = speedToSetpoint(0, prop_on, prop_full_time)
         else:
@@ -103,19 +101,18 @@ def tail_section_loop(status):
 
         except:
             print 'read error'
-        
-        
-#        timeElapse = time.time()-timeRef
-#        if timeElapse < controlPeriod:
-#            r.sleep()
-#        else:
-#            str = "tail_section rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
-#            rospy.logwarn(str)
+                
+        timeElapse = time.time()-timeRef
+        if timeElapse < controlPeriod:
+            r.sleep()
+        else:
+            str = "tail_section rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
         
         dt = time.time() - time_zero
-        while dt < (1/freq):
-            dt = time.time() - time_zero
-            time.sleep(0.01)
+#        while dt < (1/freq):
+#            dt = time.time() - time_zero
+#            time.sleep(0.01)
             
 ################################################################################
 ################################################################################
