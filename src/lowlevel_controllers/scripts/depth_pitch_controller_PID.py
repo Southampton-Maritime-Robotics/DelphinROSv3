@@ -130,8 +130,6 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
         
         DPC.Depth_Thrust = DPC.Depth_Pterm + DPC.Depth_Iterm + DPC.Depth_Dterm # determine a required generalised force to bring the AUV down to a desired depth
         
-#        DPC.Depth_Thrust = 4*10**2 # TODO remove me
-        
         if numpy.abs(error_pitch) > DPC.deadzone_Pitch:        
         
             DPC.Pitch_Pterm = error_pitch*DPC.Pitch_Pgain
@@ -145,22 +143,21 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
         
         cr = myUti.limits(-cr, crMin, crMax)       # Function to contrain within defined limits (w.r.t. cr_approx)
         
-#        cr = 0 # FIXME remove this line
-        
         DPC.cr = cr
         cr = cr_approx - cr # TODO check if it can handle the change in depth demand. numpy.sign(DPC.Depth_Thrust)*cr           # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
         Ltf = cr-Ltf_nose   # Moment arm of front vertical thruster from the cr [metre]
         Ltr = L_th-Ltf      # Moment arm of rear vertical thruster from the cr [metre]
         print [crMax-crMin, cr, Ltf, Ltr]
         
-        # TODO remove this block
         DPC.Ltf = Ltf
         DPC.Ltr = Ltr
         DPC.crNose = cr
         
         ## distribute a generalised force onto each thruster based on a relative arm length
-        thruster0 = float(DPC.Depth_Thrust)/float(Ltf)
-        thruster1 = float(DPC.Depth_Thrust)/float(Ltr)
+#        thruster0 = float(DPC.Depth_Thrust)/float(Ltf)
+#        thruster1 = float(DPC.Depth_Thrust)/float(Ltr)
+        thruster0 = float(DPC.Depth_Thrust)*float(Ltr)/float(Ltf+Ltr)
+        thruster1 = float(DPC.Depth_Thrust)*float(Ltf)/float(Ltf+Ltr)
 
         thruster0 = numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5 # according to a relationship between thrust and rpm
         thruster1 = numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5 # according to a relationship between thrust and rpm
@@ -199,7 +196,7 @@ def main_control_loop():
         controller_onOff = Bool()
         set_params()
         
-        controlRate = 10. # [Hz]
+        controlRate = 5. # [Hz]
         r = rospy.Rate(controlRate)
         controlPeriod = 1/controlRate # [sec]
         
