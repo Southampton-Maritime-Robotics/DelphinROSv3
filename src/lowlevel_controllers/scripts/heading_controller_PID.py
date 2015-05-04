@@ -109,8 +109,8 @@ def thrust_controller(error, int_error, der_error):
         HC.Thrust_heading = HC.Thrust_Pterm + HC.Thrust_Iterm + HC.Thrust_Dterm
         
         ## turn torque into thrust and superposition with sway demand
-        thruster0 = float(HC.Thrust_heading)/float(Ltf) + float(HC.sway_demand)
-        thruster1 = -float(HC.Thrust_heading)/float(Ltr) + float(HC.sway_demand)    
+        thruster0 = float(HC.Thrust_heading)/float(Ltf+Ltr) + float(HC.sway_demand)*float(Ltr)/float(Ltf+Ltr)
+        thruster1 = -float(HC.Thrust_heading)/float(Ltf+Ltr) + float(HC.sway_demand)*float(Ltf)/float(Ltf+Ltr)
         
         thruster0 = numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5 # according to a relationship between thrust and rpm
         thruster1 = numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5 # according to a relationship between thrust and rpm
