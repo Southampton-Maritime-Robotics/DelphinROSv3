@@ -56,17 +56,18 @@ class actions(smach.State):
 #            self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)            
             
         while not rospy.is_shutdown() and time.time()-timeStart < 60:
-            self.__controller.setDepth(0.25) # specified depth demand in [metre]
-            self.__controller.setPitch(0) # specified pitch demand in [degree] 
-            self.__controller.setHeading(290)
-            self.__controller.setRearProp(0)
-        timeStart = time.time()
-        while not rospy.is_shutdown() and time.time()-timeStart < 15:
-            self.__controller.setDepth(0.25) # specified depth demand in [metre]
-            self.__controller.setPitch(0) # specified pitch demand in [degree] 
-            self.__controller.setHeading(290)
-            self.__controller.setRearProp(10)
-#                self.__controller.setControlSurfaceAngle(-30,-30,-30,-30) # (VerUp,HorRight,VerDown,HorLeft)
+            pass
+#            self.__controller.setDepth(0.25) # specified depth demand in [metre]
+#            self.__controller.setPitch(0) # specified pitch demand in [degree] 
+#            self.__controller.setHeading(290)
+#            self.__controller.setRearProp(0)
+#        timeStart = time.time()
+#        while not rospy.is_shutdown() and time.time()-timeStart < 15:
+#            self.__controller.setDepth(0.25) # specified depth demand in [metre]
+#            self.__controller.setPitch(0) # specified pitch demand in [degree] 
+#            self.__controller.setHeading(290)
+#            self.__controller.setRearProp(10)
+##                self.__controller.setControlSurfaceAngle(-30,-30,-30,-30) # (VerUp,HorRight,VerDown,HorLeft)
         
         # stop all the actuators
         self.__controller.setRearProp(0)
