@@ -114,6 +114,7 @@ def thrust_controller(error, int_error, der_error):
         
         thruster0 = numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5 # according to a relationship between thrust and rpm
         thruster1 = numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5 # according to a relationship between thrust and rpm
+
         # if a setpoint of one thruster goes beyond the limit. it will be saturated and the other one will be scaled down proportionally in order to scale down torque.
         thruster0 = round(thruster0)
         thruster1 = round(thruster1)
