@@ -59,9 +59,9 @@ def set_params():
 #    HC.CS_min         = -HC.CS_max
     
     ### Thrust Controller ###
-    HC.Thrust_Pgain = 10000.00
+    HC.Thrust_Pgain = 30000.00
     HC.Thrust_Igain = 0.00
-    HC.Thrust_Dgain = 0.0 # -30000.00 # D gain has to be negative (c.f. PI-D)
+    HC.Thrust_Dgain = -100000.0 # -30000.00 # D gain has to be negative (c.f. PI-D)
     HC.Thrust_Smax  = 800 # 1000 # maximum thruster setpoint, FIXME: unleash me kantapon
 
     ### Utility Object ###

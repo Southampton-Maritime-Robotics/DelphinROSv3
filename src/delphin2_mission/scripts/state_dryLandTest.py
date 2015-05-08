@@ -75,7 +75,7 @@ class dryLandTest(smach.State):
             rpmT1_avg = 0
             time_ref = time.time()
             while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterVertical(600,600)
+                self.__controller.setArduinoThrusterVertical(-600,-600)
                 rpmT0_avg += numpy.abs(self.__controller.getT0rpm())
                 rpmT1_avg += numpy.abs(self.__controller.getT1rpm())
                 N += 1
@@ -83,7 +83,7 @@ class dryLandTest(smach.State):
             
             time_ref = time.time()
             while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterVertical(-600,-600)
+                self.__controller.setArduinoThrusterVertical(600,600)
                 rpmT0_avg += numpy.abs(self.__controller.getT0rpm())
                 rpmT1_avg += numpy.abs(self.__controller.getT1rpm())
                 N += 1
@@ -92,18 +92,18 @@ class dryLandTest(smach.State):
             rpmT0_avg = rpmT0_avg/float(N)
             rpmT1_avg = rpmT1_avg/float(N)
             
-            if (rpmT0_avg < 100):
-                str = "Problem with thruster 0. Average speed = %s" %rpmT0_avg
-                rospy.logerr(str)
-                return 'aborted'
-            if (rpmT1_avg < 100):
-                str = "Problem with thruster 1. Average speed = %s" %rpmT1_avg
-                rospy.logerr(str)
-                return 'aborted'
-            str = "Thruster 0 - working"
-            rospy.loginfo(str)
-            str = "Thruster 1 - working"
-            rospy.loginfo(str)
+#            if (rpmT0_avg < 100):
+#                str = "Problem with thruster 0. Average speed = %s" %rpmT0_avg
+#                rospy.logerr(str)
+#                return 'aborted'
+#            if (rpmT1_avg < 100):
+#                str = "Problem with thruster 1. Average speed = %s" %rpmT1_avg
+#                rospy.logerr(str)
+#                return 'aborted'
+#            str = "Thruster 0 - working"
+#            rospy.loginfo(str)
+#            str = "Thruster 1 - working"
+#            rospy.loginfo(str)
             
             #### Thruster 2 and 3 ####
             N = 0

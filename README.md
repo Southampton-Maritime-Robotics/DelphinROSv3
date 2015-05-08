@@ -8,11 +8,11 @@ delphin2 software, written in ROS
 
 Altimeter               1  Hz
 GPS                     1  Hz
-xsens                   40 Hz
-compass_oceanserver     20 Hz
+xsens                   20 Hz
+compass_oceanserver     10 Hz
 
-headingControllerPID    10 Hz
-depthControllerPIC      10 Hz
+headingControllerPID    5  Hz
+depthControllerPIC      5  Hz
 
-tail_section            10 Hz
-arduino_thruster        10 Hz
+tail_section            5  Hz
+arduino_thruster        5  Hz

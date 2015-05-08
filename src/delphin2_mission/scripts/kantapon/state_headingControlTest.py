@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('delphin2_mission')
 import rospy
 import numpy
 import smach
@@ -41,13 +40,6 @@ class headingControlTest(smach.State):
         time_zero=time.time()
         while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
             self.__controller.setHeading(270) # specified in a range of [0 360) degree
-
-#        time_zero=time.time()
-#        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-#            self.__controller.setHeading(180) # specified in a range of [0 360) degree
-#        time_zero=time.time()
-#        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-#            self.__controller.setHeading(270) # specified in a range of [0 360) degree
             
         # stop all the actuators
         self.__controller.setRearProp(0)

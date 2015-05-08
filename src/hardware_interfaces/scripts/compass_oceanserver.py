@@ -52,7 +52,7 @@ def listenForData(status):
     
     pitch_callback = 0.
     
-    controlRate = 20. # [Hz]
+    controlRate = 10. # [Hz]
     controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
 

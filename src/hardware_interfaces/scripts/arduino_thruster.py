@@ -262,7 +262,7 @@ def motor_control(status):
     timeStart_rpm = [timeStart_vol,timeStart_vol,timeStart_vol,timeStart_vol]
     timeLim_rpm = timeLim_vol
     
-    controlRate = 10. # [Hz]
+    controlRate = 5. # [Hz]
     controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
