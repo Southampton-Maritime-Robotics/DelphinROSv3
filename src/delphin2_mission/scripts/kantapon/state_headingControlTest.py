@@ -31,15 +31,15 @@ class headingControlTest(smach.State):
         
         # let the vehicle doing those actions for a period of time
         # and shutdown the actuators once finished
+#        time_zero=time.time()
+#        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
+#            self.__controller.setHeading(90) # specified in a range of [0 360) degree
+        time_zero=time.time()
+        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action/3: # in second
+            self.__controller.setHeading(210) # specified in a range of [0 360) degree
         time_zero=time.time()
         while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-            self.__controller.setHeading(90) # specified in a range of [0 360) degree
-        time_zero=time.time()
-        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-            self.__controller.setHeading(180) # specified in a range of [0 360) degree
-        time_zero=time.time()
-        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-            self.__controller.setHeading(270) # specified in a range of [0 360) degree
+            self.__controller.setHeading(290) # specified in a range of [0 360) degree
             
         # stop all the actuators
         self.__controller.setRearProp(0)
