@@ -5,5 +5,6 @@
 	<!-- <node pkg="hardware_interfaces" type="compass_oceanserver.py" name="ocean_server" /> -->
 	
 	<node pkg="xsens_driver" type="mtdevice.py" name="xsens_driver" output="screen" respawn="true" />
+    <!-- <node pkg="rosbag" type="rosbag" name="rosbag_record_xsens_all" args="-o /tmp/" />    -->
 	
 </launch>
