@@ -48,7 +48,7 @@ ReqPacket = {'req.Acc_lin','req.Vel_ang','req.Ori'}
 # need to check the allignment matrix when using FreeAcc_lin
 
 _baudrate = 115200
-_controlRate = 40.
+_controlRate = 20.
 
 ################################################################
 # MTDevice class

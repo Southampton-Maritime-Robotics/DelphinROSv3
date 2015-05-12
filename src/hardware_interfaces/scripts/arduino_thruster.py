@@ -50,7 +50,7 @@ delaySerial = 0.01 # [sec] just enough for arduino to get a data packet
 timeOut = 0.1 # [sec] timeout to wait for a data packet being sent back from arduino
 
 global ThrusterSetpoint_max
-ThrusterSetpoint_max = 5 # in a range of [0-255]
+ThrusterSetpoint_max = 255 # in a range of [0-255]
 global thrust_dr_ref
 thrust_dr_ref = [0,0,0,1] # a vector to correct thrust_direction
 global timeLastDemand_sat
@@ -262,8 +262,8 @@ def motor_control(status):
     timeStart_rpm = [timeStart_vol,timeStart_vol,timeStart_vol,timeStart_vol]
     timeLim_rpm = timeLim_vol
     
-    controlRate = 10. # [Hz]
-    controlPeriod = 1/controlRate
+    controlRate = 5. # [Hz]
+    controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
     while not rospy.is_shutdown():      
@@ -361,7 +361,7 @@ def motor_control(status):
             speed0 = speed0, speed1 = speed1, speed2 = speed2, speed3 = speed3, 
             current0 = current0, current1 = current1, current2 = current2, current3 = current3, 
             voltage = voltage)
-          
+        
         timeElapse = time.time()-timeRef
         if timeElapse < controlPeriod:
             r.sleep()

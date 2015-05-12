@@ -4,10 +4,14 @@
 This node control pitch and depth based on the PI-D strategy.
 Pitch bias is used to indirectly control the depth of the AUV via control surfaces when undergoing a surge motion.
 
+Note:
+- control surface and pitchBias are not in use yet. This will be very important part when the AUV operates at non-zero speeds.
+- pitch_Dgain makes the system becomes worse possibly due to the delay response of the thruster control boards
+
 ######################################
 #Modifications
-# 2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
-# 5/4/2015: force CS and thruster demands to become Integer32
+2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
+5/4/2015: force CS and thruster demands to become Integer32
 
 """
 
@@ -44,9 +48,12 @@ def set_params():
     global myUti
     global timeLastDemandMax
     global timeLastCallback
+    global propDemand
+    global crMax
+    global crMin
     
     ### General ###
-    
+    propDemand = 0
     timeLastDemandMax = 1 # [sec] if there is no onOff flag updated within this many seconds, controller will be turnned off
     timeLastCallback = time.time()
 
@@ -61,25 +68,30 @@ def set_params():
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
     # thruster
-    DPC.Depth_Pgain = 500000.00 # FIXME: tune me kantapon
-    DPC.Depth_Igain = 4000.00 # FIXME: tune me kantapon
-    DPC.Depth_Dgain = -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Depth_Pgain = 2500000.00 # 700000.00 # FIXME: tune me kantapon
+    DPC.Depth_Igain = 120000.00 # 50000.00 # FIXME: tune me kantapon
+    DPC.Depth_Dgain = -3000000.00 # -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
-    DPC.Pitch_Pgain = 10.00 # FIXME: tune me kantapon
-    DPC.Pitch_Igain = 0.00 # FIXME: tune me kantapon
-    DPC.Pitch_Dgain = -1.00 # D gain has to be negative (c.f. PI-D),FIXME: tune me kantapon
+    DPC.Pitch_Pgain = 0.01 # 0.01 # 0.02 # FIXME: tune me kantapon
+    DPC.Pitch_Igain = 0.0005 # 0.0005 # 0.001 # FIXME: tune me kantapon
+    DPC.Pitch_Dgain = -0.005 # -0.005 # -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
-    DPC.Thrust_Smax = 1000       # maximum thruster setpoint # FIXME: unleash me kantapon
+    DPC.Thrust_Smax = 1800       # maximum thruster setpoint # FIXME: unleash me kantapon
 
     DPC.pitchBiasMax = 5. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
-    DPC.pitchBiasGain = -5. # p gain to compute bias
+    DPC.pitchBiasGain = -5. # p gain to compute bias: has to be -VE
 
     ### determine relative arm lengths for thrust allocation ###
-    L_th = 1.06        # distance between two vertical thrusters [metre]: measured
-    cr_approx = 1.15           # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
-    Ltf_nose = 0.28    # location of the front vertical thruster from nose: measured
-    DPC.crMax = 0.15        # maximum cr diviation [metre]: chosen
+    L_th = 1.06             # distance between two vertical thrusters [metre]: measured
+    cr_approx = 1.05 # 0.98        # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
+    Ltf_nose = 0.28         # location of the front vertical thruster from nose: measured
+#    DPC.crTol = 0.05        # FIXME change the message structure and logger. to bound the cr between front and rear thruster with this gap from the bound [metre]: chosen
     
+    crTol = 0.15
+    crMax = crTol
+    crMin = -crTol
+#    crMin = cr_approx - Ltf_nose -L_th + crTol      # length from cr_approx to front thruster
+#    crMax = cr_approx - Ltf_nose - crTol            # length from cr_approx to rear thruster
     ### Utility Object ###
     myUti = uti()
     
@@ -89,7 +101,7 @@ def set_params():
 
 def CS_controller(error_pitch, int_error_pitch, der_error_pitch):
     global DPC
-    DPC.CS_Pterm      = error*DPC.CS_Pgain
+    DPC.CS_Pterm      = error_pitch*DPC.CS_Pgain
     DPC.CS_Iterm      = 0 # TODO int_error*DPC.CS_Igain
     DPC.CS_Dterm      = 0 # TODO der_err*DPC.CS_Dgain
 
@@ -124,21 +136,28 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
             DPC.Pitch_Iterm = int_error_pitch*DPC.Pitch_Igain
             DPC.Pitch_Dterm = der_error_pitch*DPC.Pitch_Dgain
 
-            cr = DPC.Pitch_Pterm + DPC.Pitch_Iterm + DPC.Depth_Dterm # determine a deviation of a center of rotation to stabilise the pitching
-            cr = myUti.limits(cr, -DPC.crMax, DPC.crMax)       #Function to contrain within defined limits
+            cr = DPC.Pitch_Pterm + DPC.Pitch_Iterm + DPC.Pitch_Dterm # determine a deviation of a center of rotation to stabilise the pitching
 
         else:
             cr = 0
         
-        # determine relative arm lengths for thrust allocation
+        cr = myUti.limits(-cr, crMin, crMax)       # Function to contrain within defined limits (w.r.t. cr_approx)
+        
         DPC.cr = cr
-        cr = cr_approx + numpy.sign(DPC.Depth_Thrust)*cr           # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
+        cr = cr_approx - cr #
         Ltf = cr-Ltf_nose   # Moment arm of front vertical thruster from the cr [metre]
         Ltr = L_th-Ltf      # Moment arm of rear vertical thruster from the cr [metre]
+        print [crMax-crMin, cr, Ltf, Ltr]
+        
+        DPC.Ltf = Ltf
+        DPC.Ltr = Ltr
+        DPC.crNose = cr
         
         ## distribute a generalised force onto each thruster based on a relative arm length
-        thruster0 = float(DPC.Depth_Thrust)/float(Ltf)
-        thruster1 = float(DPC.Depth_Thrust)/float(Ltr)
+#        thruster0 = float(DPC.Depth_Thrust)/float(Ltf)
+#        thruster1 = float(DPC.Depth_Thrust)/float(Ltr)
+        thruster0 = float(DPC.Depth_Thrust)*float(Ltr)/float(Ltf+Ltr)
+        thruster1 = float(DPC.Depth_Thrust)*float(Ltf)/float(Ltf+Ltr)
 
         thruster0 = numpy.sign(thruster0)*(numpy.abs(thruster0))**0.5 # according to a relationship between thrust and rpm
         thruster1 = numpy.sign(thruster1)*(numpy.abs(thruster1))**0.5 # according to a relationship between thrust and rpm
@@ -149,7 +168,7 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
             scale_factor = float(DPC.Thrust_Smax)/float(numpy.abs(thruster0))
             thruster0 = thruster0*scale_factor
             thruster1 = thruster1*scale_factor
-        if numpy.abs(DPC.thruster1) > DPC.Thrust_Smax:
+        if numpy.abs(thruster1) > DPC.Thrust_Smax:
             scale_factor = float(DPC.Thrust_Smax)/float(numpy.abs(thruster1))
             thruster0 = thruster0*scale_factor 
             thruster1 = thruster1*scale_factor
@@ -157,7 +176,7 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
     
         DPC.thruster0 = 0.
         DPC.thruster1 = 0.
-    
+        
     DPC.thruster0 = int(round(thruster0))
     DPC.thruster1 = int(round(thruster1))
     
@@ -177,7 +196,7 @@ def main_control_loop():
         controller_onOff = Bool()
         set_params()
         
-        controlRate = 10. # [Hz]
+        controlRate = 5. # [Hz]
         r = rospy.Rate(controlRate)
         controlPeriod = 1/controlRate # [sec]
         
@@ -203,7 +222,7 @@ def main_control_loop():
                 [error_depth, int_error_depth] = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
                 [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
                 
-                [CS_demand] = CS_controller(error_pitch, int_error_pitch, der_error_pitch)
+                CS_demand = CS_controller(error_pitch, int_error_pitch, der_error_pitch)
                 [thruster0, thruster1] = thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch)
                 
                 # update the heading_control.msg, and this will be subscribed by the logger.py
@@ -241,13 +260,11 @@ def main_control_loop():
 ################################################################################
 
 def determinePitchBias(depth_current,depth_demand):
-    
     if propDemand > 10:
         pitchBias = DPC.pitchBiasGain*(depth_demand-depth_current)
-        myUti.limits(pitchBias,0,DPC.pitchBiasMax)
+        myUti.limits(pitchBias,-DPC.pitchBiasMax,DPC.pitchBiasMax)
     else:
         pitchBias = 0
-        
     return pitchBias
 
 def system_state_depth(dt,depth_current,depth_demand,der_error_depth):
@@ -296,7 +313,7 @@ def system_state_pitch(dt,pitch_current,pitch_demand,pitchBias):
         # PI-D strategy (compute the derivative of pitch)
         sample_pitch[1] = sample_pitch[0]	                # Shift old values up in the array
         sample_pitch[0] = error_pitch				        # Set first array term to new error value
-        der_error_pitch = (sample_pitch[0]-sample_pitch[1])/dt    # Calculate the derivative error
+        der_error_pitch = -(sample_pitch[0]-sample_pitch[1])/dt    # Calculate the derivative error: need a negative at front because the coordinate convention
         
     # update the error terms. These will be subscribed by the logger node.
     DPC.error_pitch = error_pitch
@@ -332,7 +349,7 @@ def pitch_demand_callback(pitchd):
     
 def prop_demand_callback(propd):
     global propDemand
-    propDemand = propd
+    propDemand = propd.data
 
 ################################################################################
 ######## INITIALISATION ########################################################

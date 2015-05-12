@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
 """
-A drive to communicate with a tail unit consisting of control surfaces and propeller
+A driver to communicate with a tail unit that consists of control surfaces and propeller.
 
 ### MODIFICATION
-10/4/2015 automatically shutdown the actuators if there is no new message published on a relevant topic for longer then "timeLastDemandMax".
-11/4/2015 control rate viw rospy.Rate()
+10/4/2015 add watchdog to automatically shutdown the actuators if there is no new message published on a relevant topic for longer then "timeLastDemandMax".
+11/4/2015 control rate via rospy.Rate()
 
 """
 
@@ -50,7 +50,6 @@ def tail_section_loop(status):
     global e_port
     global prop
     
-    freq = 10.
     dt = 0
     prop_full_time = 1.0
     prop_on = 0
@@ -61,16 +60,21 @@ def tail_section_loop(status):
     e_port = 70
     prop = 94
     
+    controlRate = 5. # [Hz]
+    controlPeriod = 1/controlRate
+    r = rospy.Rate(controlRate)
+    
 ################################################################################
 ################################################################################
         
     while not rospy.is_shutdown():
-        
-        pubStatus.publish(nodeID = 2, status = status)
-        
+
+        timeRef = time.time()
         time_zero = time.time()
         prop_on = prop_on + dt
         
+        pubStatus.publish(nodeID = 2, status = status)
+                
         if time.time()-timeLastDemandProp>timeLastDemandMax:
             [prop, prop_on] = speedToSetpoint(0, prop_on, prop_full_time)
         else:
@@ -83,7 +87,6 @@ def tail_section_loop(status):
             d_bottom = angleToSetpoint(0, 70)
             c_starb = angleToSetpoint(0, 70)
             e_port = angleToSetpoint(0, 70)
-
         
         message = 'b%03dc%03dd%03de%03df%03d' %(b_top, c_starb, d_bottom , e_port, prop)
         #print 'message: ',message
@@ -91,18 +94,25 @@ def tail_section_loop(status):
             serialPort.write(message)   #POSSIBLE ISSUE STILL FAILS EVEN THIUGH IN TRY!
         except:
             print 'Write error'
-    
+
         try:
             feedback = serialPort.read(25)
             process_feedback(feedback)
+
         except:
             print 'read error'
+                
+        timeElapse = time.time()-timeRef
+        if timeElapse < controlPeriod:
+            r.sleep()
+        else:
+            str = "tail_section rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
         
         dt = time.time() - time_zero
-        
-        while dt < (1/freq):
-            dt = time.time() - time_zero
-            time.sleep(0.01)
+#        while dt < (1/freq):
+#            dt = time.time() - time_zero
+#            time.sleep(0.01)
             
 ################################################################################
 ################################################################################
@@ -229,7 +239,7 @@ def process_feedback(feedback):
      
      if abs(prop_demand) > 0:
         raw = float(feedback[21:24])
-        prop_rpm = ((1-1/numpy.exp(0.05*(raw-340)))*(raw*0.45)-80)*numpy.sign(prop_demand)
+        prop_rpm = ((1-1/numpy.exp(0.05*(raw-340)))*(raw*0.45)-80)*numpy.sign(prop_demand)/20.
      else:
         prop_rpm = 0
         
@@ -297,5 +307,3 @@ if __name__ == '__main__':
         pubStatus.publish(nodeID = 2, status = status)
     
     tail_section_loop(status)
- 
-

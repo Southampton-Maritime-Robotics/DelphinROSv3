@@ -11,7 +11,7 @@ class actions(smach.State):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.delay_thruster = 0 # allow the vehicle to gain a speed (value is specified in second) 
-        self.delay_action = self.delay_thruster+900 # let the vehicle doing those actions for a period of time (value is specified in second)
+        self.delay_action = self.delay_thruster+15 # let the vehicle doing those actions for a period of time (value is specified in second)
             
     def execute(self, userdata):
         outcome = 'aborted' # set exit flag to aborted by default
@@ -20,8 +20,6 @@ class actions(smach.State):
         ### Perform actions ################################################
         ####################################################################
 
-        # initialise a reference time
-        time_zero=time.time()
         # apply a setpoint to a relevant actuator
         self.__controller.setRearProp(0)
         self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
@@ -34,15 +32,41 @@ class actions(smach.State):
         
         flagTest = True
         timeStart = time.time()
-        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-            pass
+
+#        demandProp = [10,12,14,16,18,20,22]
+#        for dem in demandProp:
+#            time_zero=time.time()
+#            while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
+#                self.__controller.setRearProp(dem)
             
+#        nSamp = 500
+#        a = numpy.zeros([nSamp])
+#        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
+#            timeRef = time.time()
+#            while time.time()-timeRef<3:
+#                self.__controller.setArduinoThrusterVertical(100,100) # (FrontVer,RearVer)
+#            timeRef = time.time()
+#            while time.time()-timeRef<3:
+#                self.__controller.setArduinoThrusterVertical(200,200) # (FrontVer,RearVer)
+
+#            self.__controller.setRearProp(22)
+#            a = numpy.append(a[1:nSamp],[self.__controller.getPropRPM()])
+#            print "mean: ", numpy.mean(a), "current: ", self.__controller.getPropRPM()
+
 #            self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)            
             
-#            if time.time()-timeStart < 10:
-##                self.__controller.setHeading(-20)
-#                self.__controller.setDepth(2)
-##                self.__controller.setRearProp(15)
+        while not rospy.is_shutdown() and time.time()-timeStart < 60:
+            pass
+#            self.__controller.setDepth(0.25) # specified depth demand in [metre]
+#            self.__controller.setPitch(0) # specified pitch demand in [degree] 
+#            self.__controller.setHeading(290)
+#            self.__controller.setRearProp(0)
+#        timeStart = time.time()
+#        while not rospy.is_shutdown() and time.time()-timeStart < 15:
+#            self.__controller.setDepth(0.25) # specified depth demand in [metre]
+#            self.__controller.setPitch(0) # specified pitch demand in [degree] 
+#            self.__controller.setHeading(290)
+#            self.__controller.setRearProp(10)
 ##                self.__controller.setControlSurfaceAngle(-30,-30,-30,-30) # (VerUp,HorRight,VerDown,HorLeft)
         
         # stop all the actuators

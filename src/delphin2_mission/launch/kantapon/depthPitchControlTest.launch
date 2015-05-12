@@ -23,7 +23,7 @@
     <!--Easleigh North lat_orig=50.95702499999999 long_orig=-1.36675104 -->
     <!--Coordinates are for south pier, middle south of lake (X,Y) = (-24.6,30.0) -->
     
-    <node name="mission_script" pkg="delphin2_mission" type="mission_script_kantapon_headingControlTest.py"  output="screen" required="true" /> 
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_kantapon_depthPitchControlTest.py"  output="screen" required="true" /> 
     
     <!-- Add all other nodes under here! -->
     
@@ -42,6 +42,7 @@
     <!-- <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner4.py"  /> -->
     
     <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py" output = "screen"/>
+    <node name="depth_pitch_controller" pkg="lowlevel_controllers" type="depth_pitch_controller_PID.py" output = "screen"/>
             
     <include file="$(find delphin2_mission)/launch/thruster_system.launch" />
     <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py"/> 

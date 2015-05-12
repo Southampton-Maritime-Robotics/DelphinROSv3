@@ -19,9 +19,7 @@ from state_camera                 import camera
 from state_terminalZ              import terminalZ
 from state_N                      import N
 from state_setTail                import setTail
-from state_actionserver_goToDepth import GoToDepthServer
 from hardware_interfaces.msg      import compass
-#### from hardware_interfaces.msg      import GoToDepthAction, GoToDepthGoal
 from actionlib                    import *
 from actionlib.msg                import *
 from std_msgs.msg import String
