@@ -44,10 +44,8 @@ LatLonAlt = location.Boldrewood_Campus
 ## request data packets
 # available options {'Acc_lin','FreeAcc_lin','Vel_ang','Ori','Temp'}
 # careful with different publishing frequencies!
-# MagField and Acc_lin at the same time will not work with the
-# current packet interpretation!
-ReqPacket = {'req.MagField','req.Acc_lin','req.Vel_ang','req.Ori'}
-# ReqPacket = {'req.MagField'}
+#ReqPacket = {'req.MagField','req.Acc_lin','req.Vel_ang','req.Ori'}
+ReqPacket = {'req.MagField', 'req.Acc_lin', 'req.Ori'}
 #ReqPacket = {'req.Acc_lin','req.Ori'}
 # need to check the allignment matrix when using FreeAcc_lin
 
@@ -138,16 +136,15 @@ class MTDevice(object):
 				while len(buf)<TotLength:
 					buf.extend(self.device.read(TotLength-len(buf)))
 				
+                                #print("%%%%%%%%% ORIGINAL MESSAGE")
+                                #print(' '.join(["%02x"%x for x in buf]))
 				if 0xFF&sum(buf[1:]):
 					sys.stderr.write("MT: invalid checksum; discarding data and "\
-							"waiting for next message.\n")
-                                        # This is where an error in analysis happens
-                                        print(' '.join(["%02x"%x for x in buf]))
+						"waiting for next message.\n")
 					del buf[:-HeaderLength]
 					continue
-
-				data = str(buf[HeaderLength+1:-1])
-				return data
+                data = str(buf[HeaderLength+1:-1])
+                return data
 #		else:
 #			raise MTException("could not find MTData message.")
 			
@@ -163,8 +160,7 @@ class MTDevice(object):
 			def waitfor(size=1):
 				while self.device.inWaiting() < size:
 					if time.time()-new_start >= __timeout:
-                                                pass
-						#raise MTException("timeout waiting for message.")
+				raise MTException("timeout waiting for message.")
 
 			c = self.device.read()
 			while (not c) and ((time.time()-new_start)<__timeout):
@@ -444,9 +440,7 @@ class MTDevice(object):
 					channels.append(ch)
 				o['channels'] = channels
 			else:
-                                print("%%%%% Error line 447")
-				#raise MTException("unknown packet: 0x%04X."%data_id)
-                                pass
+				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_SCR(data_id, content, ffmt):
 			o = {}
@@ -507,9 +501,7 @@ class MTDevice(object):
 				elif (data_id&0x0003) == 0x0:
 					ffmt = 'f'
 				else:
-                                        print("%%%%% Error line 510")
-                                        pass
-					#raise MTException("fixed point precision not supported.")
+					raise MTException("fixed point precision not supported.")
 				content = data[3:3+size]
 				data = data[3+size:]
 				group = data_id&0xFF00
@@ -540,16 +532,10 @@ class MTDevice(object):
 				elif group == XDIGroup.Status:
 					output['Status'] = parse_status(data_id, content, ffmt)
 				else:
-                                        print("%%%%% error line 543")
-					#raise MTException("unknown XDI group: 0x%04X."%group)
-                                        pass
+					raise MTException("unknown XDI group: 0x%04X."%group)
 			except struct.error, e:
-                                print("Error line 547")
-				#raise MTException("couldn't parse MTData2 message.")
-                                pass
-
+				raise MTException("couldn't parse MTData2 message.")
 		return output
-
 ##############################
 # # # XSensDriver object # # #
 ##############################
@@ -584,8 +570,7 @@ class XSensDriver(object):
 		rospy.Subscriber('compass_old', compass, self.callback_COMPASS_msg)
 		# create messages and default values
 		self.com = compass()
-                self.mag = Magnetometer_msg()
-		
+        self.mag = Magnetometer_msg()
 		self.depth = 0.0
 		self.depth_filt = 0.0
 		self.depth_der = 0.0
@@ -651,10 +636,10 @@ class XSensDriver(object):
 		has_Ori = False
 		has_AngVel = False
 		has_Acc = False
-                has_Mag = False
+        has_Mag = False
 
 		pub_IMU = False
-                pub_Mag = False
+        pub_Mag = False
 
 		# get data and split it into particular variables
 		output = self.mt.read_measurement2(self.dataLength)
@@ -671,44 +656,44 @@ class XSensDriver(object):
 		if output.has_key('Acceleration'):
 			out_Acc = output['Acceleration']
 			has_Acc = True
-                if output.has_key('Magnetic'):
-                        out_Mag = output['Magnetic']
-                        has_Mag = True
+        if output.has_key('Magnetic'):
+            out_Mag = output['Magnetic']
+            has_Mag = True
 		
 		# fill information where it's due #
 		if has_Temp:
-			self.com.temperature = out_Temp['Temp']
-			pub_IMU = True
+                    self.com.temperature = out_Temp['Temp']
+                    pub_IMU = True
 		if has_Ori:
-			# compensate a heading offset due to a different in the reference frame
-			out_Ori['Yaw'] = out_Ori['Yaw'] + 90
-			# remap heading from [-pi,pi] to [0,2pi]
-			if out_Ori['Yaw']>0:
-				out_Ori['Yaw'] = 360-out_Ori['Yaw']
-			else:
-				out_Ori['Yaw'] = -out_Ori['Yaw']			
-			# b-frame convension base on the orientation of sensor mounted on delphin2	
-			self.com.roll = -out_Ori['Roll']
-			self.com.pitch = out_Ori['Pitch']
-			self.com.heading = out_Ori['Yaw']
-			pub_IMU = True
+                    # compensate a heading offset due to a different in the reference frame
+                    out_Ori['Yaw'] = out_Ori['Yaw'] + 90
+                    # remap heading from [-pi,pi] to [0,2pi]
+                    if out_Ori['Yaw']>0:
+                            out_Ori['Yaw'] = 360-out_Ori['Yaw']
+                    else:
+                            out_Ori['Yaw'] = -out_Ori['Yaw']			
+                    # b-frame convension base on the orientation of sensor mounted on delphin2	
+                    self.com.roll = -out_Ori['Roll']
+                    self.com.pitch = out_Ori['Pitch']
+                    self.com.heading = out_Ori['Yaw']
+                    pub_IMU = True
 		if has_AngVel:
-			# b-frame convension base on the orientation of sensor mounted on delphin2
-			self.com.angular_velocity_x = -out_AngVel['gyrX']
-			self.com.angular_velocity_y = out_AngVel['gyrY']
-			self.com.angular_velocity_z = -out_AngVel['gyrZ']
-			pub_IMU = True
+                    # b-frame convension base on the orientation of sensor mounted on delphin2
+                    self.com.angular_velocity_x = -out_AngVel['gyrX']
+                    self.com.angular_velocity_y = out_AngVel['gyrY']
+                    self.com.angular_velocity_z = -out_AngVel['gyrZ']
+                    pub_IMU = True
 		if has_Acc: 
-			# b-frame convension base on the orientation of sensor mounted on delphin2
-			if out_Acc.has_key('freeAccX'):
-				self.com.ax = out_Acc['freeAccX']
-				self.com.ay = -out_Acc['freeAccY']
-				self.com.az = out_Acc['freeAccZ']
-			elif out_Acc.has_key('accX'):
-				self.com.ax = out_Acc['accX']
-				self.com.ay = -out_Acc['accY']
-				self.com.az = out_Acc['accZ']
-			pub_IMU = True
+                    # b-frame convension base on the orientation of sensor mounted on delphin2
+                    if out_Acc.has_key('freeAccX'):
+                            self.com.ax = out_Acc['freeAccX']
+                            self.com.ay = -out_Acc['freeAccY']
+                            self.com.az = out_Acc['freeAccZ']
+                    elif out_Acc.has_key('accX'):
+                            self.com.ax = out_Acc['accX']
+                            self.com.ay = -out_Acc['accY']
+                            self.com.az = out_Acc['accZ']
+                    pub_IMU = True
                 if has_Mag:
                     self.mag.magnetometer_x = out_Mag['magX']
                     self.mag.magnetometer_y = out_Mag['magY']
@@ -722,4 +707,5 @@ class XSensDriver(object):
 			self.com.depth_filt = self.depth_filt
 			self.com.depth_der = self.depth_der
 			self.COMPASS_pub.publish(self.com)
-	
+                if pub_Mag:
+                        self.MAGNETOMETER_pub.publish(self.mag)
