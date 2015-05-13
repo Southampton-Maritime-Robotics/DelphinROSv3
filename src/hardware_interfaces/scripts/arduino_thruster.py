@@ -133,6 +133,7 @@ def getVoltage():
                 timeElapse = time.time()-timeStart # elapsed time for finding a header
     except:
         pass
+    vol = vol*1.08 # compensate the voltage reading
     
     return vol # return in mili vol
     
