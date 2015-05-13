@@ -45,8 +45,8 @@ LatLonAlt = location.Boldrewood_Campus
 # available options {'Acc_lin','FreeAcc_lin','Vel_ang','Ori','Temp'}
 # careful with different publishing frequencies!
 #ReqPacket = {'req.MagField','req.Acc_lin','req.Vel_ang','req.Ori'}
-ReqPacket = {'req.MagField', 'req.Acc_lin', 'req.Ori'}
-#ReqPacket = {'req.Acc_lin','req.Ori'}
+#ReqPacket = {'req.MagField', 'req.Acc_lin', 'req.Ori'}
+ReqPacket = {'req.Acc_lin','req.Ori'}
 # need to check the allignment matrix when using FreeAcc_lin
 
 _baudrate = 115200
@@ -158,9 +158,9 @@ class MTDevice(object):
 
 			# Makes sure the buffer has 'size' bytes.
 			def waitfor(size=1):
-				while self.device.inWaiting() < size:
-					if time.time()-new_start >= __timeout:
-				raise MTException("timeout waiting for message.")
+			    while self.device.inWaiting() < size:
+			        if time.time()-new_start >= __timeout:
+			            raise MTException("timeout waiting for message.")
 
 			c = self.device.read()
 			while (not c) and ((time.time()-new_start)<__timeout):
@@ -570,7 +570,7 @@ class XSensDriver(object):
 		rospy.Subscriber('compass_old', compass, self.callback_COMPASS_msg)
 		# create messages and default values
 		self.com = compass()
-        self.mag = Magnetometer_msg()
+                self.mag = Magnetometer_msg()
 		self.depth = 0.0
 		self.depth_filt = 0.0
 		self.depth_der = 0.0
@@ -636,10 +636,10 @@ class XSensDriver(object):
 		has_Ori = False
 		has_AngVel = False
 		has_Acc = False
-        has_Mag = False
+                has_Mag = False
 
 		pub_IMU = False
-        pub_Mag = False
+                pub_Mag = False
 
 		# get data and split it into particular variables
 		output = self.mt.read_measurement2(self.dataLength)
@@ -656,9 +656,9 @@ class XSensDriver(object):
 		if output.has_key('Acceleration'):
 			out_Acc = output['Acceleration']
 			has_Acc = True
-        if output.has_key('Magnetic'):
-            out_Mag = output['Magnetic']
-            has_Mag = True
+                if output.has_key('Magnetic'):
+                        out_Mag = output['Magnetic']
+                        has_Mag = True
 		
 		# fill information where it's due #
 		if has_Temp:
