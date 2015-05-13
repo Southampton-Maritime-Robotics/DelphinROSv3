@@ -45,8 +45,8 @@ LatLonAlt = location.Boldrewood_Campus
 # available options {'Acc_lin','FreeAcc_lin','Vel_ang','Ori','Temp'}
 # careful with different publishing frequencies!
 #ReqPacket = {'req.MagField','req.Acc_lin','req.Vel_ang','req.Ori'}
-#ReqPacket = {'req.MagField', 'req.Acc_lin', 'req.Ori'}
-ReqPacket = {'req.Acc_lin','req.Ori'}
+ReqPacket = {'req.MagField', 'req.Acc_lin', 'req.Ori'}
+#ReqPacket = {'req.Acc_lin','req.Ori'}
 # need to check the allignment matrix when using FreeAcc_lin
 
 _baudrate = 115200
@@ -160,13 +160,15 @@ class MTDevice(object):
 			def waitfor(size=1):
 			    while self.device.inWaiting() < size:
 			        if time.time()-new_start >= __timeout:
-			            raise MTException("timeout waiting for message.")
+			            #raise MTException("timeout waiting for message.")
+                                    pass #%%%%%
 
 			c = self.device.read()
 			while (not c) and ((time.time()-new_start)<__timeout):
 				c = self.device.read()
 			if not c:
-				raise MTException("timeout waiting for message.")
+				#raise MTException("timeout waiting for message.")
+                                pass #%%%%%
 			if ord(c)<>0xFA: # search for a begining of package
 				continue # go back to "while (time.time()-start)<__timeout:"
 			# second part of preamble
@@ -199,7 +201,8 @@ class MTDevice(object):
 				continue
 			return (mid, buf[:-1])
 		else:
-			raise MTException("could not find message.")
+			#raise MTException("could not find message.")
+                        pass #%%%%%
 
 	## Send a message and read confirmation
 	def write_ack(self, mid, data=[]):
@@ -211,8 +214,9 @@ class MTDevice(object):
 			if mid_ack==(mid+1):
 				break
 		else:
-			raise MTException("Ack (0x%X) expected, MID 0x%X received instead"\
-					" (after 100 tries)."%(mid+1, mid_ack))
+			#raise MTException("Ack (0x%X) expected, MID 0x%X received instead"\
+			#		" (after 100 tries)."%(mid+1, mid_ack))
+                        # %%%%%
 			pass
 		return data_ack	
 
@@ -294,7 +298,8 @@ class MTDevice(object):
 			## available XKF scenarios
 			self.scenarios = scenarios
 		except struct.error:
-			raise MTException("could not parse the available XKF scenarios.")
+			#raise MTException("could not parse the available XKF scenarios.")
+                        pass #%%%%%
 		return scenarios
 		
 	def ReqBaudrate(self):
@@ -327,7 +332,8 @@ class MTDevice(object):
 			if (data_id&0x00F0) == 0x10:	# Temperature
 				o['Temp'], = struct.unpack('!'+ffmt, content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_timestamp(data_id, content, ffmt):
 			o = {}
@@ -350,7 +356,8 @@ class MTDevice(object):
 			elif (data_id&0x00F0) == 0x80:	# Frame Range
 				o['startFrame'], o['endFrame'] = struct.unpack('!HH', content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_orientation_data(data_id, content, ffmt):
 			o = {}
@@ -364,7 +371,8 @@ class MTDevice(object):
 				o['Roll'], o['Pitch'], o['Yaw'] = struct.unpack('!'+3*ffmt,
 						content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_pressure(data_id, content, ffmt):
 			o = {}
@@ -372,7 +380,8 @@ class MTDevice(object):
 				# FIXME is it really U4 as in the doc and not a float/double?
 				o['Pressure'], = struct.unpack('!L', content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_acceleration(data_id, content, ffmt):
 			o = {}
@@ -386,7 +395,8 @@ class MTDevice(object):
 				o['freeAccX'], o['freeAccY'], o['freeAccZ'] = \
 						struct.unpack('!'+3*ffmt, content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_position(data_id, content, ffmt):
 			o = {}
@@ -400,7 +410,8 @@ class MTDevice(object):
 			elif (data_id&0x00F0) == 0x40:	# LatLon
 				o['lat'], o['lon'] = struct.unpack('!'+2*ffmt, content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_angular_velocity(data_id, content, ffmt):
 			o = {}
@@ -412,7 +423,8 @@ class MTDevice(object):
 				o['Delta q0'], o['Delta q1'], o['Delta q2'], o['Delta q3'] = \
 						struct.unpack('!'+4*ffmt, content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_GPS(data_id, content, ffmt):
 			o = {}
@@ -440,7 +452,8 @@ class MTDevice(object):
 					channels.append(ch)
 				o['channels'] = channels
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_SCR(data_id, content, ffmt):
 			o = {}
@@ -452,7 +465,8 @@ class MTDevice(object):
 				o['tempGyrX'], o['tempGyrY'], o['tempGyrZ'] = \
 						struct.unpack("!hhh", content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_analog_in(data_id, content, ffmt):
 			o = {}
@@ -461,7 +475,8 @@ class MTDevice(object):
 			elif (data_id&0x00F0) == 0x20:	# Analog In 2
 				o['analogIn2'], = struct.unpack("!H", content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_magnetic(data_id, content, ffmt):
 			o = {}
@@ -469,7 +484,8 @@ class MTDevice(object):
 				o['magX'], o['magY'], o['magZ'] = \
 						struct.unpack("!3"+ffmt, content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%%
 			return o
 		def parse_velocity(data_id, content, ffmt):
 			o = {}
@@ -477,7 +493,8 @@ class MTDevice(object):
 				o['velX'], o['velY'], o['velZ'] = \
 						struct.unpack("!3"+ffmt, content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				##raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%
 			return o
 		def parse_status(data_id, content, ffmt):
 			o = {}
@@ -488,7 +505,8 @@ class MTDevice(object):
 			elif (data_id&0x00F0) == 0x40:	# RSSI
 				o['RSSI'], = struct.unpack("!b", content)
 			else:
-				raise MTException("unknown packet: 0x%04X."%data_id)
+				#raise MTException("unknown packet: 0x%04X."%data_id)
+                                pass #%%%%%
 			return o
 
 		# data object
@@ -501,7 +519,8 @@ class MTDevice(object):
 				elif (data_id&0x0003) == 0x0:
 					ffmt = 'f'
 				else:
-					raise MTException("fixed point precision not supported.")
+					#raise MTException("fixed point precision not supported.")
+                                        pass #%%%%
 				content = data[3:3+size]
 				data = data[3+size:]
 				group = data_id&0xFF00
@@ -532,9 +551,11 @@ class MTDevice(object):
 				elif group == XDIGroup.Status:
 					output['Status'] = parse_status(data_id, content, ffmt)
 				else:
-					raise MTException("unknown XDI group: 0x%04X."%group)
+					#raise MTException("unknown XDI group: 0x%04X."%group)
+                                        pass #%%%%
 			except struct.error, e:
-				raise MTException("couldn't parse MTData2 message.")
+				#raise MTException("couldn't parse MTData2 message.")
+                                pass #%%%%
 		return output
 ##############################
 # # # XSensDriver object # # #
@@ -550,7 +571,8 @@ class XSensDriver(object):
 		try:
 			self.mt = MTDevice(device, 115200)
 		except serial.SerialException:
-			raise MTException("unable to open %s"%device)
+			#raise MTException("unable to open %s"%device)
+                        pass #%%%%
 		self.mt.RestoreFactoryDefaults() # restore all the setting to factory defaults. 
 		# By this point, sensor baudrate is definitely 115200.
 		# If the sensor baudrate does not match the desired value, Set the baudrate and reopen the sensor.
