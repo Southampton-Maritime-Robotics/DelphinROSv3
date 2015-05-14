@@ -11,7 +11,7 @@ class actions(smach.State):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.delay_thruster = 0 # allow the vehicle to gain a speed (value is specified in second) 
-        self.delay_action = self.delay_thruster+15 # let the vehicle doing those actions for a period of time (value is specified in second)
+        self.delay_action = self.delay_thruster+1500 # let the vehicle doing those actions for a period of time (value is specified in second)
             
     def execute(self, userdata):
         outcome = 'aborted' # set exit flag to aborted by default
@@ -55,7 +55,7 @@ class actions(smach.State):
 
 #            self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)            
             
-        while not rospy.is_shutdown() and time.time()-timeStart < 60:
+        while not rospy.is_shutdown() and time.time()-timeStart < self.delay_action:
             pass
 #            self.__controller.setDepth(0.25) # specified depth demand in [metre]
 #            self.__controller.setPitch(0) # specified pitch demand in [degree] 

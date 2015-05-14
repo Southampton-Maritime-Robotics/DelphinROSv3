@@ -35,7 +35,7 @@ class Initialise(smach.State):
                 while (time.time()-time_zero < self.__timeout) and not(all_online):
                    all_online = (self.__controller.getThrusterStatus() 
                         and self.__controller.getTailStatus()   
-                        and self.__controller.getAltimeterStatus()
+                        and True # self.__controller.getAltimeterStatus() # FIXME: uncomment me
                         and self.__controller.getGPSStatus()
                         and self.__controller.getCompassStatus())
 ####                   print 'thruster status = ', self.__controller.getThrusterStatus()
@@ -62,7 +62,8 @@ class Initialise(smach.State):
 
                 print 'thruster status = ', self.__controller.getThrusterStatus()
                 print 'tail status = ', self.__controller.getTailStatus()
-                print 'alt status = ', self.__controller.getAltimeterStatus()
+                print 'alt status = unloaded!!!!!!!!!!'                
+                # print 'alt status = ', self.__controller.getAltimeterStatus()
                 print 'gps status = ', self.__controller.getGPSStatus()
                 print 'compass status = ', self.__controller.getCompassStatus()
                 print 'all online = ', all_online
