@@ -1,6 +1,11 @@
 #!/usr/bin/python
 ###########
 #  VERSION AS OF 2/4/2012 
+
+
+# TODO smaria
+# At the moment, this is relying on data given in launch file
+# a set of defaults would be nice, so this script can run independently
 ###########
 
 import roslib; roslib.load_manifest('hardware_interfaces') 
@@ -129,7 +134,12 @@ def setupSonar():
     global serialPort 
     
     # Serial port settings for Micron Sonar #
-    serialPort = serial.Serial(port='/dev/ttyS3', baudrate='115200') 
+    #%%% use laptop serial port serialPort = serial.Serial(port='/dev/ttyS3', baudrate='115200') 
+
+    rospy.logerr("made it here %%%%%")
+    serialPort = serial.Serial(port='/dev/ttyUSB0', baudrate='115200')
+
+    rospy.logerr("made it here %%%%%")
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
