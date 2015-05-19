@@ -1,9 +1,10 @@
 #!/usr/bin/python
 
 """
-# this node subscribe to a motion demand, e.g. speed, heading, depth
-# A state vector of the virtual AUV is updated accordingly
-# The current state is then published as dummy messages of compass_out and position_dead
+# Description
+This node subscribe to a motion demand, e.g. speed, heading, depth
+A state vector of the virtual AUV is updated accordingly
+The current state is then published as dummy messages of compass_out and position_dead
 """
 
 import rospy

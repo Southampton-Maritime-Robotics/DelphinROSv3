@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+'''
 # Dry Land Test:
-# test of all sensors and actuators before the vehicle is run in water
-# - run thrusters and propeller at lower RPM
-
+test of all sensors and actuators before the vehicle is run in water
+- run thrusters and propeller at lower RPM
+'''
 
 import rospy
 import smach
@@ -64,9 +65,6 @@ def main():
     
     #Set Up Publisher for Mission Control Log
     pub = rospy.Publisher('MissionStrings', String)
-    
-    
-
     
     #Read back seat driver Settings
     

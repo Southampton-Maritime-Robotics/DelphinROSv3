@@ -1,5 +1,16 @@
 #!/usr/bin/env python
 
+'''
+# Dry Land Test:
+test of all sensors and actuators before the vehicle is run in water
+- run thrusters and propeller at lower RPM
+
+######################################
+#Modifications
+12/May/2015 use the feedback signal to identify if the actuators is functioning
+
+'''
+
 import rospy
 import numpy
 import smach
@@ -92,18 +103,18 @@ class dryLandTest(smach.State):
             rpmT0_avg = rpmT0_avg/float(N)
             rpmT1_avg = rpmT1_avg/float(N)
             
-#            if (rpmT0_avg < 100):
-#                str = "Problem with thruster 0. Average speed = %s" %rpmT0_avg
-#                rospy.logerr(str)
-#                return 'aborted'
-#            if (rpmT1_avg < 100):
-#                str = "Problem with thruster 1. Average speed = %s" %rpmT1_avg
-#                rospy.logerr(str)
-#                return 'aborted'
-#            str = "Thruster 0 - working"
-#            rospy.loginfo(str)
-#            str = "Thruster 1 - working"
-#            rospy.loginfo(str)
+            if (rpmT0_avg < 100):
+                str = "Problem with thruster 0. Average speed = %s" %rpmT0_avg
+                rospy.logerr(str)
+                return 'aborted'
+            if (rpmT1_avg < 100):
+                str = "Problem with thruster 1. Average speed = %s" %rpmT1_avg
+                rospy.logerr(str)
+                return 'aborted'
+            str = "Thruster 0 - working"
+            rospy.loginfo(str)
+            str = "Thruster 1 - working"
+            rospy.loginfo(str)
             
             #### Thruster 2 and 3 ####
             N = 0

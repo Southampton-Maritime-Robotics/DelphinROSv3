@@ -61,18 +61,18 @@ def main():
     O = array([-2,2]) # home: shifted from the origin a little to make sure it will not collide with the pier
     A = array([-28.,12.]) # reference point A
     B = array([-1.,64.]) # reference point B
-    # North pier of the Eastleigh lake (50.956473,-1.366835)
-    O = array([-2,2]) # home: shifted from the origin a little to make sure it will not collide with the pier
-    A = array([-20.,14.]) # reference point A
-    B = array([-30.,64.]) # reference point B
+#    # South pier of the Eastleigh lake (50.956473,-1.366835)
+#    O = array([-2,2]) # home: shifted from the origin a little to make sure it will not collide with the pier
+#    A = array([-20.,14.]) # reference point A
+#    B = array([-30.,64.]) # reference point B
     
     M = array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
     pathAtoB = numpy.vstack((A,B)).T
     pathMtoO = numpy.vstack((M,O)).T
     pathMtoA = numpy.vstack((M,A)).T
     pathOtoM = numpy.vstack((O,M)).T
-    pathTest = array([[-15,100,20,120],
-                      [-60,40,80,120]])
+#    pathTest = array([[-15,100,20,120],
+#                      [-60,40,80,120]])
     
     # guidance
     L_los = 5 # [m] line-of-sight distance
@@ -87,9 +87,14 @@ def main():
     
     # general
     timeDemandHold = 2 # 40 sec TODO actuator demand will be hold for this many second
-    timeDelay = 1 # 5-20 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
+    timeDelay = 1 # 20 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
     
     time.sleep(10) # TODO: to be removed: tempolary used to allow the system to come online
+    
+    # for testing at depth # TODO:
+    depthDemand = 0. # [m].
+    depthTol = 0.2 # [m]. It is account as the AUV get to the depth if the depth error is less than this.
+    depthDemandMin = 0.5 # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
 
 ################################################################################
 ########### STATE MACHINE ######################################################
@@ -124,7 +129,7 @@ def main():
 ####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'SURGE', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will guide the AUV back and forth between point A and B with different rudder RPM
-####        smach.StateMachine.add('SURGE', testSurge(lib,myUti,pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDelay), 
+####        smach.StateMachine.add('SURGE', testSurge(lib,myUti,pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDelay, depthDemand, depthTol, depthDemandMin), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
