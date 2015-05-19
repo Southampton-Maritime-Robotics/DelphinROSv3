@@ -67,13 +67,27 @@ def main():
 #    B = array([-30.,64.]) # reference point B
     
     M = array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
+
     pathAtoB = numpy.vstack((A,B)).T
+    pathBtoA = numpy.vstack((B,A)).T
     pathMtoO = numpy.vstack((M,O)).T
     pathMtoA = numpy.vstack((M,A)).T
     pathOtoM = numpy.vstack((O,M)).T
+    pathTest = numpy.vstack((O,M,A,B,M)).T
 #    pathTest = array([[-15,100,20,120],
 #                      [-60,40,80,120]])
-    
+
+    # determine range and heading to the first waypoint in the list # TODO: comment this block
+    # help to ensure that the AUV got hte location right
+    while not rospy.is_shutdown():
+        X = lib.getX()
+        Y = lib.getY()
+        Px = pathAtoB[0][0]
+        Py = pathAtoB[1][0]
+        rang, bear = myUti.rangeBearing([X,Y], [Px, Py])
+        print "range to the point is ", rang, "deg"
+        print "bearing to the point is ", bear, "metre"
+        
     # guidance
     L_los = 5 # [m] line-of-sight distance
     wp_R = 5 # [m] radius of acceptance
@@ -118,9 +132,9 @@ def main():
 
         #=================================================
         ## PATH FOLLOWING TEST 
-        # This state will get the AUV moving along the path
-####        smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R), 
-####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        # This state will get the AUV moving along the pathTest [O->M->A->B->M->O]. note that [M->O] is in the state 'HOME'
+        smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R), 
+            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         #=================================================
@@ -155,13 +169,13 @@ def main():
 
         #=================================================
         ## TURNING CIRCLE TEST 
-        # This state will get the AUV transit to point A
-        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
-            transitions={'succeeded':'TURNING', 'aborted':'HOME','preempted':'HOME'})
-        # This state will keep the AUV at point M and perform sway motion response test: TODO checi timeDemandHold
-        smach.StateMachine.add('TURNING', testTurningCircle(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay), 
-            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
-        #-------------------------------------------------
+####        # This state will get the AUV transit to point A
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
+####            transitions={'succeeded':'TURNING', 'aborted':'HOME','preempted':'HOME'})
+####        # This state will keep the AUV at point M and perform sway motion response test: TODO checi timeDemandHold
+####        smach.StateMachine.add('TURNING', testTurningCircle(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay), 
+####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+####        #-------------------------------------------------
         
         ## GENERIC STATE FOR EASTLEIGH LAKE
         # This state will get the AUV HOME

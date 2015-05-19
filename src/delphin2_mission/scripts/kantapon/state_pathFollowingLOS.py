@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+'''
+a horizontal plane path following algorithm based on line-of-sight technique
+
+'''
+
 import rospy
 import numpy
 import smach
@@ -30,9 +35,6 @@ class pathFollowingLOS(smach.State):
         Y = self.__controller.getY()
         eta = [X,Y]
         
-        # identify the waypoint to follow
-#        wpTarget = self.__uti.findFirstSegment(self.__path,eta)
-
         wpTarget = 1
         self.__path = numpy.vstack((eta,self.__path.T)).T # include the current location of the AUV as the first waypoint
         _,pathLen = self.__path.shape
@@ -42,7 +44,6 @@ class pathFollowingLOS(smach.State):
         print 'Y = ', self.__path[1,:]
         print 'target waypoint ', self.__path[:,wpTarget]
         
-        # move back and forth between two waypoint with different demandProp
         while not rospy.is_shutdown():
             
             time_ref = time.time()
@@ -81,14 +82,11 @@ class pathFollowingLOS(smach.State):
 
             los_vec = los_p-eta
             los_a = mod(atan2(los_vec[0],los_vec[1])*180/pi,360) # TODO: should also consider the side slip angle
-#            if los_a<0: # confine the los_a within [0,2pi)
-#                los_a = los_a+360
 
             # determine heading error
             errHeading = self.__uti.computeHeadingError(los_a,heading)
             u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__uGain,errHeading)
-#            u = self.__uMax*exp(-self.__uGain*abs(errHeading))
-####            
+ 
             # publish heading demand
             self.__controller.setHeading(los_a)
             # turn speedDemand into propeller demand and send
