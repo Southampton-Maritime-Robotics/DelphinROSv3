@@ -27,7 +27,7 @@ class testSway(smach.State):
         ### Perform actions ################################################
         ####################################################################
 
-        listThrusterDemand = [100, 200, 400, 700, 1400,2100] # list of thruster demand used in experiment
+        listThrusterDemand = [100, 200, 400, 700, 1400, 2100] # list of thruster demand used in experiment
         
         print 'execute sway motion response test'
         
