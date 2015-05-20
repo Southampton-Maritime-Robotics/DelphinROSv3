@@ -20,6 +20,10 @@ class testTurningCircle(smach.State):
         self.__wp_R = wp_R
         self.__timeDemandHold = timeDemandHold # demand will be hold for this many second
         self.__timeDelay = timeDelay
+        self.__listProp = [10,22] # list of propeller demand used in experiment
+        self.__listThruster = [400, 2000] # list of thruster demand used in experiment [+ve yaw CW]
+        self.__listRudder = [10,30] # list of rudder angle used in experiment [+ve yaw CW]
+        self.__headingBias = -25 # TODO [deg, +ve CW] point away from the target just so the vehicle have enough space for turning
 
     def execute(self, userdata):
         
@@ -27,11 +31,6 @@ class testTurningCircle(smach.State):
         ### Perform actions ################################################
         ####################################################################
 
-        listProp = [10,22] # list of propeller demand used in experiment
-        listThruster = [400, 2000] # list of thruster demand used in experiment [+ve yaw CW]
-        listRudder = [10,30] # list of rudder angle used in experiment [+ve yaw CW]
-        headingBias = -25 # TODO [deg, +ve CW] point away from the target just so the vehicle have enough space for turning
-        
         wpRang,_ = self.__uti.rangeBearing([self.__wp[0][0], self.__wp[1][0]],[self.__wp[0][1], self.__wp[1][1]]) # determine a range between waypoints as a reference
         wpIndex = 0
         
@@ -39,9 +38,9 @@ class testTurningCircle(smach.State):
         
         # move back and forth between two waypoint with different combination of propeller, thruster and rudder demand
             
-        for demandProp in listProp:
-            for demandThruster in listThruster:
-                for demandRudder in listRudder:
+        for demandProp in self.__listProp:
+            for demandThruster in self.__listThruster:
+                for demandRudder in self.__listRudder:
                     # go to the waypoint
                     print 'go to start point'
                     while not rospy.is_shutdown():
@@ -69,7 +68,7 @@ class testTurningCircle(smach.State):
                         Y = self.__controller.getY()
                         heading = self.__controller.getHeading()
                         rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][1-wpIndex], self.__wp[1][1-wpIndex]])
-                        headingDemand = mod(bear+headingBias,360) # deviate from the bearing by headingBias
+                        headingDemand = mod(bear+self.__headingBias,360) # deviate from the bearing by headingBias
                         errHeading = self.__uti.computeHeadingError( headingDemand, heading )
                         self.__controller.setHeading(headingDemand)
                         if abs(errHeading)>self.__errHeadingTol:
