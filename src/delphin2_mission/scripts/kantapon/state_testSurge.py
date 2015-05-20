@@ -41,6 +41,7 @@ class testSurge(smach.State):
         self.__depthDemand = depthDemand # [m].
         self.__depthTol = depthTol # [m]. It is account as the AUV get to the depth if the depth error is less than this.
         self.__depthDemandMin = depthDemandMin # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
+        self.__listProp = [10,14,18,22] # list of propeller demand used in experiment
 
     def execute(self, userdata):
         
@@ -48,12 +49,10 @@ class testSurge(smach.State):
         ### Perform actions ################################################
         ####################################################################
 
-        listProp = [10,14,18,22] # list of propeller demand used in experiment
-        
         wpRang,_ = self.__uti.rangeBearing([self.__wp[0][0], self.__wp[1][0]],[self.__wp[0][1], self.__wp[1][1]]) # determine a range between waypoints as a reference
         wpIndex = 0
 
-        for demandProp in listProp:
+        for demandProp in self.__listProp:
 
             # go to the waypoint
             print 'go to start point'
