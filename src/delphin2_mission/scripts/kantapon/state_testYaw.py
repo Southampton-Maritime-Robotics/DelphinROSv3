@@ -1,5 +1,23 @@
 #!/usr/bin/env python
 
+'''
+######################################
+# description
+A script to get the AUV to point M and let it executes the thruster demand when rudder is set to amidships and propeller is not running.
+If the depth demand is less than 0.5m, it will accaount as no depth demand specified.
+
+Routine
+    go to point M
+    descend to a desired depth
+    execute thruster setpoint
+    stop and ascend to the surface
+    
+######################################
+#Modifications
+19/May/2015: insert the depth control in the procedure
+
+'''
+
 import rospy
 import numpy
 import smach
