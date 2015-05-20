@@ -101,6 +101,7 @@ def main():
     
     # general
     timeDemandHold = 2 # 60 sec TODO actuator demand will be hold for this many second
+    turningAngle = 720 # [deg] TODO the vehicle has to turn this many degree before move to the next step
     timeDelay = 1 # 20 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
     
     time.sleep(10) # TODO: to be removed: tempolary used to allow the system to come online
@@ -152,7 +153,7 @@ def main():
         # This state will get the AUV transit to point M
 ####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'YAW', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will keep the AUV at point M and perform yaw motion response test: TODO checi timeDemandHold
+####        # This state will keep the AUV at point M and perform yaw motion response test: TODO check timeDemandHold
 ####        smach.StateMachine.add('YAW', testYaw(lib, myUti, M, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
@@ -162,17 +163,27 @@ def main():
         # This state will get the AUV transit to point M
 ####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will keep the AUV at point M and perform sway motion response test: TODO checi timeDemandHold
-####        smach.StateMachine.add('SWAY', testSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay), 
+####        # This state will keep the AUV at point M and perform sway motion response test: TODO check timeDemandHold
+####        smach.StateMachine.add('SWAY', testSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
+
+        #=================================================
+        ## SPIRAL TEST 
+####        # This state will get the AUV transit to point A
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
+####            transitions={'succeeded':'SPIRAL', 'aborted':'HOME','preempted':'HOME'})
+####        # This state will get the AUV perform a spiral manoeuvre
+####        smach.StateMachine.add('SPIRAL', testSpiral(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle), 
+####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+####        #-------------------------------------------------
 
         #=================================================
         ## TURNING CIRCLE TEST 
 ####        # This state will get the AUV transit to point A
 ####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'TURNING', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will keep the AUV at point M and perform sway motion response test: TODO checi timeDemandHold
+####        # This state will get the AUV perform a turning curcle manoeuvre: TODO check timeDemandHold
 ####        smach.StateMachine.add('TURNING', testTurningCircle(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
 ####        #-------------------------------------------------

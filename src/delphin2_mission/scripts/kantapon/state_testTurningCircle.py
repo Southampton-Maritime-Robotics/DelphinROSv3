@@ -1,5 +1,29 @@
 #!/usr/bin/env python
 
+'''
+######################################
+# description
+A script to get the AUV perform the turning circle manoeuvre.
+Given two reference points, the AUV will move in a straight line from one point with a heading bias to the other point. When it is travel far enough and the surge speed is steady, it will execute actuator (either rudders, thrusters or their combination). The setpoint will hold until the AUV have performed two circle turns (720 degree).
+
+Routine
+    go to first reference point
+    head to another reference point with a heading bias
+    descend to a desired depth
+    move forward with a fixed propeller setpoint
+    when far enough, execute the actuators
+    hold the demand until the AUV complete two turns
+    stop and ascend to the surface
+    
+######################################
+#TODO
+-make the AUV performs action at depth
+-include a criterion to let the AUV stop when it have performed 720 degree turn
+
+#Modifications
+
+'''
+
 import rospy
 import numpy
 import smach

@@ -108,10 +108,13 @@ class testSway(smach.State):
             print 'actuate thruster with demand = ', demandThruster
             timeStart = time.time()
             while not rospy.is_shutdown():
-                print float(demandThruster)/2300*0.5 # TODO: remove me kantapon
-                self.__controller.sway(float(demandThruster)/2300*0.5) # TODO: remove me kantapon
-                self.__controller.setArduinoThrusterHorizontal(demandThruster,demandThruster)
-                if time.time()-timeStart > self.__timeDemandHold:
+                if time.time()-timeStart <= self.__timeDemandHold:
+                    print float(demandThruster)/2300*0.5 # TODO: remove me kantapon
+                    self.__controller.sway(float(demandThruster)/2300*0.5) # TODO: remove me kantapon
+                    self.__controller.setArduinoThrusterHorizontal(demandThruster,demandThruster)
+                    if self.__depthDemand>=self.__depthDemandMin:
+                        self.__controller.setDepth(self.__depthDemand)
+                else:
                     # if the AUV perform action long enoght, move onto the next step
                     self.__controller.setRearProp(0)
                     self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
