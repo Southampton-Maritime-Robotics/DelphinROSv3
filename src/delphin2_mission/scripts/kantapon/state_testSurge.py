@@ -41,6 +41,7 @@ class testSurge(smach.State):
         self.__depthDemand = depthDemand # [m].
         self.__depthTol = depthTol # [m]. It is account as the AUV get to the depth if the depth error is less than this.
         self.__depthDemandMin = depthDemandMin # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
+        self.__listProp = [10,14,18,22] # list of propeller demand used in experiment
 
     def execute(self, userdata):
         
@@ -48,12 +49,10 @@ class testSurge(smach.State):
         ### Perform actions ################################################
         ####################################################################
 
-        listProp = [10,14,18,22] # list of propeller demand used in experiment
-        
         wpRang,_ = self.__uti.rangeBearing([self.__wp[0][0], self.__wp[1][0]],[self.__wp[0][1], self.__wp[1][1]]) # determine a range between waypoints as a reference
         wpIndex = 0
 
-        for demandProp in listProp:
+        for demandProp in self.__listProp:
 
             # go to the waypoint
             print 'go to start point'
@@ -62,16 +61,17 @@ class testSurge(smach.State):
                 Y = self.__controller.getY()
                 heading = self.__controller.getHeading()
                 rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
-                if rang < self.__wp_R:
+                if rang >= self.__wp_R:
+                    errHeading = self.__uti.computeHeadingError(bear,heading)
+                    u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__gGain,errHeading)
+                    self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
+                    self.__controller.setHeading(bear)
+                else:
+                    # when the AUV get to the start point, move onto the next step
                     self.__controller.setRearProp(0)
                     self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                     self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-                    time.sleep(self.__timeDelay) # vehicle will stop for this many second as to let its motion decay
                     break
-                errHeading = self.__uti.computeHeadingError(bear,heading)
-                u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__gGain,errHeading)
-                self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
-                self.__controller.setHeading(bear)
 
             # point toward anoter waypoint
             print 'head toward the target'
@@ -82,24 +82,29 @@ class testSurge(smach.State):
                 heading = self.__controller.getHeading()
                 rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][1-wpIndex], self.__wp[1][1-wpIndex]])
                 errHeading = self.__uti.computeHeadingError(bear,heading)
-                self.__controller.setHeading(bear)
                 if abs(errHeading)>self.__errHeadingTol:
                     timeStart = time.time()
-                timeElapse = time.time()-timeStart
-                if timeElapse>self.__timeDelay:
+                if time.time()-timeStart <= self.__timeDelay:
+                    self.__controller.setHeading(bear)
+                else:
+                    # when the heading is steady, move onto the next step
                     self.__controller.setRearProp(0)
                     self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                     self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                     break
-
+                    
             # bring the AUV to depth if the depth demand is specified
             if self.__depthDemand>=self.__depthDemandMin:
                 print 'descend to desired depth'
-                timeRef = time.time()                
-                while abs(getDepth()-self.__depthDemand)>self.__depthTol and (time.time()-timeRef) < self.__timeDelay:
-                    self.__controller.setDepth(self.__depthDemand)
+                timeStart = time.time()
+                while not rospy.is_shutdown():
                     if abs(getDepth()-self.__depthDemand)>self.__depthTol:
                         timeRef = time.time() # reset the reference time
+                    if time.time()-timeStart <= self.timeDelay:
+                        self.__controller.setDepth(self.__depthDemand)
+                    else:
+                        # if the AUV get to the depth and stay there long enough, move onto the next step
+                        break
 
             # set demandProp
             print 'apply propeller demand = ', demandProp                
@@ -108,17 +113,19 @@ class testSurge(smach.State):
                 Y = self.__controller.getY()
                 rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
                 
-                if abs(wpRang-rang) < self.__wp_R:
-                    self.__controller.setRearProp(0)
-                    self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
-                    self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-                    self.__controller.setDepth(0)
-                    break
-                else:
+                if abs(wpRang-rang) >= self.__wp_R:
                     self.__controller.setRearProp(demandProp)
                     if self.__depthDemand>=self.__depthDemandMin:
                         self.__controller.setDepth(self.__depthDemand)
-            
+                else:
+                    # if the AUV travel far enough, move onto the next step
+                    self.__controller.setRearProp(0)
+                    self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                    self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+                    if self.__depthDemand>=self.__depthDemandMin:
+                        self.__controller.setDepth(0)
+                    break
+
             # vehicle will stop for this many second as to let the AUV ascend to the surface
             if self.__depthDemand>=self.__depthDemandMin:
                 self.__controller.setDepth(0) # by defult, the depth controller will turn off on its own after 1sec of not reciving new demand

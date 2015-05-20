@@ -97,10 +97,10 @@ def main():
     uMax = 1 # [m/s] maximum surge speed
 
     # tolerant
-    errHeadingTol = 2 # TODO [sec] tolarance in heading error
+    errHeadingTol = 2 # TODO [deg] tolarance in heading error
     
     # general
-    timeDemandHold = 2 # 40 sec TODO actuator demand will be hold for this many second
+    timeDemandHold = 2 # 60 sec TODO actuator demand will be hold for this many second
     timeDelay = 1 # 20 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
     
     time.sleep(10) # TODO: to be removed: tempolary used to allow the system to come online
@@ -153,7 +153,7 @@ def main():
 ####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'YAW', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will keep the AUV at point M and perform yaw motion response test: TODO checi timeDemandHold
-####        smach.StateMachine.add('YAW', testYaw(lib, myUti, M, uGain, uMax, wp_R, timeDemandHold, timeDelay), 
+####        smach.StateMachine.add('YAW', testYaw(lib, myUti, M, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
