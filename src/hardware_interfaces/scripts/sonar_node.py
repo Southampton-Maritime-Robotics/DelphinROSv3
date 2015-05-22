@@ -39,9 +39,10 @@ def sonarTalker():
     mtSendData = ''.join([chr(char) for char in mtSendData[:]])  # Converts from string to hex
     serialPort.write(mtSendData)                                 # Send mtSendData message to sonar
 
-    print "Sending ping trigger to sonar - mtSendData:"
-    print mtSendData
-    print "--------"
+    rospy.logdebug("Sending ping trigger to sonar - mtSendData:")
+    rospy.logdebug(mtSendData)
+    #print mtSendData
+    #print "--------"
 
 
 ################################################################
@@ -299,7 +300,40 @@ def shutdown():
 ################################################################
 if __name__ == '__main__':
 
-    rospy.init_node('sonar')
+    # if script is main, assume its run manually for debugging
+    rospy.init_node('sonar', log_level=rospy.DEBUG)
+    # Default setup, normally replaced by setting in launch file
+    # %%%% this is not enough, script still doesn't run through
+    """
+    RLim = 95.0         # this is an Angle limit
+    LLim = 85.0         # this is an Angle limit
+    heading = 3200
+    NBins = 200         # 0 to 1500 #TODO smaria is this correct?
+    Range = 20          # in m
+    ADInterval = 0
+    GlitchCount = 1
+    Threshold = 10
+    BlankDist = 0.6
+    headType = 1
+    SID = 255
+    DID = 2
+    msgSeq = 128
+    Node = 255
+    HdCtrl1 = '00000101'
+    HdCtrl2 = '00100011'
+    DstHead = 11
+    ADSpan = 210
+    ADLow = 0
+    IGainB1 = 84
+    IGainB2 = 84
+    moTime = 25
+    step = 64           # step size of motor in radians
+    MaxADBuf = 500
+    Lockout = 100
+    MinorAxis = 1600
+    MajorAxis = 1
+    Ctl2 = 0
+    """
     
     global pub
     global updateFlag
