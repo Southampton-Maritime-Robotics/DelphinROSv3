@@ -1,10 +1,8 @@
 #!/usr/bin/env python
-import roslib; roslib.load_manifest('xsens_driver')
 import rospy
 import select
 
-import mtdevice # XXX this mtdevice.py has been modified by kantapon
-
+import mtdevice
 import LatLon # convert lat, lon to X and Y (referenced from original point)
 
 from std_msgs.msg import Header
@@ -57,15 +55,13 @@ class XSensDriver(object):
 		self.IMU_pub = rospy.Publisher('IMU_information',IMU_msg)
 		self.GPS_pub = rospy.Publisher('GPS_information',GPS_msg)
 		
-		# reference lat lon in decimal degree 
-		# these are needed to be replaced with a home location that specified in delphin2_mission.launch (XXX kantapon XXX)
+
 		self.lat_ori = 50.9346914113
 		self.lon_ori = -1.39423859832
 
 
 	def spin(self):
-	
-		# XXX this section has been modified by kantapon
+
 		#set an output configuration of the MTi-G-700 (also applicable for other device that support MTData2)
 		# construct an OutputData message from particular packetID
 		# e.g. "ReqPacket = {'Temp','Ori'}" to output orientation and acceleration

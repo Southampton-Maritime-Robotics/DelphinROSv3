@@ -22,7 +22,6 @@ class MID:
 	## Reset device
 	Reset = 0x40
 	
-	## Reset device #XXX this section has been added by kantapon XXX
 	ReqLatLonAlt = 0x6E
 	
 	# Informational messages
