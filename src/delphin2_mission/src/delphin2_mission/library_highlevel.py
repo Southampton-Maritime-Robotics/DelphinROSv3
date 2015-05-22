@@ -14,6 +14,7 @@ from std_msgs.msg import String
 
 #import message types for subscribing:
 from hardware_interfaces.msg    import compass
+from hardware_interfaces.msg    import depth
 from hardware_interfaces.msg    import position
 from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import tsl_setpoints
@@ -56,6 +57,7 @@ class library_highlevel:
         
         #set up subscribers
         rospy.Subscriber('compass_out', compass, self.callback_compass)                         #compass data
+        rospy.Subscriber('depth_out', depth, self.callback_depth)                         #compass data
         rospy.Subscriber('position_dead', position, self.callback_position)                     #position (dead reckoning)
         rospy.Subscriber('altimeter_out', altitude, self.callback_altitude)
         rospy.Subscriber('back_seat_flag', Int8, self.callback_back_seat_flag)
@@ -74,6 +76,7 @@ class library_highlevel:
         #initilise empty object variables to hold latest data from subscribers
         ######### might need to set default values in message files
         self.__compass = compass()
+        self.__depth = depth()
         self.__position = position()
         self.__altitude = altitude()
         self.__sonar_range = 0
@@ -181,7 +184,7 @@ class library_highlevel:
         output=tsl_setpoints()
         output.thruster0=thruster0
         output.thruster1=thruster1
-        
+
         #print statement might not work! hasn't been tested!
 #        str = "Vertical Thruster Setpoints %s %s" %(thruster0,thruster1)
 #        rospy.loginfo(str)
@@ -201,12 +204,6 @@ class library_highlevel:
             self.pub_depth_demand.publish(demand)
 #            str = "Setting depth demand %sm" %demand
 #            rospy.loginfo(str)
-######        elif demand <= 0.2: # TODO this case will never be in use
-######            str = "Requested depth demand %sm <=0m, turning vertical thrusters Off. " %	demand
-######            self.pub_depth_demand.publish(demand)
-######            rospy.logwarn(str)   
-######            #self.switchDepthOnOff(0)
-######            self.switchVerticalThrusters(0)           
         else:
             self.pub_depth_demand.publish(self.__maxDepthDemand)
             str = "Requested depth %sm > maxDepthDemand (%sm)" %(demand, self.__maxDepthDemand)
@@ -313,8 +310,8 @@ class library_highlevel:
     ############# these might change depending on which compass is being used...
     ############# could I create PNI compass class? etc that could be instantiated in constructor of this class?
     ############# or is that getting too complicated...?    
-    def getDepthandpitchMPC(self):
-        return self.__depthandpitchMPC
+#    def getDepthandpitchMPC(self):
+#        return self.__depthandpitchMPC
     
     def getHeading(self):
         return self.__compass.heading
@@ -329,7 +326,7 @@ class library_highlevel:
         return self.__compass.temperature
     
     def getDepth(self):
-        return self.__compass.depth_filt
+        return self.__depth.depth_filt
     
     # magnetometer
     def getM(self):
@@ -520,11 +517,14 @@ class library_highlevel:
         self.__depthandpitchMPC = data
 
     def callback_compass(self, compass_data):
-#           if compass_data.depth > 15:
+        self.__compass = compass_data
+
+    def callback_depth(self, depth_data):
+        self.__depth = depth_data
+#           if self.__depth.depth_filt > 15:
 #                str = "Depth exceeded 15m - aborting mission"
 #                rospy.logfatal(str)
 #                self.stop()
-        self.__compass = compass_data
     
     def callback_position(self, position):
         self.__position = position   

@@ -19,6 +19,7 @@ from datetime import datetime
 
 from xsens_driver.msg import IMU_msg
 from hardware_interfaces.msg import compass
+from hardware_interfaces.msg import depth
 from hardware_interfaces.msg import tsl_setpoints
 from hardware_interfaces.msg import tsl_feedback
 from std_msgs.msg import Float32
@@ -80,20 +81,33 @@ def callback_compass(compass_data):
                    compass_data.roll, 
                    compass_data.pitch, 
                    compass_data.temperature, 
-                   compass_data.depth, 
                    compass_data.ax, 
                    compass_data.ay, 
                    compass_data.az, 
                    compass_data.angular_velocity_x, 
                    compass_data.angular_velocity_y, 
-                   compass_data.angular_velocity_z, 
-                   compass_data.depth_filt, 
-                   compass_data.depth_der]
+                   compass_data.angular_velocity_z]
 
     with open('%s/compassLog.csv' %(dirname), "a") as f:
         try:
             Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             Writer.writerow(compassList)
+        except ValueError:
+            print 'writerow error'
+
+def callback_depth(depth_data):
+
+    stringtime = time.time()-time_zero
+    depthList = [stringtime, 
+                   depth_data.depth, 
+                   depth_data.depth_calib, 
+                   depth_data.depth_filt, 
+                   depth_data.depth_der]
+
+    with open('%s/depthLog.csv' %(dirname), "a") as f:
+        try:
+            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            Writer.writerow(depthList)
         except ValueError:
             print 'writerow error'
 
@@ -675,6 +689,7 @@ if __name__ == '__main__':
 ################################################################################
 
     rospy.Subscriber('compass_out', compass, callback_compass)
+    rospy.Subscriber('depth_out', depth, callback_depth)
     rospy.Subscriber('TSL_feedback', tsl_feedback, tsl_feedback_callback)        
     rospy.Subscriber('heading_demand', Float32, headingdemand_callback)
     rospy.Subscriber('depth_demand', Float32, depthdemand_callback)

@@ -2,11 +2,12 @@
 
 """
 ######################################
-This node used to play an important role for publishing the compass_out topic
-Since we have xsens installed to the Delphin2, this node only responsible for producing a filtered depth and its derivative.
-The actual node that publish to compass_out topic is xsens which give a more accurate and reliable orientation of the AUV.
+Driver for a pressure transducer
 
-keys parameters
+This node was for publishing the depth from pressure transducer and orientation from compass and gyro.
+Since we have xsens installed to the Delphin2, this node only responsible for providing depth information.
+
+keys parameters that sill in use
 -depth: the raw measurement took from the pressure transducer
 -depth_calib: the depth that calibrated with the pitch angle of the AUV
 -depth_filt: the depth reading that is filtered by the polynomial-type (PT) filter
@@ -16,6 +17,7 @@ keys parameters
 #Modifications
 9 Apr 2015: alter the way to control sampling rate with rospy.rate()
 24 Apr 2015: calibrate the depth reading using the pitch angle and shift between center of rotation and location of depth transducer 
+22 May 2015: have this node publishes directly to the depth_out rather than send to the xsens and then publish
 
 """
 
@@ -26,6 +28,7 @@ import time
 import math
 from re import findall
 from hardware_interfaces.msg import compass
+from hardware_interfaces.msg import depth
 from hardware_interfaces.msg import status
 
 global serialPort
@@ -43,7 +46,6 @@ def setUpSerial():
     serialPort.flushInput()
     serialPort.flushOutput()
     return serialPort.isOpen()
-    
     
 ################################################################
 def listenForData(status):
@@ -70,11 +72,10 @@ def listenForData(status):
     L_ref        = 0.65  # a reference point w.r.t. AUV nose [m] approximate
     L_shift     = L_sensor-L_ref # [m]
     
-    #####################   
+    #####################
     
     while not rospy.is_shutdown():    
         timeRef = time.time()
-        com = compass()
         try:
 #            time.sleep(0.01)  # Prevents node from using 100% CPU!!
             while serialPort.inWaiting() > 0 and serialPort.read(1) == '$':     #while there is data to be read - read the line...
@@ -89,7 +90,7 @@ def listenForData(status):
                     depth       = (data[4]*42.045)- 0.84+0.53  -0.21  -0.05   #Convert ADC value to depth value
                     
                     depth_calib = depth - L_shift*math.sin(pitch_callback*math.pi/180.)# depth that takes into account the pitch angle of the AUV
-                    
+
                     #### DEPTH FILTER ####
                     if rateOK:
                         T = controlPeriod
@@ -102,12 +103,13 @@ def listenForData(status):
                     [der, depth_filt] = numpy.polyfit(Dx_real, Dy, 1)
                     depth_der = -der
                     
-                    com.depth = depth
-                    com.depth_filt = depth_filt
-                    com.depth_der = depth_der
+                    depth_msg.depth = depth # the depth that is directly determined from a static pressure.
+                    depth_msg.depth_calib = depth_calib # the depth with pitch angle correction
+                    depth_msg.depth_filt = depth_filt # depth_calib that is filtered by PT-filter.
+                    depth_msg.depth_der = depth_der # derivative of depth_calib: a by-product of the PT-filter.
                     
                     #Publish data to compass_out
-                    pub.publish(com)
+                    pub.publish(depth_msg)
                     
                 except ValueError: 
                     print 'not a float'
@@ -168,9 +170,11 @@ if __name__ == '__main__':
     
     global pub
     global serialPort
+    global depth_msg
+    depth_msg = depth()
     
-    pub = rospy.Publisher('compass_old', compass)
-    rospy.Subscriber('compass_out', compass, compass_callback)   
+    pub = rospy.Publisher('depth_out', depth)
+    rospy.Subscriber('compass_out', compass, compass_callback) 
     pubStatus = rospy.Publisher('status', status)
     
     rospy.on_shutdown(shutdown)
