@@ -35,7 +35,7 @@
     <node name="back_seat_driver" pkg="hardware_interfaces" type="BackSeatDriver.py" required="true" />
 	
     <!-- <node name="compass_dummy" pkg="hardware_interfaces" type="compass_dummy.py" /> -->
-    <node name="arduino" pkg="hardware_interfaces" type="arduino.py" /> 
+    <node name="light_arduino" pkg="hardware_interfaces" type="light_arduino.py" /> 
     <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py" /> 
     <!-- <node name="temp_sensor" pkg="hardware_interfaces" type="temp_sensor.py" />  -->
     <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py" /> 
