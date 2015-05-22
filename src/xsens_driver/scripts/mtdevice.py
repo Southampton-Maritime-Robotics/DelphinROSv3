@@ -564,14 +564,8 @@ class XSensDriver(object):
 			
 		# initialize topics
 		self.COMPASS_pub = rospy.Publisher('compass_out',compass)
-		#set up subscribers
-		rospy.Subscriber('compass_old', compass, self.callback_COMPASS_msg)
 		# create messages and default values
 		self.com = compass()
-		
-		self.depth = 0.0
-		self.depth_filt = 0.0
-		self.depth_der = 0.0
 
 	def spin(self):
 
@@ -622,11 +616,6 @@ class XSensDriver(object):
 
 		except KeyboardInterrupt:
 			pass
-
-	def callback_COMPASS_msg(self,data):
-		self.depth = data.depth
-		self.depth_filt = data.depth_filt
-		self.depth_der = data.depth_der
 
 	def spin_once(self):
 		
@@ -689,10 +678,6 @@ class XSensDriver(object):
 			
 		# publish available information #
 		if pub_IMU:
-			# add a depth measurement of old device into the new compass_out topic
-			self.com.depth = self.depth
-			self.com.depth_filt = self.depth_filt
-			self.com.depth_der = self.depth_der
 			self.COMPASS_pub.publish(self.com)
 			
 if __name__=='__main__':

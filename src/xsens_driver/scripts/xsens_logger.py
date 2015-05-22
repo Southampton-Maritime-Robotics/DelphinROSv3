@@ -23,16 +23,13 @@ def callback_IMU_msg(compass_data):
                    compass_data.heading, 
                    compass_data.roll, 
                    compass_data.pitch, 
-                   compass_data.temperature, 
-                   compass_data.depth, 
+                   compass_data.temperature,
                    compass_data.ax, 
                    compass_data.ay, 
                    compass_data.az, 
                    compass_data.angular_velocity_x, 
                    compass_data.angular_velocity_y, 
-                   compass_data.angular_velocity_z, 
-                   compass_data.depth_filt, 
-                   compass_data.depth_der]
+                   compass_data.angular_velocity_z]
 
     with open('%s/IMU_Log.csv' %(dirname), "a") as f:
         try:
