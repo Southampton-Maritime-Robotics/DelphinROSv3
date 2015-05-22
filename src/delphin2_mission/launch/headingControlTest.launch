@@ -23,14 +23,14 @@
     <!--Easleigh North lat_orig=50.95702499999999 long_orig=-1.36675104 -->
     <!--Coordinates are for south pier, middle south of lake (X,Y) = (-24.6,30.0) -->
     
-    <node name="mission_script" pkg="delphin2_mission" type="mission_script_kantapon_headingControlTest.py"  output="screen" required="true" /> 
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_headingControlTest.py"  output="screen" required="true" /> 
     
     <!-- Add all other nodes under here! -->
     
     <node name="back_seat_driver" pkg="hardware_interfaces" type="BackSeatDriver.py" required="true" />
 	
     <!-- <node name="compass_dummy" pkg="hardware_interfaces" type="compass_dummy.py" /> -->
-    <node name="arduino" pkg="hardware_interfaces" type="arduino.py" /> 
+    <node name="light_arduino" pkg="hardware_interfaces" type="light_arduino.py" /> 
     <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py" />
     <!-- <node name="temp_sensor" pkg="hardware_interfaces" type="temp_sensor.py" /> --> 
     <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py" /> 

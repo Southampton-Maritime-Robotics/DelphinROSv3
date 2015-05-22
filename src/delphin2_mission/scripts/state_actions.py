@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 
+'''
+A state that directly operates the actuators for a period of time. When timeout, the actuator demands will be set to zero.
+
+user needs to specify
+-self.delay_action: how long the action will be held
+-self.__controller.setRearProp(0)
+-self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+-self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
+-self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+
+'''
+
 import rospy
 import numpy
 import smach
@@ -29,45 +41,14 @@ class actions(smach.State):
         
         # let the vehicle doing those actions for a period of time
         # and shutdown the actuators once finished
-        
-        flagTest = True
         timeStart = time.time()
-
-#        demandProp = [10,12,14,16,18,20,22]
-#        for dem in demandProp:
-#            time_zero=time.time()
-#            while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-#                self.__controller.setRearProp(dem)
-            
-#        nSamp = 500
-#        a = numpy.zeros([nSamp])
-#        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-#            timeRef = time.time()
-#            while time.time()-timeRef<3:
-#                self.__controller.setArduinoThrusterVertical(100,100) # (FrontVer,RearVer)
-#            timeRef = time.time()
-#            while time.time()-timeRef<3:
-#                self.__controller.setArduinoThrusterVertical(200,200) # (FrontVer,RearVer)
-
-#            self.__controller.setRearProp(22)
-#            a = numpy.append(a[1:nSamp],[self.__controller.getPropRPM()])
-#            print "mean: ", numpy.mean(a), "current: ", self.__controller.getPropRPM()
-
-#            self.__controller.setArduinoThrusterHorizontal(-100,-200) # (FrontHor,RearHor)            
-            
         while not rospy.is_shutdown() and time.time()-timeStart < self.delay_action:
+#            print self.__controller.getPitch()
             pass
 #            self.__controller.setDepth(0.25) # specified depth demand in [metre]
 #            self.__controller.setPitch(0) # specified pitch demand in [degree] 
 #            self.__controller.setHeading(290)
 #            self.__controller.setRearProp(0)
-#        timeStart = time.time()
-#        while not rospy.is_shutdown() and time.time()-timeStart < 15:
-#            self.__controller.setDepth(0.25) # specified depth demand in [metre]
-#            self.__controller.setPitch(0) # specified pitch demand in [degree] 
-#            self.__controller.setHeading(290)
-#            self.__controller.setRearProp(10)
-##                self.__controller.setControlSurfaceAngle(-30,-30,-30,-30) # (VerUp,HorRight,VerDown,HorLeft)
         
         # stop all the actuators
         self.__controller.setRearProp(0)

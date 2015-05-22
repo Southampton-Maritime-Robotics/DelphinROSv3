@@ -15,7 +15,6 @@ class headingControlTest(smach.State):
             
     def execute(self, userdata):
         outcome = 'aborted' # set exit flag to aborted by default
-            
         ####################################################################
         ### Perform actions ################################################
         ####################################################################
@@ -31,9 +30,6 @@ class headingControlTest(smach.State):
         
         # let the vehicle doing those actions for a period of time
         # and shutdown the actuators once finished
-#        time_zero=time.time()
-#        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-#            self.__controller.setHeading(90) # specified in a range of [0 360) degree
         time_zero=time.time()
         while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action/3: # in second
             self.__controller.setHeading(210) # specified in a range of [0 360) degree

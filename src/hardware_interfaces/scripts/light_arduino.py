@@ -56,16 +56,15 @@ def shutdown():
 ################################################################
 if __name__ == '__main__':
     time.sleep(0.5) #Allow System to come Online    
-    rospy.init_node('Arduino')
+    rospy.init_node('light_Arduino')
     
     rospy.Subscriber('light_onOff', Bool, light_callback)
-    rospy.Subscriber('phone_onOff', Bool, phone_callback)       
 
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
 
     port_status = setUpSerial()
     
-    print 'Arduino online'
+    print 'light driver online'
     
     rospy.spin()
         

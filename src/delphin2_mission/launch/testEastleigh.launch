@@ -12,7 +12,7 @@
     <param name="ImportWaypoints"     value="False" />                <!-- Import Waypoints -->
     <param name="look_ahead_distance" value="10" />                   <!-- look ahead distance (in m) for track following algorithm  effectivly inverse of gain-->
     
-    <node name="mission_script" pkg="delphin2_mission" type="mission_script_kantapon_testEastleigh.py"  output="screen" required="true" /> 
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_testEastleigh.py"  output="screen" required="true" /> 
     
     <!-- Eastleigh North Pier (50.957024,-1.366769) -->
     <!-- Eastleigh South Pier (50.956473,-1.366835) -->

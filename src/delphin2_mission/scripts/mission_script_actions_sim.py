@@ -18,13 +18,6 @@ from hardware_interfaces.msg      import compass
 from std_msgs.msg import String
 import matplotlib.pyplot as plt;
 
-#### from kantapon's folder
-import sys
-import os.path
-basepath = os.path.dirname(__file__)
-filepath = os.path.abspath(os.path.join(basepath, 'kantapon'))
-sys.path.append(filepath)
-#from state_thruster_testing       import thruster_testing
 from state_actions_sim                import actions
 
 ################################################################################

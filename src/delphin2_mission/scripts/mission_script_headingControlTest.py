@@ -1,48 +1,31 @@
 #!/usr/bin/env python
 
-"""
-General purpose mission script that lets the user manages a sequence of tasks in a section "MAIN CODE".
-
-"""
-
 import rospy
 import smach
 import smach_ros
 import time
 
-from delphin2_mission.library_highlevel            import library_highlevel
+from delphin2_mission.library_highlevel             import library_highlevel
 from state_initialise             import Initialise
-from state_importWaypoints        import ImportWaypoints
 from state_stop                   import Stop
 from state_goToDepth              import GoToDepth
 from state_goToHeading            import GoToHeading
-from state_goToXYZ2               import GoToXYZ
 from state_trackFollow            import TrackFollow
 from state_trackAltitude          import trackAltitude
 from state_surface                import Surface
 from state_camera                 import camera
-from state_terminalZ              import terminalZ
-from state_N                      import N
-from state_setTail                import setTail
 from hardware_interfaces.msg      import compass
-#### from hardware_interfaces.msg      import GoToDepthAction, GoToDepthGoal
-from actionlib                    import *
-from actionlib.msg                import *
 from std_msgs.msg import String
 import matplotlib.pyplot as plt;
 
-#### from kantapon's folder
-import sys
-import os.path
-basepath = os.path.dirname(__file__)
-filepath = os.path.abspath(os.path.join(basepath, 'kantapon'))
-sys.path.append(filepath)
-from state_actions                import actions
+from state_headingControlTest                import headingControlTest
 
 ################################################################################
 #Notes
 #
 #X is defined as east, Y is defined as north
+
+
 
 ################################################################################
 #Modifications
@@ -51,16 +34,6 @@ from state_actions                import actions
 
             
 def main():
-
-    global WPlongitude 
-    global WPlatitude
-    global Blongitude 
-    global Blatitude
-    global NosWayPoints		
-    global longOrigin
-    global latOrigin
-
-    ImportWaypoints = rospy.get_param('ImportWaypoints')
 
     rospy.init_node('smach_example_state_machine')
     
@@ -104,48 +77,6 @@ def main():
     #Allow system to come online
     time.sleep(5)
         
-#    #Display and Record Starting Location
-#    latOrigin = rospy.get_param('lat_orig')
-#    longOrigin = rospy.get_param('long_orig')
-#    str = 'Origin Loaded, Longitude=%s Latitude=%s' %(longOrigin,latOrigin)
-#    pub.publish(str)
-#    rospy.loginfo(str)
-#    X=lib.getX()
-#    Y=lib.getY()
-#    str = 'Initial Position X=%s and Y=%s' %(X,Y)
-#    rospy.loginfo(str)
-#    pub.publish(str)
-#    
-#    #Load Waypoints
-#    ImportWaypoints = rospy.get_param('ImportWaypoints')
-#    str='Import Waypoints is set to %r in the launch file' %ImportWaypoints
-#    rospy.loginfo(str)
-#    pub.publish(str)
-#    if ImportWaypoints==True:
-#        pathAndFile1='/home/delphin2/DelphinROSv2/Paths/Testwood9.kml'		#Desired Path
-#        pub.publish(pathAndFile1)
-#        pathAndFile2='/home/delphin2/DelphinROSv2/Paths/TestwoodBoundary.kml'	#Operating Area Outline
-#        plot=False#Plot Waypints File
-#				
-#        (WPlongitude, WPlatitude, Load1)=lib.loadWaypoints(pathAndFile1)
-#        (Blongitude, Blatitude, Load2)=lib.loadWaypoints(pathAndFile2)
-#        if Load1 ==1 and Load2==1:
-#            NosWaypoints=len(WPlongitude)
-#            str= 'Waypoints loaded, Nos of Waypoints = %s' %NosWaypoints
-#            rospy.loginfo(str)
-#            pub.publish(str)
-#            for i in xrange(0,NosWaypoints):
-#                str='Waypoint %i, Latitude=%s, Longitude=%s' %(NosWaypoints, WPlatitude[i], WPlongitude[i])
-#                pub.publish(str)
-#            if plot==True:
-#                pl=plt.plot(WPlongitude,WPlatitude)
-#                pl=plt.plot(Blongitude,Blatitude,'r')
-#                plt.show()	
-
-
-    # ...and an action server for the GoToDepth action
-    #server = GoToDepthServer('test_depth_action', lib, False)
-
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
 
@@ -165,11 +96,8 @@ def main():
             
 ################################################################################
         # [2/3] Added States
-        smach.StateMachine.add('ACTIONS', actions(lib), 
+        smach.StateMachine.add('ACTIONS', headingControlTest(lib), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-            
-#        smach.StateMachine.add('GoToXYZ', GoToXYZ(lib, 0, 0, 2, 2, 0.5, 10, 10, 300), 
-#            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
 

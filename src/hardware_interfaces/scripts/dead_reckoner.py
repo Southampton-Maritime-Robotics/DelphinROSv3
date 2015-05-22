@@ -1,19 +1,4 @@
 #!/usr/bin/python
-import rospy
-import time
-import numpy as np
-from std_msgs.msg import Float32
-from std_msgs.msg import Int8
-from hardware_interfaces.msg import compass
-from hardware_interfaces.msg import position
-from hardware_interfaces.msg import gps
-from hardware_interfaces.msg import altitude
-from hardware_interfaces.msg import depthandspeed_MPC
-from hardware_interfaces.msg import heading_MPC
-#from DelphinROSv2.msg import heading_control
-from hardware_interfaces.msg import dead_reckoner
-from hardware_interfaces.msg import camera_info
-import math
 
 """
 This node help to estimate the state of the AUV.
@@ -24,15 +9,35 @@ When the GPS is fixed, this node will use the position and velocity from gps as 
 #Modifications
 6/1/12 Modified GPS callback to only operate if a valid fix is returned
 9/2/12 Modified definition of X and Y. X is east and Y is north to be consistant with everything else.
-30/4/12 Need to modify code so using heading_control.msg not heading_mpc
+22/4/15 Have seperate callback blocks that subscribe to different actuator demands instead of using the MPC-based topic.
 
 """
+
+import rospy
+import time
+import numpy as np
+from std_msgs.msg import Float32
+from std_msgs.msg import Int8
+from hardware_interfaces.msg import compass
+from hardware_interfaces.msg import depth
+from hardware_interfaces.msg import position
+from hardware_interfaces.msg import gps
+from hardware_interfaces.msg import altitude
+from hardware_interfaces.msg import depthandspeed_MPC # will be removed
+from hardware_interfaces.msg import heading_MPC # will be removed
+from hardware_interfaces.msg import dead_reckoner
+from hardware_interfaces.msg import camera_info
+import math
 
 #### DEFINE GLOBAL VARIABLES ####
 global flag
 global cur_compass
 global cur_sway
 global cur_prop
+global cur_sternP
+global cur_rudder
+global cur_thHori
+global cur_thVert
 
 ########## LOW LEVEL CONTROL ############################################################
 def reckoner():
@@ -84,9 +89,8 @@ def reckoner():
         
         t0      = time.time()
 
-
         print 'Entering main loop!!!'
-        
+#        
 ############ MAIN RECKONER LOOP ################################################
         while not rospy.is_shutdown():
             
@@ -95,7 +99,7 @@ def reckoner():
             if delta_t >= dt:
                 time_zero = time.time()
             #### GPS DATA ######################################################    
-                if GPS.fix == 1 and GPS.number_of_satelites >= 5 and DaS.depth_demand < 0.5:
+                if GPS.fix == 1 and GPS.number_of_satelites >= 5 and DaS.depth_demand < 0.5: # FIXME: use depth_demand instead
                     X = GPS.x
                     Y = GPS.y
                     latitude  = np.float64(GPS.latitude)
@@ -104,21 +108,22 @@ def reckoner():
             
             #### COMPASS DATA ##################################################
                 heading = cur_compass.heading
-                depth   = cur_compass.depth #_filt
-                pitch   = cur_compass.pitch #_filt
+                depth   = cur_depth.depth_filt
+                pitch   = cur_compass.pitch
                 roll    = cur_compass.roll
-                velZ    = cur_compass.depth_der
-                velP    = cur_compass.pitch_der
+                velZ    = cur_depth.depth_der
+                velP    = cur_compass.angular_velocity_y # TODO: double check if this is of the convention
                 
             #### ACTUATOR DATA #################################################
+
                 prop    = float(cur_prop)
-                sternP  = DaS.delta
-                T0      = DaS.T0
-                T1      = DaS.T1
+                sternP  = cur_sternP
+                T0      = cur_thVert[0]
+                T1      = cur_thVert[1]
                 
-                rudder  = head.delta
-                T2      = head.T2
-                T3      = head.T3
+                rudder  = cur_rudder
+                T2      = cur_thHori[0]
+                T3      = cur_thHori[1]
                 
             #### ACTUATOR CONSTANTS ############################################
                 fCl = -0.0001574                                                   # Lift coefficient per degree
@@ -158,7 +163,6 @@ def reckoner():
                 hull_drag_Z              = -0.5*rho*(Volume**(2.0/3.0))*(hCdz)*velZ*abs(velZ)
                 hull_drag_Y              = -0.5*rho*(Volume**(2.0/3.0))*(hCdz)*velH*abs(velH)
                 
-                
                 T0 = T0/np.exp(abs(velX))
                 T1 = T1/np.exp(abs(velX))
             
@@ -171,12 +175,12 @@ def reckoner():
                 else:
                     propT = 0
                     
-                print 'sternP = ',sternP
-                print 'propT = ',propT*np.cos(np.radians(pitch))
-                print 'hull drag = ',hull_drag
-                print 'foil drag = ',foil_drag
-                print 'T0 drag = ',T0*np.sin(np.radians(pitch))
-                print 'T1 drag = ',T1*np.sin(np.radians(pitch))
+####                print 'sternP = ',sternP
+####                print 'propT = ',propT*np.cos(np.radians(pitch))
+####                print 'hull drag = ',hull_drag
+####                print 'foil drag = ',foil_drag
+####                print 'T0 drag = ',T0*np.sin(np.radians(pitch))
+####                print 'T1 drag = ',T1*np.sin(np.radians(pitch))
                                 
             #### AUV MODEL #####################################################
                 
@@ -299,7 +303,7 @@ def reckoner():
                 output2.velP_dead = velP_dead
                 pub2.publish(output2)
                 
-                print output2
+#                print output2
                 
                 #print 'time = ',time.time() - time_zero
                 #print output2
@@ -315,11 +319,31 @@ def reckoner():
 
 def compass_cb(newcompass):
     global cur_compass
-    cur_compass = newcompass   
+    cur_compass = newcompass
+    
+def depthOut_cb(newdepth):
+    global cur_depth
+    cur_depth = newdepth
 
 def prop_cb(prop):
     global cur_prop
-    cur_prop = prop.data   
+    cur_prop = prop.data
+    
+def cs_hori_cb(data):
+    global cur_sternP
+    cur_sternP = data.cs0 # assume the demand on both surfaces are identical
+    
+def cs_vert_cb(data):
+    global cur_rudder
+    cur_rudder = data.cs0 # assume the demand on both surfaces are identical
+    
+def th_hori_cb(data):
+    global cur_thHori
+    cur_thHori = data
+    
+def th_vert_cb(data):
+    global cur_thVert
+    cur_thVert = data
 
 def sway_cb(sway):
     global cur_sway
@@ -332,14 +356,6 @@ def gps_callback(gps):
 def altimeter_callback(altimeter):
     global alt
     alt = altimeter    
-    
-def depthandspeed_cb(data):
-    global DaS
-    DaS = data
-
-def heading_cb(data):
-    global head
-    head = data
     
 def temperature_cb(data):
     global temperature
@@ -359,7 +375,6 @@ if __name__ == '__main__':
     global cur_sway
     global cur_prop
     global GPS
-    global DaS
     global head
     global alt
     global temperature
@@ -377,12 +392,18 @@ if __name__ == '__main__':
     frame0=0
     frame1=0
     
-    rospy.Subscriber('altimeter_out',altitude, altimeter_callback)  
-    rospy.Subscriber('DepthandSpeed_MPC_values', depthandspeed_MPC, depthandspeed_cb)
-    rospy.Subscriber('Heading_MPC_values', heading_MPC, heading_cb)
+    rospy.Subscriber('altimeter_out',altitude, altimeter_callback) # Will not be used in here, just subscribe and pass it through the publisher.
+##    rospy.Subscriber('DepthandSpeed_MPC_values', depthandspeed_MPC, depthandspeed_cb)
+##    rospy.Subscriber('Heading_MPC_values', heading_MPC, heading_cb)
     rospy.Subscriber('compass_out', compass, compass_cb)
+    rospy.Subscriber('depth_out', depth, depthOut_cb)
     rospy.Subscriber('prop_demand',Int8, prop_cb)
+    rospy.Subscriber('depth_demand',Float32, depthDemand_cb)
     rospy.Subscriber('sway_demand',Float32, sway_cb)
+    rospy.Subscriber('tail_setpoints_horizontal', tail_setpoints, cs_hori_cb)
+    rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, cs_vert_cb)
+    rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, th_hori_cb)
+    rospy.Subscriber('TSL_setpoints_vertical', tsl_setpoints, th_vert_cb)        
     rospy.Subscriber('gps_out', gps, gps_callback)
     rospy.Subscriber('water_temp', Float32, temperature_cb)
     rospy.Subscriber('camera_info', camera_info,camera_cb)

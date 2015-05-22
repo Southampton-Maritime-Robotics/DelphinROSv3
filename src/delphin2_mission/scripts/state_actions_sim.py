@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 
-# import roslib; roslib.load_manifest('delphin2_mission')
+'''
+A state that directly operates the virtual actuators for a period of time. When timeout, the actuator demands will be set to zero.
+
+user needs to specify
+-self.delay_action: how long the action will be held
+-self.__controller.setRearProp(0)
+-self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+-self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
+-self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+
+See "auv_sim.py" for how to interact with this virtual vehicle.
+
+'''
+
 import rospy
 import numpy
 import smach
