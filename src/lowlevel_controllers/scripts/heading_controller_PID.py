@@ -25,13 +25,7 @@ from lowlevel_controllers.msg   import heading_control
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Bool
 
-#### from kantapon's folder
-import sys
-import os.path
-basepath = os.path.dirname(__file__)
-filepath = os.path.abspath(os.path.join(basepath, '..', '..', 'delphin2_mission/scripts/kantapon'))
-sys.path.append(filepath)
-from utilities                      import uti
+from delphin2_mission.utilities     import uti
 
 ################################################################################
 #### CONTROLLER PARAMETERS #####################################################

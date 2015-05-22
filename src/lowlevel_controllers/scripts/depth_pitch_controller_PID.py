@@ -23,18 +23,13 @@ from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import position
 from hardware_interfaces.msg    import compass
+from hardware_interfaces.msg    import depth
 from lowlevel_controllers.msg   import depth_pitch_control
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Int8
 from std_msgs.msg               import Bool
 
-#### from kantapon's folder
-import sys
-import os.path
-basepath = os.path.dirname(__file__)
-filepath = os.path.abspath(os.path.join(basepath, '..', '..', 'delphin2_mission/scripts/kantapon'))
-sys.path.append(filepath)
-from utilities                      import uti
+from delphin2_mission.utilities     import uti
 
 ################################################################################
 #### CONTROLLER PARAMETERS #####################################################
@@ -147,7 +142,6 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
         cr = cr_approx - cr #
         Ltf = cr-Ltf_nose   # Moment arm of front vertical thruster from the cr [metre]
         Ltr = L_th-Ltf      # Moment arm of rear vertical thruster from the cr [metre]
-        print [crMax-crMin, cr, Ltf, Ltr]
         
         DPC.Ltf = Ltf
         DPC.Ltr = Ltr
@@ -228,6 +222,7 @@ def main_control_loop():
                 # update the heading_control.msg, and this will be subscribed by the logger.py
                 pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
                 pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+#                print thruster0, thruster1
                 pub_DPC.publish(DPC)
                 
 ##                # verbose activity in thrust_controller
@@ -239,11 +234,11 @@ def main_control_loop():
 ##                rospy.loginfo(str)
 ##                str = ">>>>>>>>>>>>>>>>Current pitch is %.2fdeg" %(depth_current) 
 ##                rospy.loginfo(str)
-                str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(thruster0) 
-                rospy.loginfo(str)
-                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
-                rospy.loginfo(str)
-                print ''
+##                str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(thruster0) 
+##                rospy.loginfo(str)
+##                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
+##                rospy.loginfo(str)
+##                print ''
                 
                 if time.time()-timeLastCallback > timeLastDemandMax:
                     controller_onOff = False
@@ -328,10 +323,13 @@ def system_state_pitch(dt,pitch_current,pitch_demand,pitchBias):
 
 def compass_callback(compass):
     global DPC
-    global depth_der # depth derivative from PT-type filter in compass_oceanserver.py
-    DPC.depth = compass.depth_filt # depth filtered by PT_filter in compass_oceanserver.py
-    depth_der = compass.depth_der # derivative depth filtered by PT_filter in compass_oceanserver.py
     DPC.pitch = compass.pitch # pitch angle measured by xsens
+    
+def depth_callback(data):
+    global DPC
+    global depth_der # depth derivative from PT-type filter in compass_oceanserver.py
+    DPC.depth = data.depth_filt # depth filtered by PT_filter in compass_oceanserver.py
+    depth_der = data.depth_der # derivative depth filtered by PT_filter in compass_oceanserver.py
 
 def depth_onOff_callback(onOff):
     global controller_onOff
@@ -364,6 +362,7 @@ if __name__ == '__main__':
     rospy.Subscriber('depth_demand', Float32, depth_demand_callback)
     rospy.Subscriber('pitch_demand', Float32, pitch_demand_callback)
     rospy.Subscriber('compass_out', compass, compass_callback)
+    rospy.Subscriber('depth_out', depth, depth_callback)
     rospy.Subscriber('Depth_onOFF', Bool, depth_onOff_callback)
     rospy.Subscriber('prop_demand', Int8, prop_demand_callback)
     
