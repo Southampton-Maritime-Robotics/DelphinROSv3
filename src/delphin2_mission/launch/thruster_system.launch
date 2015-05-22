@@ -6,7 +6,7 @@
 
     <!-- NODES ################################################ -->   
     
-    <node name="tsl_customer_mission" pkg="hardware_interfaces" type="arduino_thruster.py" output = "screen"/>
+    <node name="tsl_customer_mission" pkg="hardware_interfaces" type="thruster_arduino.py" output = "screen"/>
     <!-- <node name="tsl_customer_mission" pkg="hardware_interfaces" type="tsl_customer_mission.py" output = "screen"/> -->
     
 </launch>
