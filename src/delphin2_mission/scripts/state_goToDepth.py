@@ -6,7 +6,6 @@ import smach_ros
 import time
 from std_msgs.msg import String
 
-
 class GoToDepth(smach.State):
     def __init__(self, lib, depth_demand, depth_tolerance, stable_time, timeout, heading_demand, speed_demand):
             smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])

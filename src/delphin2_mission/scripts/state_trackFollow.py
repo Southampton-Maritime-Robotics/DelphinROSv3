@@ -209,7 +209,6 @@ class TrackFollow(smach.State):
             else:
                 return False 
         
-        
     #Function to check if sub has meet criteria in the horizontal plane
     def check_XY(self):                
             

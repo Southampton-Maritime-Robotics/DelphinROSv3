@@ -6,7 +6,6 @@ import smach_ros
 import time
 from std_msgs.msg import String
 
-
 class GoToHeading(smach.State):
     def __init__(self, lib, demand, tolerance, stable_time, timeout):
             smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
