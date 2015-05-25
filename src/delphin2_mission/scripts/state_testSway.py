@@ -3,10 +3,14 @@
 '''
 ######################################
 # description
-A script to get the AUV to point M (middle of the lake) then get it move sideway with a difference thruster setpoint.
+A state for sway manoeuvre.
 
-Routine
-    go to point M
+AUV will move to a reference point (e.g. middle of the lake). Then it will move sideway by executing a certain thruster demand in a given list.
+
+If the depth demand is less than 0.5m, it will accaount as no depth demand specified.
+
+Procedure
+    go to a reference point
     head to point O - approximately [0,0]
     descend to a desired depth
     execute one of the thruster demand from the given list
@@ -15,6 +19,8 @@ Routine
 ######################################
 #Modifications
 19/May/2015: insert the depth control in the procedure
+
+@return: succeeded: if the AUV execute all the thruster demands in a given list
 
 '''
 

@@ -1,14 +1,16 @@
 #!/usr/bin/python
 
 """
-This node is a driver for a altertude measurement w.r.t. to the sea bottom.
-Note that, the pitch angle of the AUV affects the measured altitude.
+A driver for an altertude w.r.t. to the sea bottom.
 
-The sensor is very noisy, therefore, filterred by the Polynomial-Type filtering technique.
+The sensor is very noisy, therefore, filterred by the Polynomial-Type (PT) filtering technique.
 
 #######################################################
 # Modifications to code
 4/4/2015: control rate by rospy.Rate()
+
+# TODO
+- must include a pitch angle of the AUV into the altitude measurement.
 
 """
 

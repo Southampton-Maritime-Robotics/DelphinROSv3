@@ -1,8 +1,7 @@
 #!/usr/bin/python
 
 """
-This node control pitch and depth based on the PI-D strategy.
-Pitch bias is used to indirectly control the depth of the AUV via control surfaces when undergoing a surge motion.
+A depth-pitch controller based on the PI-D strategy.
 
 Note:
 - control surface and pitchBias are not in use yet. This will be very important part when the AUV operates at non-zero speeds.
@@ -12,6 +11,9 @@ Note:
 #Modifications
 2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
 5/4/2015: force CS and thruster demands to become Integer32
+
+# TODO
+- use pitch bias to indirectly control the depth of the AUV via control surfaces when undergoing a surge motion.
 
 """
 

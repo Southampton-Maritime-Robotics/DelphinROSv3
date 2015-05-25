@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
 """
-# this code lets ROS node communicate with an arduino in which then talks with maxon motor control board. It is a modified version of the "tsl_customer_mission.py" that was originally used to control thrusters via TSL motor control board
+A driver for a costom thruster control board, consisting of an arduino and four maxon board. 
+
+Developed based on "tsl_customer_mission.py" that was originally used to control thrusters via TSL motor control board
 
 # modification:
   - 12 June 2014:
@@ -21,8 +23,9 @@
     1 vert_rear
     2 hor_front
     3 hor_rear
+    
 # convention
-    [+ve demand] gives [-ve thrust and +ve sway motion] relative to the front-east-down body fix frame
++ve demand contribute to +ve sway motion relative to the front-east-down body-fixed frame
 
 """
 

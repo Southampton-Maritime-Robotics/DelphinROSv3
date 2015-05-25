@@ -3,7 +3,7 @@
 '''
 ######################################
 # description
-A script to get the AUV perform a direct spiral manoeuvre (also known as Dieudonne manoeuvre).
+A state for spiral manoeuvre (also known as Dieudonne manoeuvre).
 
 Given two reference points, the AUV will move in a straight line from one point with a heading bias to the other point. When it is travel far enough and the surge speed is steady, it will execute actuator command (either rudders, thrusters or their combination) and hold until the AUV have performed two circle turns (720 degree).
 
@@ -11,7 +11,7 @@ The sequence of actuator command will be from a hardest turn to lightest turn.
 Ideally, the command has to be hardest turn on one side, then slowly decrease pass through the neutral point and continue until it reach the hardest turn on the other side (just google Dieudonne manoeuvre and you will see ^ ^).
 Hoever, the space of the Eastleigh is limited and can perform turning on only one side at time.
 
-Routine
+Procedure:
     go to reference point
     head to another reference point with a heading bias
     descend to a desired depth
@@ -25,6 +25,8 @@ Routine
 #TODO
 -make the AUV performs action at depth
 -include a criterion to let the AUV stop when it have performed 720 degree turn
+
+@return: succeeded: if the AUV execute all the combination of actuator demands (propeller, thruster, rudder) in a given lists
 
 #Modifications
 

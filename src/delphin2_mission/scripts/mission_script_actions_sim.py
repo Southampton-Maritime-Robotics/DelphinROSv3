@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 
+"""
+A general purpose mission script that lets the user quickly manages a sequence of tasks for the Delphin2 AUV simulator in a section "MAIN CODE".
+
+#Notes
+-X is defined as east, Y is defined as north
+
+"""
+
 import rospy
 import smach
 import smach_ros
@@ -21,14 +29,6 @@ import matplotlib.pyplot as plt;
 from state_actions_sim                import actions
 
 ################################################################################
-#Notes
-#
-#X is defined as east, Y is defined as north
-
-################################################################################
-#Modifications
-#
-#9/2/12 Modified state GoToXYZ
 
 def main():
 
@@ -41,25 +41,17 @@ def main():
 
     # Open the container
     with sm:
-        # Add states to the container
-        # generic state
 
 ################################################################################
 ########### MAIN CODE ##########################################################
 ################################################################################
-
-#################################################################################
-#        # [1/3] Initialise State (Must Be Run First!)
-#        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-#            transitions={'succeeded':'GoToXYZ', 'aborted':'STOP','preempted':'STOP'})  
             
 ################################################################################
-        # [2/3] Added States
+        # Added States
         smach.StateMachine.add('ACTIONS', actions(lib), 
             transitions={'succeeded':'finish', 'aborted':'finish','preempted':'finish'})
 
 ################################################################################
-
 
 ################################################################################
 ########### EXECUTE STATE MACHINE AND STOP #####################################

@@ -3,10 +3,13 @@
 '''
 ######################################
 # description
-A script to get the AUV to move back and forth between two waypoints with different propeller demand.
+A state for surge manoeuvre
+
+AUV will be moving back and forth between two waypoints with a certain propeller demand.
+
 If the depth demand is less than 0.5m, it will accaount as no depth demand specified.
 
-Routine
+Procedure:
     go to one reference point
     head to the other reference point
     descend to a desired depth
@@ -17,6 +20,8 @@ Routine
 #Modifications
 19/May/2015: insert the depth control in the procedure
 23/May/2015: tested with depth demand
+
+@return: succeeded: if the AUV execute all the propeller demands in a given list
 
 '''
 

@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+'''
+Possibly, a state to get the AUV tracking a certain altitude.
+
+May not functioning!
+
+'''
+
 import rospy
 import smach
 import smach_ros
@@ -118,4 +125,3 @@ class trackAltitude(smach.State):
                 return 'preempted'
             else:
                 return 'succeeded'
-                         

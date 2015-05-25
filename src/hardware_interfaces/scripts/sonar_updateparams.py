@@ -1,5 +1,12 @@
 #!/usr/bin/python
-import roslib; roslib.load_manifest('DelphinROS')
+
+'''
+Possible, a part of the sonar driver.
+
+This node may not functioning!
+
+'''
+
 import rospy
 import sys
 import serial

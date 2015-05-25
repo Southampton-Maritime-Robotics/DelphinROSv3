@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 '''
-# Dry Land Test:
-test of all sensors and actuators before the vehicle is run in water
-- run thrusters and propeller at lower RPM
+A mission script to test if all actuators are working correctly. This must be before every mission.
+
 '''
 
 import rospy
@@ -24,17 +23,6 @@ from std_msgs.msg import String
 import matplotlib.pyplot as plt;
 
 ################################################################################
-#Notes
-#
-#X is defined as east, Y is defined as north
-
-
-
-################################################################################
-#Modifications
-#
-#9/2/12 Modified state GoToXYZ
-
             
 def main():
 
@@ -92,64 +80,35 @@ def main():
 ################################################################################
 ########### MAIN CODE ##########################################################
 ################################################################################
-	#Generate States
 
 ################################################################################
-#        Initialise State Should Be Run First!
+         # [1/3] Initialise State (Must Be Run First!)
         smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
             transitions={'succeeded':'DRYLANDTEST', 'aborted':'STOP','preempted':'STOP'})  
             
 ################################################################################
-        #Dry Land Test
+        # [2/3] Added States
         smach.StateMachine.add('DRYLANDTEST', dryLandTest(lib), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-
-################################################################################
   
 ################################################################################
-        # generic states
+        # [3/3] Generic States (Come to this state just before terminating the mission)
         smach.StateMachine.add('STOP', Stop(lib), 
             transitions={'succeeded':'finish'})    
 
 ################################################################################
-################################################################################
-#       AUTO GENERATED STATES 
-        
-        if ImportWaypoints==True:
-        #Auto Generate States to take sub to each waypoint
-            for i in xrange (0,NosWaypoints):
-                    depthDemand=0.0
-                    X,Y,dummy,dummy=lib.distanceandbearingTwoLatLong(latOrigin,WPlatitude[i], longOrigin,WPlongitude[i])
-		    useCurrentLocAsInitialXY=False		#If True will use current location when enters state as initial location for calculating path if 				false will use initial X and inital Y
-		    initialX=0
-		    initialY=0
-                    XYtolerance=7.5
-                    Ztolerance=2
-                    XYstable_time=1
-                    Zstable_time=1
-                    timeout=420
-                    StateName='GOTOWAYPOINT%s' %i
-                    if i< NosWaypoints-1:		
-			NextState='GOTOWAYPOINT%s' %(i+1)
-                    else:
-			NextState='HOME'
 
-                    smach.StateMachine.add(StateName, TrackFollow(lib, X, Y, depthDemand, useCurrentLocAsInitialXY, initialX, initialY, XYtolerance, Ztolerance, XYstable_time, Zstable_time,timeout),  
-                        transitions={'succeeded':NextState, 'aborted':'HOME','preempted':'STOP'})
-
-        
-
-            
+        # [3/3] Generic States (Come to this state just before terminating the mission)
+        smach.StateMachine.add('STOP', Stop(lib), 
+            transitions={'succeeded':'finish'})
 
 ################################################################################
+########### EXECUTE STATE MACHINE AND STOP #####################################
 ################################################################################
-   
 
     # Create and start the introspection server - for visualisation
     sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
     sis.start()
-    
-    
 
     # Execute the state machine
     outcome = sm.execute()
@@ -158,9 +117,6 @@ def main():
     # Wait for ctrl-c to stop the application
     rospy.spin()
     sis.stop()
-
-
-
 
 if __name__ == '__main__':
     main()

@@ -1,4 +1,12 @@
 #!/usr/bin/python
+
+'''
+A node that is temporaly used to log the data when only the xsens node is running.
+
+If the AUV system is running, a logger node will be used to log the data instead.
+
+'''
+
 import rospy
 import csv
 import time

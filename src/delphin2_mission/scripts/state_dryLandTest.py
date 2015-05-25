@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 '''
-# Dry Land Test:
-test of all sensors and actuators before the vehicle is run in water
-- run thrusters and propeller at lower RPM
+A state to do a run all the actuators and verify if they are functioning properly.
 
 ######################################
 #Modifications
 12/May/2015 use the feedback signal to identify if the actuators is functioning
+
+#TODO
+-include the test for camera
 
 '''
 
@@ -25,42 +26,13 @@ class dryLandTest(smach.State):
             self.__controller = lib
             
     def execute(self, userdata):
-            
+
             ####################################################################
             ### CAMERAS ########################################################
             ####################################################################
-#            capture0 = cv.CaptureFromCAM(0)
-#            capture1 = cv.CaptureFromCAM(1)
-#            cv.SetCaptureProperty(capture0, CV_CAP_PROP_FRAME_WIDTH, 352)
-#            cv.SetCaptureProperty(capture0, CV_CAP_PROP_FRAME_HEIGHT, 288)
-#            cv.SetCaptureProperty(capture1, CV_CAP_PROP_FRAME_WIDTH, 352)
-#            cv.SetCaptureProperty(capture1, CV_CAP_PROP_FRAME_HEIGHT, 288)
-            
-#            cam0 = cv.QueryFrame(capture0)
-#            cam1 = cv.QueryFrame(capture0)
-            
-#            print 'cam0 size = ',cv.GetSize(cam0)
-#            print 'cam1 size = ',cv.GetSize(cam1)
-            
-#            if (cam0.height == 288 and cam0.width == 352) or (cam0.height == 288*2 and cam0.width == 352*2):
-#                str = "Forwards looking camera - working"
-#                rospy.loginfo(str)
-#            else:
-#                str = "Problem with forwards looking camera"
-#                rospy.logerr(str)
- #               str = "SET CAMERAS TO PAL!!! (cd ~/ ... sudo ./cameras.sh)"
-#                rospy.logerr(str)
-                
-#            if (cam1.height == 288 and cam1.width == 352) or (cam1.height == 288*2 and cam1.width == 352*2):
-#                str = "Forwards looking camera - working"
-#                rospy.loginfo(str)
-#            else:
-#                str = "Problem with forwards looking camera"
-#                rospy.loginfo(str)
-#                str = "SET CAMERAS TO PAL!!! (cd ~/ ... sudo ./cameras.sh)"
-#                rospy.logerr(str)
-#                return 'aborted'
-                
+            #
+            #
+            #
             
             ####################################################################
             ### LIGHTS #########################################################

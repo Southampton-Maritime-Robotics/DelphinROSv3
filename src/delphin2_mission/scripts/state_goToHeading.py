@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+'''
+Possibly, a state to get the AUV to a certain heading.
+
+May not functioning!
+
+'''
+
 import rospy
 import smach
 import smach_ros

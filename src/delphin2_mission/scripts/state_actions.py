@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 '''
-A state that directly operates the actuators for a period of time. When timeout, the actuator demands will be set to zero.
+A state that directly operates the actuators in a certain way for a period of time.
 
 user needs to specify
 -self.delay_action: how long the action will be held
@@ -9,6 +9,7 @@ user needs to specify
 -self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
 -self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
 -self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+-more commands are available in library_highlevel
 
 '''
 
@@ -43,7 +44,6 @@ class actions(smach.State):
         # and shutdown the actuators once finished
         timeStart = time.time()
         while not rospy.is_shutdown() and time.time()-timeStart < self.delay_action:
-#            print self.__controller.getPitch()
             pass
 #            self.__controller.setDepth(0.25) # specified depth demand in [metre]
 #            self.__controller.setPitch(0) # specified pitch demand in [degree] 

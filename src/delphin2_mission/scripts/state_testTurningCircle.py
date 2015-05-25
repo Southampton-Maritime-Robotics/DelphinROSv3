@@ -3,10 +3,16 @@
 '''
 ######################################
 # description
-A script to get the AUV perform the turning circle manoeuvre.
+
+!! needed testing !!
+
+A state for turning circle manoeuvre.
+
 Given two reference points, the AUV will move in a straight line from one point with a heading bias to the other point. When it is travel far enough and the surge speed is steady, it will execute actuator (either rudders, thrusters or their combination). The setpoint will hold until the AUV have performed two circle turns (720 degree).
 
-Routine
+If the depth demand is less than 0.5m, it will accaount as no depth demand specified.
+
+Procedure:
     go to first reference point
     head to another reference point with a heading bias
     descend to a desired depth
@@ -21,6 +27,8 @@ Routine
 -include a criterion to let the AUV stop when it have performed 720 degree turn
 
 #Modifications
+
+@return: succeeded: if the AUV execute all the thruster demands in a given list
 
 '''
 

@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 
+'''
+A state to test the PID-based depth-pitch controller (see depthPitchPID.py).
+
+# Available commands
+-self.__controller.setHeading(100) # specified heading demand in [deg]
+
+# Define
+-self.delay_action # time span for the AUV to track one heading demand
+-listDemandHeading, [deg] e.g. [90,180,270].
+
+'''
+
 import rospy
 import numpy
 import smach
@@ -19,25 +31,25 @@ class headingControlTest(smach.State):
         ### Perform actions ################################################
         ####################################################################
         
-        # initialise a reference time
-        time_zero=time.time()
-        # apply a setpoint to a relevant actuator
+################################################################################
+        # ensure all the actuator are turnned-off
         self.__controller.setRearProp(0)
         self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
         self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
         self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
         time.sleep(self.delay_thruster) # allow the vehicle to gain a speed (delay is specified in second)
         
-        # let the vehicle doing those actions for a period of time
-        # and shutdown the actuators once finished
-        time_zero=time.time()
-        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action/3: # in second
-            self.__controller.setHeading(210) # specified in a range of [0 360) degree
-        time_zero=time.time()
-        while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
-            self.__controller.setHeading(290) # specified in a range of [0 360) degree
+################################################################################
+        # let the vehicle do heading tracking
+        listDemandHeading = [110,200,200]
+        for demandHeading in listDemandHeading
+            # set a reference time
+            time_zero=time.time()
+            while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
+                self.__controller.setHeading(demandHeading) # specified in a range of [0 360) degree
             
-        # stop all the actuators
+################################################################################
+        # stop all the actuators before leave the state
         self.__controller.setRearProp(0)
         self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
         self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)

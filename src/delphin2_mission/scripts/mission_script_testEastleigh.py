@@ -1,5 +1,16 @@
 #!/usr/bin/env python
 
+'''
+A mission script for testing at Eastleigh Lake.
+
+The tasks consist of various manoeuvrint test, e.g.
+--surge manoeuvre
+--sway manoeuvre
+--yaw manoeuvre
+--spiral manoeuvre
+
+'''
+
 import rospy
 import smach
 import smach_ros
@@ -27,9 +38,6 @@ from state_testYaw                  import testYaw
 from state_testSway                 import testSway
 from state_testTurningCircle        import testTurningCircle
 ################################################################################
-#Notes
-#
-# X is defined as east, Y is defined as north
 
 def main():
 
@@ -42,7 +50,7 @@ def main():
     lib = library_highlevel()
     myUti = uti()
 
-    # points defined relative to the origin O
+    ### points defined relative to the origin O # TODO: double-check if the LatLon ori, O, A and B are correct.
     # North pier of the Eastleigh lake (50.957024,-1.366769)
     O = array([-2,2]) # home: shifted from the origin a little to make sure it will not collide with the pier
     A = array([-28.,12.]) # reference point A
@@ -54,25 +62,24 @@ def main():
     
     M = array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
 
+    # Reference paths created from the reference points
     pathAtoB = numpy.vstack((A,B)).T
     pathBtoA = numpy.vstack((B,A)).T
     pathMtoO = numpy.vstack((M,O)).T
     pathMtoA = numpy.vstack((M,A)).T
     pathOtoM = numpy.vstack((O,M)).T
     pathTest = numpy.vstack((O,M,A,B,M)).T
-#    pathTest = array([[-15,100,20,120],
-#                      [-60,40,80,120]])
 
-    # determine range and heading to the first waypoint in the list # TODO: comment this block
-    # help to ensure that the AUV got hte location right
-####    while not rospy.is_shutdown():
-####        X = lib.getX()
-####        Y = lib.getY()
-####        Px = pathAtoB[0][0]
-####        Py = pathAtoB[1][0]
-####        rang, bear = myUti.rangeBearing([X,Y], [Px, Py])
-####        print "range to the point is ", rang, "deg"
-####        print "bearing to the point is ", bear, "metre"
+    # This while-true loop determines range and heading to the first waypoint in the list
+    # use for double check if the AUV got the location right  # TODO: comment this block
+    while not rospy.is_shutdown():
+        X = lib.getX()
+        Y = lib.getY()
+        Px = pathAtoB[0][0]
+        Py = pathAtoB[1][0]
+        rang, bear = myUti.rangeBearing([X,Y], [Px, Py])
+        print "range to the point is ", rang, "deg"
+        print "bearing to the point is ", bear, "metre"
     
     # guidance
     L_los = 5 # [m] line-of-sight distance
@@ -145,7 +152,7 @@ def main():
         #-------------------------------------------------
         
         #=================================================
-        ## SWAT TEST 
+        ## SWAY TEST 
         # This state will get the AUV transit to point M
         smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
             transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})

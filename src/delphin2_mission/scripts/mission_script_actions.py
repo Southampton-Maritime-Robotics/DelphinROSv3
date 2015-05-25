@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 """
-General purpose mission script that lets the user manages a sequence of tasks in a section "MAIN CODE".
+A general purpose mission script that lets the user quickly manages a sequence of tasks for the Delphin2 AUV in a section "MAIN CODE".
+
+#Notes
+-X is defined as east, Y is defined as north
 
 """
 
@@ -26,15 +29,6 @@ import matplotlib.pyplot as plt;
 from state_actions                import actions
 
 ################################################################################
-#Notes
-#
-#X is defined as east, Y is defined as north
-
-################################################################################
-#Modifications
-#
-#9/2/12 Modified state GoToXYZ
-
             
 def main():
 
@@ -101,25 +95,7 @@ def main():
         # [2/3] Added States
         smach.StateMachine.add('ACTIONS', actions(lib), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-            
-#        smach.StateMachine.add('GoToXYZ', GoToXYZ(lib, 0, 0, 2, 2, 0.5, 10, 10, 300), 
-#            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
-################################################################################
-
-        # Home State Return to Safe Location (an example of how to navigate back)
-####       	smach.StateMachine.add('HOME', GoToXYZ(lib,80.0, 175.0, 0, 5, 0.5, 5, 5, 1200),  #, WpYnew, depthDemand, XYtolerance, Ztolerance, XYstable_time, Zstable_time, timeout
-####            transitions={'succeeded':'STOP', 'aborted':'END_LOCATION','preempted':'STOP'})
-####            
-####        smach.StateMachine.add('START_LOCATION', GoToXYZ(lib,110.0, 190.0, 0, 5, 0.5, 5, 5, 1200),  #100.0, 180.0,
-####            transitions={'succeeded':'PAUSE', 'aborted':'STOP','preempted':'STOP'})
-####            
-####        smach.StateMachine.add('END_LOCATION', GoToXYZ(lib, 110.0, 190.0, 0.0, 5, 0.5, 5, 5, 1200),  
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-####            
-####        smach.StateMachine.add('POINTNORTH', GoToHeading(lib, 0, 10, 15, 60),  #demand, tolerance, stable_time, timeout
-####            transitions={'succeeded':'HOME', 'aborted':'STOP','preempted':'STOP'}) 
-            
 ################################################################################
 
         # [3/3] Generic States (Come to this state just before terminating the mission)

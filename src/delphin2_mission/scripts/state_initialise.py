@@ -1,21 +1,28 @@
 #!/usr/bin/env python
 
+'''
+A state to check if 
+-all the required actuators and sensors come online within a certain time span.
+-battery charged state is good
+
+Initialise class
+@extends: smach.State
+
+__init__ - initialises an Initialise object
+@param: lib - instance of library_highlevel.py
+@param: timeout - time state will wait for sensors/actuators to come online
+execute - waits until all sensors/actuators are online and checks motor voltage. 
+@return: aborted: if timeout is reached
+@return: preempted: if battery voltage is less than 20,000mV
+@return: succeeded: if all systems came online within the time and battery is above 20,000mV
+
+'''
+
 import rospy
 import smach
 import smach_ros
 import time
 from std_msgs.msg import String
-
-# Initialise class
-# @extends: smach.State
-#
-# __init__ - initialises an Initialise object
-# @param: lib - instance of library_highlevel.py
-# @param: timeout - time state will wait for sensors/actuators to come online
-# execute - waits until all sensors/actuators are online and checks motor voltage. 
-# @return: aborted: if timeout is reached
-# @return: preempted: if battery voltage is less than 20,000mV
-# @return: succeeded: if all systems came online within the time and battery is above 20,000mV
 
 class Initialise(smach.State):
 	def __init__(self, lib, timeout):
@@ -35,7 +42,7 @@ class Initialise(smach.State):
                 while (time.time()-time_zero < self.__timeout) and not(all_online):
                    all_online = (self.__controller.getThrusterStatus() 
                         and self.__controller.getTailStatus()   
-                        and True # self.__controller.getAltimeterStatus() # FIXME: uncomment me
+                        and True # self.__controller.getAltimeterStatus() # FIXME: remove "True" and uncomment me
                         and self.__controller.getGPSStatus()
                         and self.__controller.getCompassStatus())
 ####                   print 'thruster status = ', self.__controller.getThrusterStatus()
@@ -63,7 +70,7 @@ class Initialise(smach.State):
                 print 'thruster status = ', self.__controller.getThrusterStatus()
                 print 'tail status = ', self.__controller.getTailStatus()
                 print 'alt status = unloaded!!!!!!!!!!'                
-                # print 'alt status = ', self.__controller.getAltimeterStatus()
+                # print 'alt status = ', self.__controller.getAltimeterStatus() # FIXME: load the altimeter when needed
                 print 'gps status = ', self.__controller.getGPSStatus()
                 print 'compass status = ', self.__controller.getCompassStatus()
                 print 'all online = ', all_online

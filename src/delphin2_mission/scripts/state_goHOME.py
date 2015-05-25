@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 
+'''
+Possibly, a state to let the AUV navigate back home by using a pure pursuit (PP) guidance technique.
+
+May not functioning!
+
+'''
+
+
 import rospy
 import numpy
 import smach
@@ -53,7 +61,6 @@ class GoToHome(smach.State):
 	    str='Initial Location is X=%.3f, Y=%.3f' %(self.__controller.getX(), self.__controller.getY())
             pub.publish(str)
             rospy.loginfo(str)
-	    
 
             dx = self.__WpXnew - self.__controller.getX()
             dy = self.__WpYnew - self.__controller.getY()          
@@ -61,7 +68,6 @@ class GoToHome(smach.State):
             str = "Initial Range to Waypoint %.3f" %Range
             pub.publish(str)
             rospy.loginfo(str)
-            
            
             ##### Main loop #####           
             while (not rospy.is_shutdown()) and (time.time()-time_zero < self.__timeout):
@@ -152,7 +158,6 @@ class GoToHome(smach.State):
                
             ##### Exited Main loop #####
 
-
             rospy.logerr("GoHOME Timed Out")  
             str='GoHOME state timed out, state aborted'
             pub.publish(str)              
@@ -168,7 +173,6 @@ class GoToHome(smach.State):
                 return True
             else:
                 return False 
-        
         
     #Function to check if sub has meet criteria in the horizontal plane
     def check_XY(self):                

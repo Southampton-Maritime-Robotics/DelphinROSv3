@@ -1,16 +1,21 @@
 #!/usr/bin/env python
 
+'''
+A state to stop all the actuators or set to a neutral position before the mission is terminated.
+
+Stop class
+@param: smach.State - doesn't need to be passed by calling method - only used internally
+
+__init__ - initialises a Stop object
+execute - calls the stop() method in library_highlevel.py, ending the current mission and ROS session.
+
+'''
+
 import rospy
 import smach
 import smach_ros
 import time
 from std_msgs.msg import String
-
-# Stop class
-# @param: smach.State - doesn't need to be passed by calling method - only used internally
-#
-# __init__ - initialises a Stop object
-# execute - calls the stop() method in library_highlevel.py, ending the current mission and ROS session.
 
 class Stop(smach.State):
 	def __init__(self, lib):

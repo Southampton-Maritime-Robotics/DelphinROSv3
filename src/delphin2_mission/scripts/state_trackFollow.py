@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+'''
+Possibly, a state to get the AUV travel along a desired path.
+
+May not functioning!
+
+'''
+
 import rospy
 import numpy
 import smach

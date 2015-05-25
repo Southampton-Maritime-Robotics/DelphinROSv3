@@ -1,20 +1,22 @@
 #!/usr/bin/python
 
-import rospy
-import time
-from std_msgs.msg import Int8
-from std_msgs.msg import String
-
-from delphin2_mission.library_highlevel import library_highlevel
-
 """
-This node keeps an eye on the critical node. It will raise the terminate flag when one of the critical nodes cannot working properly or the critical parameters go beyond the threshold.
+A node that keeps an eye on the critical nodes. 
+
+It will raise a terminate flag when one of the critical nodes cannot working properly or the critical parameters go beyond the threshold.
 
 ######################################
 #Modifications
 30/4/12 Added total water column check and heading error check
 
 """
+
+import rospy
+import time
+from std_msgs.msg import Int8
+from std_msgs.msg import String
+
+from delphin2_mission.library_highlevel import library_highlevel
 
 def main(controller):
     rospy.init_node('back_seat_driver')

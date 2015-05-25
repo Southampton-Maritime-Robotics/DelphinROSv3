@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 
+'''
+Possibly, the state to let the AUV run forward for a certain period of time.
+
+May not functioning!
+
+'''
+
 import rospy
 import smach
 import smach_ros
 import time
 from std_msgs.msg import String
-
 
 class GoForwards(smach.State):
     def __init__(self, lib, depth_demand, timeout, prop_demand):
@@ -56,9 +62,6 @@ class GoForwards(smach.State):
                 #str = 'Current rpm = %s'%rpm
                 #rospy.loginfo(str)
 
-
-
-
                 time.sleep(0.05)
 	    
             rpm_avg = rpm_sum/count
@@ -74,7 +77,6 @@ class GoForwards(smach.State):
                 str= 'goForwards succeeded at time = %s' %(time.time())
                 pub.publish(str)
                 return 'succeeded'
-                
 
             if self.__controller.getBackSeatErrorFlag() == 1:
                 str= 'goForwards preempted at time = %s' %(time.time())    

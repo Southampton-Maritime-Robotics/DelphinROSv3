@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+'''
+Possibly, the state that intefaces to the camera and light.
+
+'''
+
 import rospy
 import numpy
 import smach
@@ -23,8 +28,6 @@ class camera(smach.State):
             pub.publish(str)
             rospy.loginfo(str)
             
-#            time.sleep(10)
-            
             self.__controller.camera(self.__cam,self.__rec,self.__filename)
             
             str='Camera = %s, Record = %s, Filename = %s.' %(self.__cam,self.__rec,self.__filename)
@@ -42,10 +45,7 @@ class camera(smach.State):
                 str='Downwards Lighting Off' 
                 pub.publish(str)
                 rospy.loginfo(str)
-                
             
-                
-
             return 'succeeded'
                 
             #return 'preempted'

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-The one and only logger node that subscribe to all topics. 
+The one and only node that subscribe to all topics. 
 When the new message is receive it will be kept in the .csv file for post-processing.
 
 To log new topic

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 '''
-A state that directly operates the virtual actuators for a period of time. When timeout, the actuator demands will be set to zero.
+A state that directly operates the virtual actuators in a certain way for a period of time.
 
 user needs to specify
 -self.delay_action: how long the action will be held

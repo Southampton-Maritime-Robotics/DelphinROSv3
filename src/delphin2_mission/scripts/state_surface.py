@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+'''
+Possibly, a state to get the AUV back to the surface and have a gps fixed.
+
+May not functioning.
+
+'''
+
 import rospy
 import smach
 import smach_ros
@@ -82,5 +89,4 @@ class Surface(smach.State):
             str= 'Surface State Failed to get a GPS fix within the timeout of %s s' %(self.__timeout)
             pub.publish(str)
             rospy.loginfo(str)
-            return 'aborted'  
-            
+            return 'aborted'

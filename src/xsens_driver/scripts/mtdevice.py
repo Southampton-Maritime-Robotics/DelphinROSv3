@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
 """
-## This code is adapted from xsens_driver written by Francis Colas.
+An xsens_driver developed from the driver written by Francis Colas.
+
 Aims to provide a communication with xsens product (mainly MTi-30) using MTData2 message structure.
 
-user adjust 
-	-ReqPacket to choose the combination of outputs (this may affect the sampling frequency)
-	-the scenario_id to modify the filtering technique used in xsens devices
+Specify
+-ReqPacket to choose the combination of outputs (this may affect the sampling frequency)
+-scenario_id to modify the filtering technique used in xsens devices
+-LatLonAlt
+-_baudrate
+
 	
 ## MODIFICATION ##
 25/11/1014 apply configuration to the sensor everytime the driver is run

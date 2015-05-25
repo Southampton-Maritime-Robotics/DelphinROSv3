@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
 """
-This node is a driver for LED torch.
+A driver to turn LED torch on/off.
+
+May not functioning!
 
 """
 

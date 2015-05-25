@@ -3,11 +3,14 @@
 '''
 ######################################
 # description
-A script to get the AUV to point M (middle of the lake) and let it executes the thruster demand when rudder is set to amidships and propeller is not running.
+A state for a yaw manoeuvre by using horizontal thrusters.
+
+A script to get a reference point (i.e. middle of the lake) and let it executes the thruster demand (rudder is set to amidships and propeller is not running).
+
 If the depth demand is less than 0.5m, it will accaount as no depth demand specified.
 
-Routine
-    go to point M
+Procedure:
+    go to a reference point
     descend to a desired depth
     execute thruster setpoint
     stop and ascend to the surface
@@ -15,6 +18,8 @@ Routine
 ######################################
 #Modifications
 20/May/2015: insert the depth control in the procedure
+
+@return: succeeded: if the AUV execute all the thruster demands in a given list
 
 '''
 

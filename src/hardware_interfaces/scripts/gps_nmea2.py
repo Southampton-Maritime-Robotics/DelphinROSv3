@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
 """
-The gps device works at 1Hz by default. Within one cycle, it provices an information via a number of message type (see variable named "identifier" in this file). The driver is written in a way that it will publish only once in one cycle when the getAll flag is raise.
+A driver for GPS.
+
+The gps device works at 1Hz by default. Within one cycle, it provices an information via a number of message type (see a variable named "identifier" in this file). The driver is written in a way that it will publish only once in one cycle when the getAll flag is raise.
 
 #######################################################
 #Modifications to code

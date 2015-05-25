@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
 """
-This node help to estimate the state of the AUV.
-When the GPS is not available, the dead-reckoner will give an estimation of the AUV state based on the actuator demands.
-When the GPS is fixed, this node will use the position and velocity from gps as it is more accurate and can be used to reset the cumulative error produced by dead-reckoner.
+A node that gives an estimated AUV's state based on a dead-reckoning algorithm.
+
+This node relies more on GPS when it is available, otherwise an equation of motion will be used to keep tracking the AUV state.
 
 ######################################
 #Modifications

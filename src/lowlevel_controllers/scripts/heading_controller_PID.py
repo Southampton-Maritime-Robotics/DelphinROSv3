@@ -1,7 +1,10 @@
 #!/usr/bin/python
 
 """
-A PID-based controller to control the heading for the AUV when moving on a horizontal plane.
+A heading controller for the AUV when moving on a horizontal plane based-on PI-D strategy
+
+# Notes
+-control surface may not functioning correctly as the gains has not been tested yet
 
 ######################################
 #Modifications

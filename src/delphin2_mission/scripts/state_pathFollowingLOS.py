@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
 '''
-a horizontal plane path following algorithm based on line-of-sight technique
+A state for horizontal plane path following algorithm based on line-of-sight technique
+
+execute:
+@return: succeeded: when the AUV has arrived to the destination
+
+#TODO
+-should also consider the side-slip angle when determine heading error
 
 '''
 
@@ -23,7 +29,6 @@ class pathFollowingLOS(smach.State):
         self.__uGain = uGain
         self.__uMax = uMax
         self.__wp_R = wp_R
-        self.__r = rospy.Rate(100) # [Hz] set the control rate
 
     def execute(self, userdata):
         
@@ -92,4 +97,3 @@ class pathFollowingLOS(smach.State):
             # turn speedDemand into propeller demand and send
             self.__controller.setRearProp(round(u*22.))
             
-#            self.__r.sleep()

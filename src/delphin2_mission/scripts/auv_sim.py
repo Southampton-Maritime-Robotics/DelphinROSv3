@@ -2,11 +2,13 @@
 
 """
 # Description
-This node subscribe to a motion demand, e.g. speed, heading, depth.
+Simulator to the AUV kinematic.
+
+This node subscribes to commands.
 A state vector of the virtual AUV is updated accordingly based on the kinematic equation, i.e. the inertia is neglected.
 The current AUV state is then published as dummy messages of compass_out, depth_out and position_dead.
 
-#Available command
+#Available commands
 -self.delay_action: how long the action will be held
 -self.__controller.setHeading(0)
 -self.__controller.setDepth()

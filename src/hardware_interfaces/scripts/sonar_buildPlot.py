@@ -1,10 +1,12 @@
 #!/usr/bin/python
 
-# NOT IN USE
-# USED TO BUILD PLOT FROM SONAR DATA
+'''
+USED TO BUILD PLOT FROM SONAR DATA.
+NOT IN USE.
 
+Possibly, this node may not working!
 
-import roslib; roslib.load_manifest('DelphinROSv2') 
+'''
 import rospy
 import sys
 import serial
@@ -65,8 +67,6 @@ def callback(msgData):
         pub.publish(pingStore_x=pingStore_x, pingStore_y=pingStore_y)
         pingStore_x = []
         pingStore_y = []
-
-    
 
 ################################################################
 if __name__ == '__main__':

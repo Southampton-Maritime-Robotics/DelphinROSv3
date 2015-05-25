@@ -1,9 +1,15 @@
 #!/usr/bin/python
-###########
-#  VERSION AS OF 2/4/2012 
-###########
 
-import roslib; roslib.load_manifest('hardware_interfaces') 
+'''
+Possibly, a node to interface with sonar
+
+This node may not functioning!
+
+# TODO
+- assign a unique name to the sonar serial port in udev rule.
+
+'''
+
 import rospy
 import serial
 import time
@@ -37,7 +43,6 @@ def sonarTalker():
     print "Sending ping trigger to sonar - mtSendData:"
     print mtSendData
     print "--------"
-
 
 ################################################################
 def sonarListener():

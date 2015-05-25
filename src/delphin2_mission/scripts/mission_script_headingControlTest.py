@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+'''
+A mission script to test the PID-based heading controller (see headingPID.py).
+
+'''
+
 import rospy
 import smach
 import smach_ros
@@ -21,17 +26,6 @@ import matplotlib.pyplot as plt;
 from state_headingControlTest                import headingControlTest
 
 ################################################################################
-#Notes
-#
-#X is defined as east, Y is defined as north
-
-
-
-################################################################################
-#Modifications
-#
-#9/2/12 Modified state GoToXYZ
-
             
 def main():
 
@@ -99,21 +93,6 @@ def main():
         smach.StateMachine.add('ACTIONS', headingControlTest(lib), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
-################################################################################
-
-        # Home State Return to Safe Location (an example of how to navigate back)
-####       	smach.StateMachine.add('HOME', GoToXYZ(lib,80.0, 175.0, 0, 5, 0.5, 5, 5, 1200),  #, WpYnew, depthDemand, XYtolerance, Ztolerance, XYstable_time, Zstable_time, timeout
-####            transitions={'succeeded':'STOP', 'aborted':'END_LOCATION','preempted':'STOP'})
-####            
-####        smach.StateMachine.add('START_LOCATION', GoToXYZ(lib,110.0, 190.0, 0, 5, 0.5, 5, 5, 1200),  #100.0, 180.0,
-####            transitions={'succeeded':'PAUSE', 'aborted':'STOP','preempted':'STOP'})
-####            
-####        smach.StateMachine.add('END_LOCATION', GoToXYZ(lib, 110.0, 190.0, 0.0, 5, 0.5, 5, 5, 1200),  
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-####            
-####        smach.StateMachine.add('POINTNORTH', GoToHeading(lib, 0, 10, 15, 60),  #demand, tolerance, stable_time, timeout
-####            transitions={'succeeded':'HOME', 'aborted':'STOP','preempted':'STOP'}) 
-            
 ################################################################################
 
         # [3/3] Generic States (Come to this state just before terminating the mission)

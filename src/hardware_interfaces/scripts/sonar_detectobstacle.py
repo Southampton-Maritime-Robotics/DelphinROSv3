@@ -1,8 +1,12 @@
 #!/usr/bin/python
-###########
-#  VERSION AS OF 2/4/2012 
-###########
-import roslib; roslib.load_manifest('hardware_interfaces')
+
+'''
+Possibly, a part of the sonar driver.
+
+This node may not functioning!
+
+'''
+
 import rospy
 import time
 import numpy
