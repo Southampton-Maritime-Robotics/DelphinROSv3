@@ -1,6 +1,6 @@
 
 <launch>
-    <param name="max-depth-demand"    value="3" />                  <!-- Maximum depth demand (m) -->
+    <param name="max-depth-demand"    value="5" />                  <!-- Maximum depth demand (m) -->
     <param name="over-depth"          value="8" />                 <!-- Maximum depth (m) - causes abort -->
     <param name="over-pitch"          value="45" />                   <!-- Maximum pitch (deg) - causes abort -->
     <param name="over-roll"           value="90" />                   <!-- Maximum roll (deg) - causes abort -->

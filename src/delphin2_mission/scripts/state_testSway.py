@@ -41,7 +41,8 @@ class testSway(smach.State):
         self.__depthDemand = depthDemand # [m].
         self.__depthTol = depthTol # [m]. It is account as the AUV get to the depth if the depth error is less than this.
         self.__depthDemandMin = depthDemandMin # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
-        self.__listThrusterDemand = [100, 200, 400, 700, 1400, 2100] # list of thruster demand used in experiment
+        self.__listThrusterDemand = [700, 1400, 2100] # [100, 200, 400, 700, 1400, 2100] # list of thruster demand used in experiment
+        self.__direction = 1 # 1:right, -1:left
 
     def execute(self, userdata):
         
@@ -60,7 +61,7 @@ class testSway(smach.State):
                 rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0], self.__wp[1]])
                 if rang >= self.__wp_R:
                     errHeading = self.__uti.computeHeadingError(bear,heading)
-                    u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__gGain,errHeading)
+                    u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__uGain,errHeading)
                     self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
                     self.__controller.setHeading(bear)
                 else:
@@ -96,9 +97,9 @@ class testSway(smach.State):
                 print 'descend to desired depth'
                 timeStart = time.time()
                 while not rospy.is_shutdown():
-                    if abs(getDepth()-self.__depthDemand)>self.__depthTol:
+                    if abs(self.__controller.getDepth()-self.__depthDemand)>self.__depthTol:
                         timeRef = time.time() # reset the reference time
-                    if time.time()-timeStart <= self.timeDelay:
+                    if time.time()-timeStart <= self.__timeDelay:
                         self.__controller.setDepth(self.__depthDemand)
                     else:
                         # if the AUV get to the depth and stay there long enough, move onto the next step
@@ -109,9 +110,8 @@ class testSway(smach.State):
             timeStart = time.time()
             while not rospy.is_shutdown():
                 if time.time()-timeStart <= self.__timeDemandHold:
-                    print float(demandThruster)/2300*0.5 # TODO: remove me kantapon
-                    self.__controller.sway(float(demandThruster)/2300*0.5) # TODO: remove me kantapon
-                    self.__controller.setArduinoThrusterHorizontal(demandThruster,demandThruster)
+                    print self.__direction*demandThruster
+                    self.__controller.setArduinoThrusterHorizontal(self.__direction*demandThruster,self.__direction*demandThruster) # (FrontHor,RearHor)
                     if self.__depthDemand>=self.__depthDemandMin:
                         self.__controller.setDepth(self.__depthDemand)
                 else:

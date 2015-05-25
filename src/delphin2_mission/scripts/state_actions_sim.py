@@ -5,10 +5,14 @@ A state that directly operates the virtual actuators for a period of time. When 
 
 user needs to specify
 -self.delay_action: how long the action will be held
+-self.__controller.setDepth(0)
+-self.__controller.setHeading(0)
 -self.__controller.setRearProp(0)
 -self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
 -self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
 -self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+
+note: if the actuator demand is assigned directly, the setHeading must be commented
 
 See "auv_sim.py" for how to interact with this virtual vehicle.
 
@@ -34,22 +38,10 @@ class actions(smach.State):
         time_zero=time.time()
         while not rospy.is_shutdown():
 
-#            self.__controller.setRearProp(25)
-            self.__controller.sway(0.2) # (this function actually requires tsl_setpoints ~500-1000, however here requires sway speed in m/s)
-#            flagCon = 1
-#            while flagCon:
-#                self.__controller.setHeading(30)
-#                self.__controller.setRearProp(10)
-#                self.__controller.setDepth(2)
-#                if self.__controller.getX()>1000:
-#                    flagCon = 0
-#                        
-#            flagCon = 1
-#            while flagCon:
-#                self.__controller.setHeading(210)
-#                self.__controller.setRearProp(14)
-#                self.__controller.setDepth(2)
-#                if self.__controller.getX<0:
-#                    flagCon = 0
+#            self.__controller.setHeading(0)
+            self.__controller.setRearProp(0)
+            self.__controller.setDepth(0)
+            self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+            self.__controller.setArduinoThrusterHorizontal(1000,-1000) # (FrontHor,RearHor)
 
         return 'succeeded' # exit with a flag of 'succeeded'

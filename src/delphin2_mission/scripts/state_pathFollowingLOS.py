@@ -92,7 +92,4 @@ class pathFollowingLOS(smach.State):
             # turn speedDemand into propeller demand and send
             self.__controller.setRearProp(round(u*22.))
             
-            self.__controller.setDepth(1)
-            
 #            self.__r.sleep()
-            print time.time()-time_ref

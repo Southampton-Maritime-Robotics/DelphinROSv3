@@ -65,18 +65,18 @@ def main():
 
     # determine range and heading to the first waypoint in the list # TODO: comment this block
     # help to ensure that the AUV got hte location right
-    while not rospy.is_shutdown():
-        X = lib.getX()
-        Y = lib.getY()
-        Px = pathAtoB[0][0]
-        Py = pathAtoB[1][0]
-        rang, bear = myUti.rangeBearing([X,Y], [Px, Py])
-        print "range to the point is ", rang, "deg"
-        print "bearing to the point is ", bear, "metre"
-        
+####    while not rospy.is_shutdown():
+####        X = lib.getX()
+####        Y = lib.getY()
+####        Px = pathAtoB[0][0]
+####        Py = pathAtoB[1][0]
+####        rang, bear = myUti.rangeBearing([X,Y], [Px, Py])
+####        print "range to the point is ", rang, "deg"
+####        print "bearing to the point is ", bear, "metre"
+    
     # guidance
     L_los = 5 # [m] line-of-sight distance
-    wp_R = 5 # [m] radius of acceptance
+    wp_R = 3 # [m] radius of acceptance
     
     # speed control
     uGain = 0.07 # gain to control speed variation: high value -> less overshoot -> more settling time
@@ -86,7 +86,7 @@ def main():
     errHeadingTol = 2 # TODO [deg] tolarance in heading error
     
     # general
-    timeDemandHold = 2 # 60 sec TODO actuator demand will be hold for this many second
+    timeDemandHold = 5 # 60 sec TODO actuator demand will be hold for this many second. used in sway and yaw test
     turningAngle = 720 # [deg] TODO the vehicle has to turn this many degree before move to the next step
     timeDelay = 1 # 20 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
     
@@ -119,9 +119,9 @@ def main():
 
         #=================================================
         ## PATH FOLLOWING TEST 
-        # This state will get the AUV moving along the pathTest [O->M->A->B->M->O]. note that [M->O] is in the state 'HOME'
-        smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R), 
-            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        # This state will get the AUV moving along the pathTest [O->M->A->B->M]
+####        smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R), 
+####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         #=================================================
@@ -139,7 +139,7 @@ def main():
         # This state will get the AUV transit to point M
 ####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'YAW', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will keep the AUV at point M and perform yaw motion response test: TODO check timeDemandHold
+####        # This state will keep the AUV at point M and perform yaw motion response test
 ####        smach.StateMachine.add('YAW', testYaw(lib, myUti, M, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
@@ -147,11 +147,11 @@ def main():
         #=================================================
         ## SWAT TEST 
         # This state will get the AUV transit to point M
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
-####            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will keep the AUV at point M and perform sway motion response test: TODO check timeDemandHold
-####        smach.StateMachine.add('SWAY', testSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin), 
-####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
+            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
+        # This state will keep the AUV at point M and perform sway motion response test: TODO check timeDemandHold
+        smach.StateMachine.add('SWAY', testSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin), 
+            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
 
         #=================================================

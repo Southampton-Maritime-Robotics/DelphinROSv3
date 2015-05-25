@@ -16,6 +16,7 @@ Routine
 ######################################
 #Modifications
 19/May/2015: insert the depth control in the procedure
+23/May/2015: tested with depth demand
 
 '''
 
@@ -63,7 +64,7 @@ class testSurge(smach.State):
                 rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
                 if rang >= self.__wp_R:
                     errHeading = self.__uti.computeHeadingError(bear,heading)
-                    u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__gGain,errHeading)
+                    u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__uGain,errHeading)
                     self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
                     self.__controller.setHeading(bear)
                 else:
@@ -98,9 +99,9 @@ class testSurge(smach.State):
                 print 'descend to desired depth'
                 timeStart = time.time()
                 while not rospy.is_shutdown():
-                    if abs(getDepth()-self.__depthDemand)>self.__depthTol:
+                    if abs(self.__controller.getDepth()-self.__depthDemand)>self.__depthTol:
                         timeRef = time.time() # reset the reference time
-                    if time.time()-timeStart <= self.timeDelay:
+                    if time.time()-timeStart <= self.__timeDelay:
                         self.__controller.setDepth(self.__depthDemand)
                     else:
                         # if the AUV get to the depth and stay there long enough, move onto the next step

@@ -17,7 +17,7 @@ keys parameters that sill in use
 #Modifications
 9 Apr 2015: alter the way to control sampling rate with rospy.rate()
 24 Apr 2015: calibrate the depth reading using the pitch angle and shift between center of rotation and location of depth transducer 
-22 May 2015: have this node publishes directly to the depth_out rather than send to the xsens and then publish
+22 May 2015: have this node publishes directly to the depth_out topic rather than send to the xsens and then publish to the compass_out topic
 
 """
 

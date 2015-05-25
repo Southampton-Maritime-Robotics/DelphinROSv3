@@ -176,7 +176,6 @@ class library_highlevel:
 #        rospy.loginfo(str)
         self.switchHorizontalThrusters(1)
         self.switchHeadingOnOff(0)
-#        time.sleep(0.5)
         self.pub_tsl_heading.publish(output)
 
     # manually send tsl setpoint values for vertical thrusters
@@ -184,13 +183,11 @@ class library_highlevel:
         output=tsl_setpoints()
         output.thruster0=thruster0
         output.thruster1=thruster1
-
         #print statement might not work! hasn't been tested!
 #        str = "Vertical Thruster Setpoints %s %s" %(thruster0,thruster1)
 #        rospy.loginfo(str)
         self.switchVerticalThrusters(1)
         self.switchDepthOnOff(0)
-#        time.sleep(0.5)
         self.pub_tsl_depth.publish(output)
 
     # move to depth 'demand' (metres)
@@ -199,17 +196,19 @@ class library_highlevel:
         #print 'Setting depth demand: ', demand, 'm'
         self.switchDepthOnOff(1)
         self.switchVerticalThrusters(1)
-#        print demand
-        if (demand < self.__maxDepthDemand and demand > 0):
+        if (demand <= self.__maxDepthDemand and demand > 0):
             self.pub_depth_demand.publish(demand)
 #            str = "Setting depth demand %sm" %demand
 #            rospy.loginfo(str)
-        else:
+        elif demand > self.__maxDepthDemand:
             self.pub_depth_demand.publish(self.__maxDepthDemand)
             str = "Requested depth %sm > maxDepthDemand (%sm)" %(demand, self.__maxDepthDemand)
             rospy.logwarn(str)
             str = "Setting depth demand %sm" %self.__maxDepthDemand
             rospy.logwarn(str)
+        else:
+            # if demand is zero TODO
+            pass
             
     def setSpeed(self, demand):
         self.pub_speed.publish(demand)

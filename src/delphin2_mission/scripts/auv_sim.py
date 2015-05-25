@@ -7,18 +7,22 @@ A state vector of the virtual AUV is updated accordingly based on the kinematic 
 The current AUV state is then published as dummy messages of compass_out, depth_out and position_dead.
 
 #Available command
--depth
--heading
--rudder
--thrusterHor
--prop
+-self.delay_action: how long the action will be held
+-self.__controller.setHeading(0)
+-self.__controller.setDepth()
+-self.__controller.setRearProp(0)
+-self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft) # only the vertical ones that work
+-self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+
+#note
+-if the actuator demands are assigned directly, the heading demand has to be removed
 
 #Todo
--have the AUV depth reset to zero when there is no depth demand for longer than 1sec
--turn thruster demand to the yaw rate, make the AUV yaw
+-make the AUV drive through the thruster demand instead of depth demand
 
 # Modification
 21/May/2015: have the AUV depth (Z) reset to zero when there is no depth demand updated for longer than 1sec
+22/May/2015: turn the thruster and rudder demands into yaw and sway motion
 
 """
 
@@ -52,11 +56,15 @@ def listenForData():
     global rearPropDemand_cb
     global swayDemand_cb
     global thruster_cb
+    global csAngle_cb
+    global depthTimeLastDemand
     headingDemand_cb = 0
     depthDemand_cb = 0
     rearPropDemand_cb = 0
     swayDemand_cb = 0
-    thruster_cb = 0
+    thruster_cb = tsl_setpoints()
+    csAngle_cb = 0
+    depthTimeLastDemand = time.time()
     
     global hasHeadingDemand
     global hasDepthDemand
@@ -68,11 +76,11 @@ def listenForData():
     hasThDemand = False
     
     # increment
-    incHeading = 10 # [(deg)/s] how quick the heading can change FIXME: tune the value
-    incDepth = 0.01 # [(m)/s] how quick the depth can change FIXME: tune the value
+    incHeading = 50 # [(deg)/s] how quick the heading can change FIXME: tune the value
+    incDepth = 0.5 # [(m)/s] how quick the depth can change FIXME: tune the value
     # saturation
-    speedMax = 1 # [m/s] maximum surge speed
-    swayMax = 0.5 # [m/s] maximum sway speed
+    speedMax = 2 # [m/s] maximum surge speed
+    swayMax = 1 # [m/s] maximum sway speed
     depthMax = rospy.get_param('over-depth') # [m] maximum depth
     dt = 0.01 # [sec] time step size
     
@@ -84,7 +92,6 @@ def listenForData():
     Y = 0 # [m]
     Z = 0 # [m]
     heading = 0 # [deg] North CW
-    depthTimeLastDemand = time.time()
     
     com = compass()
     dep = depth()
@@ -96,7 +103,10 @@ def listenForData():
         demandRearProp = rearPropDemand_cb # [m/s]
         demandDepth = depthDemand_cb # [m]
         demandHeading = headingDemand_cb # [deg] North CW
-        demandSway = swayDemand_cb # [m/s] stb
+#        demandSway = swayDemand_cb # [m/s] stb
+        th_hori_frt = thruster_cb.thruster0
+        th_hori_aft = thruster_cb.thruster1
+        csAngle = csAngle_cb
         
         # update kinematic parameters and state vector
         if hasPropDemand:
@@ -119,15 +129,19 @@ def listenForData():
         elif hasThDemand:
             #sway due to thruster
             if th_hori_frt*th_hori_aft>0: # if thrusters are spining in a same direction, do sway
-                v = myUti.limits(float(th_hori_frt)/2200.*swayMax,-swayMax,swayMax)
+                v = myUti.limits(float(th_hori_frt)/2200.*swayMax*dt,-swayMax,swayMax)
                 X = X+v*dt*cos(heading*pi/180)
                 Y = Y+v*dt*sin(heading*pi/180)
+####                print "sway speed: ", v
             #yaw due to thruster and rudder
             elif th_hori_frt*th_hori_aft<=0: # if thrusters are spining in a different direction, do yaw
                 incHeadingTH = float(th_hori_frt)/2200.*incHeading*dt
                 incHeadingCS = float(csAngle)/30.*incHeading*dt
                 heading = mod( heading+incHeadingTH+incHeadingCS, 360 )
-            hasThDemand = True
+####                print [incHeadingTH, incHeadingCS, heading]                
+            hasThDemand = False
+####            print "thruster: ", [th_hori_frt, th_hori_aft]
+####            print "cs angle: ", csAngle
             
         if hasDepthDemand:
             errDepth = demandDepth-Z
@@ -181,16 +195,14 @@ def heading_demand_cb(headingd):
     hasHeadingDemand = True
     
 def th_horiz_cb(new_sp):
-    global th_hori_frt
-    global th_hori_aft
+    global thruster_cb
     global hasThDemand
-    th_hori_frt = new_sp.thruster0
-    th_hori_aft = new_sp.thruster1
+    thruster_cb = new_sp
     hasThDemand = True
     
-def vertical_cb(new_angles):
-    global csAngle
-    csAngle = new_angles.cs0 # assume the command on top and bottom surface are identical
+def cs_vert_cb(new_angles):
+    global csAngle_cb
+    csAngle_cb = new_angles.cs0 # assume the command on top and bottom surface are identical
     # There is no need to have "hasCsDemand" to check if the demand is available since the thruste and control surface demand are specified at the same place
     
 ################################################################################
@@ -213,6 +225,6 @@ if __name__ == '__main__':
     rospy.Subscriber('depth_demand', Float32, depth_demand_cb)
     rospy.Subscriber('prop_demand', Int8, rearProp_demand_cb)
     rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, th_horiz_cb)
-    rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, vertical_cb)
+    rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, cs_vert_cb)
         
     listenForData()   #Main loop for update the AUV parameters
