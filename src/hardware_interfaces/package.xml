@@ -54,6 +54,8 @@
     <!-- <metapackage/> -->
 
     <!-- Other tools can request additional information be placed here -->
+    <!-- use rosdoc_lite for documentation, config in the given yaml file -->
+    <rosdoc config="rosdoc.yaml"/>
 
   </export>
 </package>
