@@ -22,7 +22,7 @@ class sonar:
         # now split the most recent dataset:
         self.header.append(self.allData[-1][0:52])   # 13 byte header are read from sonar
         self.bins.append(self.allData[-1][52:])      # the rest is bins
-        self.angle = self.header[-1][40]             # this is where some of the angle seems to be
+        self.angle.append(self.header[-1][40])       # this is where some of the angle seems to be
         # TODO smaria:
         # better understand what is contained in the sonar data
 
