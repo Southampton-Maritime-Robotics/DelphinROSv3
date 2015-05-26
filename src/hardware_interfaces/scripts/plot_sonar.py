@@ -72,5 +72,6 @@ if __name__ == '__main__':
     rospy.Subscriber('sonar_output', String, get_sonar)
     sonar = analyse_sonar.sonar()
     time.sleep(2)  # This is needed for stable plotting
-    plot_sonar.time_plot(sonar.allData)
+    #plot_sonar.time_plot(sonar.allData)
+    plot_sonar.fixed_angle_time(sonar, 88, 50)
    
