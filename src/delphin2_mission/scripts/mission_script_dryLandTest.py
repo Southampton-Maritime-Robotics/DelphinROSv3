@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
 '''
+Dry Land Test:
+
 A mission script to test if all actuators are working correctly. This must be before every mission.
 
+test of all sensors and actuators before the vehicle is run in water
+run thrusters and propeller at lower RPM
 '''
 
 import rospy

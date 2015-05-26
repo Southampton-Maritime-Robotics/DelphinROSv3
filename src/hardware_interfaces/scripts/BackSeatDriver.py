@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 """
 A node that keeps an eye on the critical nodes. 
 
