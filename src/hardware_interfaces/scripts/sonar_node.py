@@ -8,6 +8,8 @@
 # a set of defaults would be nice, so this script can run independently
 ###########
 
+# demionstration comment
+
 import roslib; roslib.load_manifest('hardware_interfaces') 
 import rospy
 import serial
