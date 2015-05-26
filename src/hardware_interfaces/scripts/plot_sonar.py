@@ -45,7 +45,7 @@ def get_sonar(msgData):
     msgData = numpy.fromstring(msgData.data, dtype=numpy.uint8)
     print(msgData)
     figure.data = msgData
-    testvariable = msgData
+    testvariable.append(msgData)
 
 def draw_test():
     if not rospy.is_shutdown():
@@ -57,7 +57,10 @@ def draw_test():
 def some_function():
     global testvariable
     while not rospy.is_shutdown():
-        plot(testvariable)
+        plotValues = np.swapaxes(testvariable,0,1)
+        imshow(plotValues, origin='lower', cmap=get_cmap('gist_heat'), vmin = 0, vmax = 200, interpolation = 'none')
+
+        #plot(testvariable)
         ion()    # for some reason all of these three are necessary
         draw()
         show()
