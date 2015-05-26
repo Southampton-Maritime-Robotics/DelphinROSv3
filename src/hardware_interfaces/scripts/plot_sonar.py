@@ -45,9 +45,7 @@ def get_sonar(msgData):
     msgData = numpy.fromstring(msgData.data, dtype=numpy.uint8)
     print(msgData)
     figure.data = msgData
-    #testvariable = msgData
-    testvariable.append(testvariable[-1] + 1)
-    testvariable.pop(0)
+    testvariable = msgData
 
 def draw_test():
     if not rospy.is_shutdown():
@@ -73,7 +71,7 @@ if __name__ == '__main__':
     # if script is main, assume its run manually for debugging
     rospy.init_node('plot_sonar', log_level=rospy.DEBUG)
     global testvariable
-    testvariable = [0, 1, 2, 3, 4, 5, 0, 1, 2]
+    testvariable = []
     rospy.Subscriber('sonar_output', String, get_sonar)
     #draw_test = rospy.Publisher('nanana', Float32, queue_size=10)
     time.sleep(2)
