@@ -35,15 +35,15 @@ class plotter:
         plt.draw()
         print("%%%%%%%%%")
 
-    def time_plot(self):
-        while not rospy.is_shutdown():
-            plotValues = np.swapaxes(sonar.data,0,1)
-            imshow(plotValues, origin='lower', cmap=get_cmap('gist_heat'), vmin = 0, vmax = 200, interpolation = 'none')
+def time_plot(bin_array):
+    while not rospy.is_shutdown():
+        plotValues = np.swapaxes(bin_array,0,1)
+        imshow(plotValues, origin='lower', cmap=get_cmap('gist_heat'), vmin = 0, vmax = 200, interpolation = 'none')
 
-            #plot(testvariable)
-            ion()    # for some reason all of these three are necessary
-            draw()
-            show()
+        #plot(testvariable)
+        ion()    # for some reason all of these three are necessary
+        draw()
+        show()
 
 
 
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     rospy.Subscriber('sonar_output', String, get_sonar)
     sonar = plotter()
     #draw_test = rospy.Publisher('nanana', Float32, queue_size=10)
-    time.sleep(2)
-    sonar.time_plot()
+    time.sleep(2)  # This is needed for stable plotting
+    time_plot(sonar.data)
     #plotter.update(figure)
    
