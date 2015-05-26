@@ -17,6 +17,7 @@ from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import sonar	
 
 from hardware_interfaces import plot_sonar
+from hardware_interfaces import analyse_sonar
 
 ################################################################
 class plotter:
@@ -51,11 +52,7 @@ def time_plot(bin_array):
 
 def get_sonar(msgData):
     # initialise figure
-
-    rawData= msgData.data
-    msgData = numpy.fromstring(msgData.data, dtype=numpy.uint8)
-    print(msgData)
-    sonar.data.append(msgData)
+    sonar.add_message(msgData)
 
 def draw_test():
     if not rospy.is_shutdown():
@@ -73,7 +70,7 @@ if __name__ == '__main__':
     # if script is main, assume its run manually for debugging
     rospy.init_node('plot_sonar', log_level=rospy.DEBUG)
     rospy.Subscriber('sonar_output', String, get_sonar)
-    sonar = plotter()
+    sonar = analyse_sonar.sonar()
     time.sleep(2)  # This is needed for stable plotting
-    plot_sonar.time_plot(sonar.data)
+    plot_sonar.time_plot(sonar.allData)
    

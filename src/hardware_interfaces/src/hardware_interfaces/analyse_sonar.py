@@ -1,3 +1,5 @@
+import numpy
+
 """
 Useful classes, functions for analysing sonar data
 """
@@ -15,8 +17,8 @@ class sonar:
         """
         fill in new information for a new message
         """
-        self.raw.append(message)
-        self.allData.append(numpy.fromstring(msg.data, dtype=numpy.uint8))
+        self.raw.append(message.data)
+        self.allData.append(numpy.fromstring(self.raw[-1], dtype=numpy.uint8))
         # now split the most recent dataset:
         self.header.append(self.allData[-1][0:52])   # 13 byte header are read from sonar
         self.bins.append(self.allData[-1][52:])      # the rest is bins
