@@ -29,7 +29,7 @@ class pathFollowingLOS(smach.State):
         self.__uGain = uGain
         self.__uMax = uMax
         self.__wp_R = wp_R
-
+        
     def execute(self, userdata):
         
         ####################################################################
@@ -43,6 +43,10 @@ class pathFollowingLOS(smach.State):
         wpTarget = 1
         self.__path = numpy.vstack((eta,self.__path.T)).T # include the current location of the AUV as the first waypoint
         _,pathLen = self.__path.shape
+        
+        controlRate = 50. # [Hz]
+        controlPeriod = 1/controlRate
+        r = rospy.Rate(controlRate)
 
         print 'Execute path following algorithm with a following path'
         print 'X = ', self.__path[0,:]
@@ -51,7 +55,7 @@ class pathFollowingLOS(smach.State):
         
         while not rospy.is_shutdown():
             
-            time_ref = time.time()
+            timeRef = time.time()
             
             X = self.__controller.getX()
             Y = self.__controller.getY()
@@ -97,3 +101,9 @@ class pathFollowingLOS(smach.State):
             # turn speedDemand into propeller demand and send
             self.__controller.setRearProp(round(u*22.))
             
+            timeElapse = time.time()-timeRef
+            if timeElapse < controlPeriod:
+                r.sleep()
+            else:
+                str = "pathFollowingLOS rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+                rospy.logwarn(str)
