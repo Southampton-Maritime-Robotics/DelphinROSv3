@@ -234,9 +234,9 @@ def position_callback(position):
 
 ##############################################################
 
-def mission_callback(HC): 
+def mission_callback(message): 
     stringtime = time.time()-time_zero
-    missionList = [stringtime, HC.data]
+    missionList = [stringtime, message.data]
     
     with open('%s/mission.txt' %(dirname), "a") as f:
         try:
