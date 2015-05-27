@@ -48,8 +48,8 @@ class headingControlTest(smach.State):
         
 ################################################################################
         # let the vehicle do heading tracking
-        listDemandHeading = [110,200,200]
-        for demandHeading in listDemandHeading
+        listDemandHeading = [110,200,290]
+        for demandHeading in listDemandHeading:
 
             str = "tracking a heading demand of = %s" %(demandHeading)
             rospy.loginfo(str)
