@@ -77,14 +77,18 @@ def listenForData():
     hasPropDemand = False
     hasThDemand = False
     
+    controlRate = 50. # [Hz]
+    controlPeriod = 1./controlRate
+    r = rospy.Rate(controlRate)
+    
     # increment
-    incHeading = 50 # [(deg)/s] how quick the heading can change FIXME: tune the value
-    incDepth = 0.5 # [(m)/s] how quick the depth can change FIXME: tune the value
+    incHeading = 1.5 # [(deg)/s] how quick the heading can change FIXME: tune the value
+    incDepth = 0.1 # [(m)/s] how quick the depth can change FIXME: tune the value
     # saturation
-    speedMax = 2 # [m/s] maximum surge speed
-    swayMax = 1 # [m/s] maximum sway speed
+    speedMax = 1. # [m/s] maximum surge speed
+    swayMax = 1. # [m/s] maximum sway speed
     depthMax = rospy.get_param('over-depth') # [m] maximum depth
-    dt = 0.01 # [sec] time step size
+    dt = controlPeriod*20 # [sec] time step size
     
     # nu: velocity vector
     u = 0 # [m/s] initial surge velocity
@@ -100,6 +104,8 @@ def listenForData():
     pos = position()
     
     while not rospy.is_shutdown():
+        
+        timeRef = time.time()
         
         # get demand
         demandRearProp = rearPropDemand_cb # [m/s]
@@ -123,6 +129,7 @@ def listenForData():
             
         # a priority of actuator demand heading>thrusterSway>thrusterRudderYaw (note: this is not real!)
         # yaw due to heading demand
+        v = 0
         if hasHeadingDemand:
             errHeading = myUti.computeHeadingError(demandHeading,heading)
             heading = mod( heading+sign(errHeading)*incHeading*dt, 360 )
@@ -131,19 +138,15 @@ def listenForData():
         elif hasThDemand:
             #sway due to thruster
             if th_hori_frt*th_hori_aft>0: # if thrusters are spining in a same direction, do sway
-                v = myUti.limits(float(th_hori_frt)/2200.*swayMax*dt,-swayMax,swayMax)
+                v = myUti.limits(float(th_hori_frt)/2200.*swayMax,-swayMax,swayMax)
                 X = X+v*dt*cos(heading*pi/180)
-                Y = Y+v*dt*sin(heading*pi/180)
-####                print "sway speed: ", v
+                Y = Y-v*dt*sin(heading*pi/180)
             #yaw due to thruster and rudder
             elif th_hori_frt*th_hori_aft<=0: # if thrusters are spining in a different direction, do yaw
                 incHeadingTH = float(th_hori_frt)/2200.*incHeading*dt
                 incHeadingCS = float(csAngle)/30.*incHeading*dt
-                heading = mod( heading+incHeadingTH+incHeadingCS, 360 )
-####                print [incHeadingTH, incHeadingCS, heading]                
+                heading = mod( heading+incHeadingTH+incHeadingCS, 360 )                
             hasThDemand = False
-####            print "thruster: ", [th_hori_frt, th_hori_aft]
-####            print "cs angle: ", csAngle
             
         if hasDepthDemand:
             errDepth = demandDepth-Z
@@ -155,10 +158,6 @@ def listenForData():
             # reset depth if there is no depth demand for longer than 1 sec
             if time.time()-depthTimeLastDemand > 1:
                 Z = 0
-
-#        print demandRearProp, u
-#        print X, Y, Z, heading, u
-#        print demandSpeed, demandHeading, demandDepth
                 
         com.heading = heading
         dep.depth_filt = Z
@@ -167,12 +166,19 @@ def listenForData():
         pos.Y = Y
         pos.Z = Z
         pos.forward_vel = u
+        pos.sway_vel = v
         
         # publish
         pubCompass.publish(com)
         pubDepth.publish(dep)
         pubPosition.publish(pos)
-#        time.sleep(0.0001)
+        
+        timeElapse = time.time()-timeRef
+        if timeElapse < controlPeriod:
+            r.sleep()
+        else:
+            str = "auv_sim rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
 
 ################################################################################
 ######## SATURATION AND UPDATE PARAMETERS FROM TOPICS ##########################
