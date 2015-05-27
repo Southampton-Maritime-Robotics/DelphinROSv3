@@ -27,6 +27,7 @@ from hardware_interfaces.msg    import compass
 from lowlevel_controllers.msg   import heading_control
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Bool
+from std_msgs.msg               import String
 
 from delphin2_mission.utilities     import uti
 
@@ -202,6 +203,7 @@ def main_control_loop():
                 else:
                     str = "Heading control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
                     rospy.logwarn(str)
+                    pubMissionLog.publish(str)
 
 ################################################################################
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
@@ -284,6 +286,7 @@ if __name__ == '__main__':
     pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
     pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
     pub_HC   = rospy.Publisher('Heading_controller_values', heading_control)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     
     rospy.loginfo("Heading controller online")
 

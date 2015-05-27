@@ -30,6 +30,7 @@ from lowlevel_controllers.msg   import depth_pitch_control
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Int8
 from std_msgs.msg               import Bool
+from std_msgs.msg               import String
 
 from delphin2_mission.utilities     import uti
 
@@ -251,6 +252,7 @@ def main_control_loop():
                 else:
                     str = "Pitch-Depth control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse)
                     rospy.logwarn(str)
+                    pubMissionLog.publish(str)
 
 ################################################################################
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
@@ -370,7 +372,8 @@ if __name__ == '__main__':
     
     pub_tail = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
     pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
-    pub_DPC   = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control)
+    pub_DPC  = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     
     rospy.loginfo("Depth-Pitch controller online")
 
