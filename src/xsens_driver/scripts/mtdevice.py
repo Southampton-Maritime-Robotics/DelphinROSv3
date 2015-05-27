@@ -27,6 +27,7 @@ import serial
 import struct
 import select
 import rospy
+from hardware_interfaces.msg import status
 
 import sys, time
 
@@ -568,6 +569,7 @@ class XSensDriver(object):
 			
 		# initialize topics
 		self.COMPASS_pub = rospy.Publisher('compass_out',compass)
+		self.pubStatus = rospy.Publisher('status', status)
 		# create messages and default values
 		self.com = compass()
 
@@ -601,6 +603,8 @@ class XSensDriver(object):
 			print "Current baudrate: %s (id: %s)"%(Baudrates.get_BR(int(brid)),brid)
 #			print "Current location : (id: %s)"%self.mt.ReqLatLonAlt()
 			self.mt.GoToMeasurement()
+			
+			self.pubStatus.publish(nodeID = 6, status = True)
 			
 			try:
 				while not rospy.is_shutdown():
@@ -686,6 +690,7 @@ class XSensDriver(object):
 			
 if __name__=='__main__':
 	rospy.init_node('xsens_driver')
+	
 	driver = XSensDriver()
 	
 	rospy.loginfo("xsens_driver online")
