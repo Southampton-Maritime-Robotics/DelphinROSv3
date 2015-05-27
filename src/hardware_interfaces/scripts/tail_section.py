@@ -224,7 +224,6 @@ def prop_callback(new_prop):
 ################################################################################
 
 def process_feedback(feedback):
-     global pub
      global prop_demand
      global b
      global c
@@ -272,9 +271,7 @@ def shutdown():
 ################################################################################
 
 if __name__ == '__main__':
-    time.sleep(1) #Allow System to come Online    
-    global pub
-    global pubMissionLog
+    time.sleep(1) #Allow System to come Online
     global prop_demand
     global serialPort
     global b

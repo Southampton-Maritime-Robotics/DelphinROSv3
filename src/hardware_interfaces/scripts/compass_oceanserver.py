@@ -170,8 +170,6 @@ if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online    
     rospy.init_node('OceanServer_compass')
     
-    global pub
-    global pubMissionLog
     global serialPort
     global depth_msg
     depth_msg = depth()

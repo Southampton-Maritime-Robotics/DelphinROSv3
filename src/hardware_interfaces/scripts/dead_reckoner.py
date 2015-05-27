@@ -5,6 +5,9 @@ A node that gives an estimated AUV's state based on a dead-reckoning algorithm.
 
 This node relies more on GPS when it is available, otherwise an equation of motion will be used to keep tracking the AUV state.
 
+#TODO
+-include sway_demand in the model
+
 ######################################
 #Modifications
 6/1/12 Modified GPS callback to only operate if a valid fix is returned
@@ -21,23 +24,13 @@ from std_msgs.msg import Int8
 from hardware_interfaces.msg import compass
 from hardware_interfaces.msg import depth
 from hardware_interfaces.msg import position
+from hardware_interfaces.msg import tail_setpoints
+from hardware_interfaces.msg import tsl_setpoints
 from hardware_interfaces.msg import gps
 from hardware_interfaces.msg import altitude
-from hardware_interfaces.msg import depthandspeed_MPC # will be removed
-from hardware_interfaces.msg import heading_MPC # will be removed
 from hardware_interfaces.msg import dead_reckoner
 from hardware_interfaces.msg import camera_info
 import math
-
-#### DEFINE GLOBAL VARIABLES ####
-global flag
-global cur_compass
-global cur_sway
-global cur_prop
-global cur_sternP
-global cur_rudder
-global cur_thHori
-global cur_thVert
 
 ########## LOW LEVEL CONTROL ############################################################
 def reckoner():
@@ -90,7 +83,7 @@ def reckoner():
         t0      = time.time()
 
         print 'Entering main loop!!!'
-#        
+
 ############ MAIN RECKONER LOOP ################################################
         while not rospy.is_shutdown():
             
@@ -99,20 +92,20 @@ def reckoner():
             if delta_t >= dt:
                 time_zero = time.time()
             #### GPS DATA ######################################################    
-                if GPS.fix == 1 and GPS.number_of_satelites >= 5 and DaS.depth_demand < 0.5: # FIXME: use depth_demand instead
-                    X = GPS.x
-                    Y = GPS.y
-                    latitude  = np.float64(GPS.latitude)
-                    longitude = np.float64(GPS.longitude)
-                    velX = GPS.speed
+                if gpsInfo.fix == 1 and gpsInfo.number_of_satelites >= 5 and DaS.depth_demand < 0.5: # FIXME: use depth_demand instead
+                    X = gpsInfo.x
+                    Y = gpsInfo.y
+                    latitude  = np.float64(gpsInfo.latitude)
+                    longitude = np.float64(gpsInfo.longitude)
+                    velX = gpsInfo.speed
             
             #### COMPASS DATA ##################################################
-                heading = cur_compass.heading
+                heading = cur_compassInfo.heading
                 depth   = cur_depth.depth_filt
-                pitch   = cur_compass.pitch
-                roll    = cur_compass.roll
+                pitch   = cur_compassInfo.pitch
+                roll    = cur_compassInfo.roll
                 velZ    = cur_depth.depth_der
-                velP    = cur_compass.angular_velocity_y # TODO: double check if this is of the convention
+                velP    = cur_compassInfo.angular_velocity_y # TODO: double check if this is of the convention
                 
             #### ACTUATOR DATA #################################################
 
@@ -193,7 +186,7 @@ def reckoner():
                 accH = (hull_momentH + foil_momentH + T2*LTfh + T3*LTrh + hull_heading_drag_moment -10*velH)/(I)
                 velH = accH*dt + velH
                 H    = (velH*dt*180/np.pi + H)%360
-                errorH  = cur_compass.heading - H
+                errorH  = cur_compassInfo.heading - H
                 
                 ## sway speed ##
                 accY = (hull_liftY + foil_liftY + T2 + T3 + hull_drag_Y - 20*velY)/mass 
@@ -273,8 +266,8 @@ def reckoner():
                 output.sway_vel    = velY
                 output.lat         = latitude
                 output.long        = longitude
-                output.ValidGPSfix = GPS.fix
-                output.altitude    = alt.altitude
+                output.ValidGPSfix = gpsInfo.fix
+                output.altitude    = altInfo.altitude
                 pub.publish(output)
                 
                 output2.X = X
@@ -291,22 +284,18 @@ def reckoner():
                 output2.velH    = velH
                 output2.latitude    = float(latitude)
                 output2.longitude   = float(longitude)
-                output2.ValidGPSfix = GPS.fix
-                output2.altitude    = alt.altitude
+                output2.ValidGPSfix = gpsInfo.fix
+                output2.altitude    = altInfo.altitude
                 output2.X_dead = X_dead
                 output2.Y_dead = Y_dead
                 output2.velX_dead = velX_dead
                 output2.velY_dead = velY_dead
-                output2.temperature = temperature
+                output2.temperature = tempInfo
                 output2.frame0 = frame0
                 output2.frame1 = frame1
                 output2.velP_dead = velP_dead
                 pub2.publish(output2)
                 
-#                print output2
-                
-                #print 'time = ',time.time() - time_zero
-                #print output2
             else:
                 time.sleep(0.01)
 
@@ -318,48 +307,52 @@ def reckoner():
 #### WHEN NEW MISSION OR COMPASS DATA ARRIVES UPDATE VALUES AND RESET FLAG ####
 
 def compass_cb(newcompass):
-    global cur_compass
-    cur_compass = newcompass
+    global cur_compassInfo
+    cur_compassInfo = newcompass
     
 def depthOut_cb(newdepth):
-    global cur_depth
-    cur_depth = newdepth
+    global cur_depthInfo
+    cur_depthInfo = newdepth
+    
+def depthDemand_cb(depthd):
+    global cur_depth_demand
+    cur_depth_demand = depthd.data
 
 def prop_cb(prop):
-    global cur_prop
+    global cur_prop_demand
     cur_prop = prop.data
     
 def cs_hori_cb(data):
-    global cur_sternP
-    cur_sternP = data.cs0 # assume the demand on both surfaces are identical
+    global cur_sternP_demand
+    cur_sternP_demand = data.cs0 # assume the demand on both surfaces are identical
     
 def cs_vert_cb(data):
-    global cur_rudder
-    cur_rudder = data.cs0 # assume the demand on both surfaces are identical
+    global cur_rudder_demand
+    cur_rudder_demand = data.cs0 # assume the demand on both surfaces are identical
     
 def th_hori_cb(data):
-    global cur_thHori
-    cur_thHori = data
+    global cur_thHori_demand
+    cur_thHori_demand = data
     
 def th_vert_cb(data):
-    global cur_thVert
-    cur_thVert = data
+    global cur_thVert_demand
+    cur_thVert_demand = data
 
 def sway_cb(sway):
-    global cur_sway
-    cur_sway = sway.data
+    global cur_sway_demand
+    cur_sway_demand = sway.data
 
 def gps_callback(gps):
-    global GPS
-    GPS = gps
+    global gpsInfo
+    gpsInfo = gps
     
 def altimeter_callback(altimeter):
-    global alt
-    alt = altimeter    
+    global altInfo
+    altInfo = altimeter    
     
 def temperature_cb(data):
-    global temperature
-    temperature = data.data
+    global tempInfo
+    tempInfo = data.data
     
 def camera_cb(data):
     global frame0
@@ -371,30 +364,37 @@ def camera_cb(data):
 if __name__ == '__main__':
     rospy.init_node('dead_reckoner')
     
-    global cur_compass
-    global cur_sway
-    global cur_prop
-    global GPS
-    global head
-    global alt
-    global temperature
+    global cur_compassInfo
+    global cur_depthInfo
+    global cur_depth_demand
+    global cur_prop_demand
+    global cur_sternP_demand
+    global cur_rudder_demand
+    global cur_thHori_demand
+    global cur_thVert_demand
+    global cur_sway_demand
+    global gpsInfo
+    global altInfo
+    global tempInfo
     global frame0
     global frame1
-    
-    cur_compass = compass()
-    GPS         = gps()
-    alt         = altitude()
-    DaS         = depthandspeed_MPC()
-    head        = heading_MPC()
-    cur_prop    = 0
-    cur_sway    = 0
-    temperature = 0.0
+
+    cur_compassInfo = compass()
+    cur_depthInfo = depth()
+    cur_depth_demand = 0.
+    cur_prop_demand = 0.
+    cur_sternP_demand = tail_setpoints()
+    cur_rudder_demand = tail_setpoints()
+    cur_thHori_demand = tsl_setpoints()
+    cur_thVert_demand = tsl_setpoints()
+    cur_sway_demand   = 0.
+    gpsInfo         = gps()
+    altInfo         = altitude()
+    tempInfo        = 0.
     frame0=0
     frame1=0
     
     rospy.Subscriber('altimeter_out',altitude, altimeter_callback) # Will not be used in here, just subscribe and pass it through the publisher.
-##    rospy.Subscriber('DepthandSpeed_MPC_values', depthandspeed_MPC, depthandspeed_cb)
-##    rospy.Subscriber('Heading_MPC_values', heading_MPC, heading_cb)
     rospy.Subscriber('compass_out', compass, compass_cb)
     rospy.Subscriber('depth_out', depth, depthOut_cb)
     rospy.Subscriber('prop_demand',Int8, prop_cb)
@@ -406,7 +406,7 @@ if __name__ == '__main__':
     rospy.Subscriber('TSL_setpoints_vertical', tsl_setpoints, th_vert_cb)        
     rospy.Subscriber('gps_out', gps, gps_callback)
     rospy.Subscriber('water_temp', Float32, temperature_cb)
-    rospy.Subscriber('camera_info', camera_info,camera_cb)
+    rospy.Subscriber('camera_info', camera_info, camera_cb)
       
     pub  = rospy.Publisher('position_dead', position)
     pub2 = rospy.Publisher('dead_reckoner', dead_reckoner)

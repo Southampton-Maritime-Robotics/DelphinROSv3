@@ -425,9 +425,6 @@ if __name__ == '__main__':
     rospy.init_node('Arduino_Thruster')    
     
     global current_data
-    global pub
-    global pubStatus
-    global pubMissionLog
     
     port_status = init_serial()
     

@@ -291,8 +291,6 @@ def shutdown():
 if __name__ == '__main__':
     time.sleep(4) #Allow System to come Online    
     global identifier
-    global pub
-    global pubMissionLog
     rospy.init_node('gps_sensor')
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
        
