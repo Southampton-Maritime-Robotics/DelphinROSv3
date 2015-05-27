@@ -50,6 +50,11 @@ class headingControlTest(smach.State):
         # let the vehicle do heading tracking
         listDemandHeading = [110,200,200]
         for demandHeading in listDemandHeading
+
+            str = "tracking a heading demand of = %s" %(demandHeading)
+            rospy.loginfo(str)
+            pub.publish(str)
+                
             # set a reference time
             time_zero=time.time()
             while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
@@ -64,10 +69,8 @@ class headingControlTest(smach.State):
                     self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
                     self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                     return 'preempted'
-                    
-                str = "tracking a heading demand of = %s" %(demandHeading)
-                rospy.loginfo(str)
-                pub.publish(str)
+
+                # assign the demands
                 self.__controller.setHeading(demandHeading) # specified in a range of [0 360) degree
             
 ################################################################################

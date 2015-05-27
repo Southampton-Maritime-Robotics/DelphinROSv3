@@ -61,9 +61,12 @@ class depthPitchControlTest(smach.State):
 
         for demandDepth in listDemandDepth:
 
+            str = "tracking a depth demand of = %s" %(demandDepth)
+            rospy.loginfo(str)
+            pub.publish(str)
+
             # initialise a reference time
             time_zero=time.time()
-
             while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
                 
                 # check if the AUV is overdepth
@@ -78,9 +81,6 @@ class depthPitchControlTest(smach.State):
                     return 'preempted'
                 
                 # assign the demands
-                str = "tracking a depth demand of = %s" %(demandDepth)
-                rospy.loginfo(str)
-                pub.publish(str)
                 self.__controller.setDepth(demandDepth) # specified depth demand in [metre]
                 self.__controller.setPitch(demandPitch) # specified pitch demand in [degree] 
                 self.__controller.setHeading(demandHeading)
