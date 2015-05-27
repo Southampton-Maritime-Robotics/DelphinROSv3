@@ -26,6 +26,7 @@ def main(controller):
     pubMissionLog = rospy.Publisher('MissionStrings', String)
 
     controlRate = 40. # [Hz]
+    controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
     # Store Initial Time

@@ -87,7 +87,8 @@ class library_highlevel:
         self.__tail_status = 0
         self.__altimeter_status = 0
         self.__gps_status = 0
-        self.__compass_status = 0
+        self.__depth_transducer_status = 0
+        self.__xsens_status = 0
         
         self.__heading_error=0.0
         self.__altitude=0.0
@@ -399,8 +400,11 @@ class library_highlevel:
     def getGPSStatus(self):
         return self.__gps_status
     
-    def getCompassStatus(self):
-        return self.__compass_status
+    def getDepthTransducerStatus(self):
+        return self.__depth_transducer_status
+
+    def getXsensStatus(self):
+        return self.__xsens_status
     
     def getCS_b(self):
         return self.__CS_b
@@ -570,6 +574,9 @@ class library_highlevel:
             self.__gps_status = status.status
             return
         elif status.nodeID == 5:
-            self.__compass_status = status.status
+            self.__depth_transducer_status = status.status
+            return
+        elif status.nodeID == 6:
+            self.__xsens_status = status.status
             return
 
