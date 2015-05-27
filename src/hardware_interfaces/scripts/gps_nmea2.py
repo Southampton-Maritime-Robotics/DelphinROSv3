@@ -248,6 +248,7 @@ def listenForData(status):
                     else:
                         str = "GPS rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
                         rospy.logwarn(str)
+                        pubMissionLog.publish(str)
 
         except:
             print 'read error'
@@ -290,7 +291,8 @@ def shutdown():
 if __name__ == '__main__':
     time.sleep(4) #Allow System to come Online    
     global identifier
-    global pub    
+    global pub
+    global pubMissionLog
     rospy.init_node('gps_sensor')
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
        
@@ -302,7 +304,8 @@ if __name__ == '__main__':
   
     #Define Publishers
     pubStatus = rospy.Publisher('status', status)
-    pub = rospy.Publisher('gps_out', gps) 
+    pub = rospy.Publisher('gps_out', gps)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     time.sleep(1)
     #Setup serial port and check its status
     port_status = setUpSerial()    

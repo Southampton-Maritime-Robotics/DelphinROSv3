@@ -23,7 +23,7 @@ from delphin2_mission.library_highlevel import library_highlevel
 def main(controller):
     rospy.init_node('back_seat_driver')
     pub=rospy.Publisher('back_seat_flag',Int8)
-    pub2 = rospy.Publisher('MissionStrings', String)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
 
     controlRate = 40. # [Hz]
     r = rospy.Rate(controlRate)
@@ -44,7 +44,7 @@ def main(controller):
     
     #Initialise BackSeatFlag to zero
     BackSeatFlag=0
-    pub2.publish('Backseat Driver Node Is Active')
+    pubMissionLog.publish('Backseat Driver Node Is Active')
     
     headingOld = 0. # [deg]
     timeXsensLastPublish = time.time() # [sec]
@@ -65,7 +65,7 @@ def main(controller):
             str = "xsens did not response for longer than %ss" %(timeXsensDead)
             rospy.logerr(str)
             pub.publish(BackSeatFlag)
-            pub2.publish(str)
+            pubMissionLog.publish(str)
             return
         else:
             headingOld = headingNow
@@ -77,7 +77,7 @@ def main(controller):
             str = "Current depth %sm > Depth limit of %sm" %(current_depth, overDepth)
             rospy.logerr(str)
             pub.publish(BackSeatFlag)
-            pub2.publish(str)
+            pubMissionLog.publish(str)
             return
         
         #Identify OverPitch?
@@ -87,7 +87,7 @@ def main(controller):
             str = "Current pitch %sdeg > Pitch limit of %sdeg" %(current_pitch, overPitch)
             rospy.logerr(str)
             pub.publish(BackSeatFlag)
-            pub2.publish(str)
+            pubMissionLog.publish(str)
             return
         
         #Identify OverRoll?
@@ -97,7 +97,7 @@ def main(controller):
             str = "Current roll %sdeg > Roll limit of %sdeg" %(current_roll, overRoll)
             rospy.logerr(str)
             pub.publish(BackSeatFlag)
-            pub2.publish(str)
+            pubMissionLog.publish(str)
             return
 
         #Check Internal Pressure Vessel Temperature
@@ -107,7 +107,7 @@ def main(controller):
             str = "Current temperature %sdeg > Temperature limit of %sdeg" %(current_temperature, maxInternalTemp)
             rospy.logerr(str)
             pub.publish(BackSeatFlag)
-            pub2.publish(str)
+            pubMissionLog.publish(str)
             return
         
         #Check Motor Voltage
@@ -117,7 +117,7 @@ def main(controller):
             str = "Current voltage %smV < Motor voltage limit of %smV" %(current_voltage, minMotorVoltage)
             rospy.logerr(str)
             pub.publish(BackSeatFlag)
-            pub2.publish(str)
+            pubMissionLog.publish(str)
             return
         
         #Check Mission Duration
@@ -127,7 +127,7 @@ def main(controller):
             str = "Current mission time %ss > Mission time limit of %ss" %(current_time, missionTimeout)
             rospy.logerr(str)
             pub.publish(BackSeatFlag)
-            pub2.publish(str)
+            pubMissionLog.publish(str)
             return
 
         timeElapse = time.time()-timeRef

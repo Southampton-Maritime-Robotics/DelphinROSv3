@@ -27,6 +27,7 @@ import serial
 import time
 import math
 from re import findall
+from std_msgs.msg import String
 from hardware_interfaces.msg import compass
 from hardware_interfaces.msg import depth
 from hardware_interfaces.msg import status
@@ -125,6 +126,7 @@ def listenForData(status):
             rateOK = False
             str = "compass_oceanserver rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
             rospy.logwarn(str)
+            pubMissionLog.publish(str)
 
 def compass_callback(data):
     global pitch_callback
@@ -169,11 +171,13 @@ if __name__ == '__main__':
     rospy.init_node('OceanServer_compass')
     
     global pub
+    global pubMissionLog
     global serialPort
     global depth_msg
     depth_msg = depth()
     
     pub = rospy.Publisher('depth_out', depth)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     rospy.Subscriber('compass_out', compass, compass_callback) 
     pubStatus = rospy.Publisher('status', status)
     

@@ -108,6 +108,7 @@ def tail_section_loop(status):
         else:
             str = "tail_section rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
             rospy.logwarn(str)
+            pubMissionLog.publish(str)
         
         dt = time.time() - time_zero
 #        while dt < (1/freq):
@@ -273,6 +274,7 @@ def shutdown():
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online    
     global pub
+    global pubMissionLog
     global prop_demand
     global serialPort
     global b
@@ -284,7 +286,7 @@ if __name__ == '__main__':
     
     pub = rospy.Publisher('tail_output', tail_feedback)
     pubStatus = rospy.Publisher('status', status)
-    
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     prop_demand = 0
     
     rospy.init_node('tail_section')

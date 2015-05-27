@@ -18,6 +18,7 @@ import rospy
 import serial
 import time
 import numpy
+from std_msgs.msg import String
 from hardware_interfaces.msg import altitude
 from hardware_interfaces.msg import status
 
@@ -118,6 +119,7 @@ def listenForData(status):
         else:
             str = "Altimeter_micron rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
             rospy.logwarn(str)
+            pubMissionLog.publish(str)
         
 ################################################################
 def shutdown():
@@ -130,11 +132,17 @@ def shutdown():
 #     INITIALISE     ###########################################
 ################################################################
 if __name__ == '__main__':
+    
     time.sleep(1) #Allow System to come Online    
     rospy.init_node('MicronEchoSounder')
+    rospy.on_shutdown(shutdown)         #Defining shutdown behaviour
+    
+    global pubMissionLog
+    global pub
+    
     pub = rospy.Publisher('altimeter_out', altitude)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     pubStatus = rospy.Publisher('status', status)
-    rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
     
     global array_length
     global Dx

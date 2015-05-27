@@ -372,6 +372,7 @@ def motor_control(status):
         else:
             str = "Arduino_thruster rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
             rospy.logwarn(str)
+            pubMissionLog.publish(str)
     
 ############################# CALLBACKS ######################################    
 
@@ -426,6 +427,7 @@ if __name__ == '__main__':
     global current_data
     global pub
     global pubStatus
+    global pubMissionLog
     
     port_status = init_serial()
     
@@ -433,8 +435,10 @@ if __name__ == '__main__':
     rospy.Subscriber('TSL_onOff_vertical', Bool, onOff_vert_callback)
     rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, horiz_callback)
     rospy.Subscriber('TSL_setpoints_vertical', tsl_setpoints, vert_callback)
+    
     pub = rospy.Publisher('TSL_feedback', tsl_feedback)
     pubStatus = rospy.Publisher('status', status)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     
     board_status = init_board()
     
