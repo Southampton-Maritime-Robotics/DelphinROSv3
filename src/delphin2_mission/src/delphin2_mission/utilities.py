@@ -63,8 +63,9 @@ class uti:
     def rangeBearing(self, p1, p2):
         rang = sqrt( (p2[0]-p1[0])**2 + (p2[1]-p1[1])**2 )
         bear = atan2( (p2[0]-p1[0]), (p2[1]-p1[1]) )*180/pi
-        if bear<0:
-            bear = bear+360
+        bear = mod(bear,360)
+#        if bear<0:
+#            bear = bear+360
             
         return rang, bear
     
