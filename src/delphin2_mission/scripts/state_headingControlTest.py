@@ -10,6 +10,9 @@ A state to test the PID-based depth-pitch controller (see depthPitchPID.py).
 -self.delay_action # time span for the AUV to track one heading demand
 -listDemandHeading, [deg] e.g. [90,180,270].
 
+@return: preempted: if BackSeatErrorFlag is raised
+@return: successed: tasks accomplished
+
 '''
 
 import rospy
@@ -17,6 +20,7 @@ import numpy
 import smach
 import smach_ros
 import time
+from std_msgs.msg import String
 
 class headingControlTest(smach.State):
     def __init__(self, lib):
@@ -26,7 +30,10 @@ class headingControlTest(smach.State):
         self.delay_action = self.delay_thruster+70 # let the vehicle doing those actions for a period of time (value is specified in second)
             
     def execute(self, userdata):
-        outcome = 'aborted' # set exit flag to aborted by default
+    
+        #Set Up Publisher for Mission Control Log
+        pub = rospy.Publisher('MissionStrings', String)
+        
         ####################################################################
         ### Perform actions ################################################
         ####################################################################
@@ -46,6 +53,21 @@ class headingControlTest(smach.State):
             # set a reference time
             time_zero=time.time()
             while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
+
+                # check if the AUV is overdepth
+                if self.__controller.getBackSeatErrorFlag():
+                    str = "backSeatErrorFlag is raised"
+                    rospy.loginfo(str)
+                    pub.publish(str)
+                    self.__controller.setRearProp(0)
+                    self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
+                    self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
+                    self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+                    return 'preempted'
+                    
+                str = "tracking a heading demand of = %s" %(demandHeading)
+                rospy.loginfo(str)
+                pub.publish(str)
                 self.__controller.setHeading(demandHeading) # specified in a range of [0 360) degree
             
 ################################################################################

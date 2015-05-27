@@ -16,6 +16,9 @@ A state to test the PID-based depth-pitch controller (see depthPitchPID.py).
 # Notes
 heading controller will be functioning along side as to have the AUV heading remain unchanged.
 
+@return: aborted: if BackSeatErrorFlag is raised
+@return: successed: tasks accomplished
+
 '''
 
 import rospy
@@ -23,6 +26,7 @@ import numpy
 import smach
 import smach_ros
 import time
+from std_msgs.msg import String
 
 class depthPitchControlTest(smach.State):
     def __init__(self, lib):
@@ -32,7 +36,9 @@ class depthPitchControlTest(smach.State):
         self.delay_action = self.delay_thruster+270 # let the vehicle doing those actions for a period of time (value is specified in second)
             
     def execute(self, userdata):
-        outcome = 'aborted' # set exit flag to aborted by default
+
+        #Set Up Publisher for Mission Control Log
+        pub = rospy.Publisher('MissionStrings', String)        
         
         ####################################################################
         ### Perform actions ################################################
@@ -62,15 +68,19 @@ class depthPitchControlTest(smach.State):
                 
                 # check if the AUV is overdepth
                 if self.__controller.getBackSeatErrorFlag():
-                    print "over-depth detected"
-                        # stop all the actuators
+                    str = "backSeatErrorFlag is raised"
+                    rospy.loginfo(str)
+                    pub.publish(str)
                     self.__controller.setRearProp(0)
                     self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                     self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
                     self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-                    return 'aborted'
+                    return 'preempted'
                 
                 # assign the demands
+                str = "tracking a depth demand of = %s" %(demandDepth)
+                rospy.loginfo(str)
+                pub.publish(str)
                 self.__controller.setDepth(demandDepth) # specified depth demand in [metre]
                 self.__controller.setPitch(demandPitch) # specified pitch demand in [degree] 
                 self.__controller.setHeading(demandHeading)
