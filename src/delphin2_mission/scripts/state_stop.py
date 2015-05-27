@@ -18,18 +18,18 @@ import time
 from std_msgs.msg import String
 
 class Stop(smach.State):
-	def __init__(self, lib):
-		smach.State.__init__(self, outcomes=['succeeded'])
-                self.__controller = lib
+    def __init__(self, lib):
+        smach.State.__init__(self, outcomes=['succeeded'])
+        self.__controller = lib
                    		
-	def execute(self,userdata):
+    def execute(self,userdata):
 		#SYTEMS STOP
-                global pub
-                #Set Up Publisher for Mission Control Log
-                pub = rospy.Publisher('MissionStrings', String)
-                
-                str= 'Delphin2 STOP state started at time = %s' %(time.time())
-                pub.publish(str)
-                
-                self.__controller.stop()
-                return 'succeeded'
+		
+        #Set Up Publisher for Mission Control Log
+        pub = rospy.Publisher('MissionStrings', String)
+        
+        str= 'Delphin2 STOP state started at time = %s' %(time.time())
+        pub.publish(str)
+        
+        self.__controller.stop()
+        return 'succeeded'
