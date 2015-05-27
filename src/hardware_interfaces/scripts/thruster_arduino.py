@@ -34,13 +34,13 @@ import serial
 import time
 import numpy
 import math
-import string
 from hardware_interfaces.msg import tsl_setpoints
 from hardware_interfaces.msg import tsl_feedback
 from hardware_interfaces.msg import status
 
 from std_msgs.msg import UInt8
 from std_msgs.msg import Bool
+from std_msgs.msg import String
 
 global new_data
 global current_data

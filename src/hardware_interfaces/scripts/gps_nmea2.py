@@ -31,6 +31,7 @@ import string
 from pylab import *
 from hardware_interfaces.msg import gps
 from hardware_interfaces.msg import status
+from std_msgs.msg import String
 
 ################### GLOBAL VARIABLES ################### 
 
@@ -290,7 +291,10 @@ def shutdown():
 
 if __name__ == '__main__':
     time.sleep(4) #Allow System to come Online    
-    global identifier
+
+    global identifier    
+    global serialPort
+    
     rospy.init_node('gps_sensor')
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
        
