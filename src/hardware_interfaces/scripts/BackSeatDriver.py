@@ -25,7 +25,7 @@ def main(controller):
     pub=rospy.Publisher('back_seat_flag',Int8)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
 
-    controlRate = 40. # [Hz]
+    controlRate = 10. # [Hz]
     controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
@@ -142,4 +142,3 @@ if __name__ == '__main__':
     # Define an instance of highlevelcontrollibrary to pass to all action servers
     lib = library_highlevel()
     main(lib)
-    rospy.spin()
