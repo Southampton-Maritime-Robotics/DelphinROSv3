@@ -32,7 +32,7 @@ class Initialise(smach.State):
   		
     def execute(self,userdata):
         
-        time.sleep(10) # allow the logger and critical nodes to come online
+        time.sleep(5) # allow the logger and critical nodes to come online
 	
         #Set Up Publisher for Mission Control Log
         pub = rospy.Publisher('MissionStrings', String)
@@ -42,13 +42,15 @@ class Initialise(smach.State):
         str= 'Entered State Initialise'
         pub.publish(str)
         
-        while (time.time()-time_zero < self.__timeout) and not(all_online):
+        while (time.time()-time_zero < self.__timeout) and not(all_online) and not rospy.is_shutdown():
            all_online = (self.__controller.getThrusterStatus() 
                 and self.__controller.getTailStatus()   
                 and True # self.__controller.getAltimeterStatus() # FIXME: remove "True" and uncomment me when loading the altimeter
                 and self.__controller.getGPSStatus()
                 and self.__controller.getDepthTransducerStatus()
-                and self.__controller.getXsensStatus())
+                and self.__controller.getXsensStatus()
+                and self.__controller.getHeadingCtrlStatus()
+                and self.__controller.getDepthCtrlStatus())
            time.sleep(0.5)
 
         rospy.loginfo('##############################################')
@@ -73,14 +75,17 @@ class Initialise(smach.State):
         str='xsens status = %r' %self.__controller.getXsensStatus()
         pub.publish(str)
         rospy.loginfo(str)
-        str= 'all online = %r' %all_online
+        rospy.loginfo('##############################################')
+        str='heading ctrl status = %r' %self.__controller.getHeadingCtrlStatus()
         pub.publish(str)
         rospy.loginfo(str)
-        str='time elapsed = %s s' %(time.time()-time_zero)
+        str='depth ctrl status = %r' %self.__controller.getDepthCtrlStatus()
         pub.publish(str)
         rospy.loginfo(str)
         rospy.loginfo('##############################################')
-        rospy.loginfo('##############################################')
+####        str= 'all online = %r' %all_online
+####        pub.publish(str)
+####        rospy.loginfo(str)
 
         #if timeout...                
         if all_online == False:    
@@ -90,13 +95,18 @@ class Initialise(smach.State):
             str='Initialise State Aborted' 
             pub.publish(str)                      
             return 'aborted'
-        
+
         time.sleep(0.1) #give motor control board time to return a voltage measurement
-        str = "Motor voltage: %smV" %(self.__controller.getVoltage())
-        rospy.loginfo(str)
-        pub.publish(str) 
-        
         voltage = self.__controller.getVoltage()
+        str = "Motor voltage: %smV" %(voltage)
+        rospy.loginfo(str)
+        pub.publish(str)
+        str='time elapsed = %s s' %(time.time()-time_zero)
+        pub.publish(str)
+        rospy.loginfo(str)
+        rospy.loginfo('##############################################')
+        rospy.loginfo('##############################################')
+        
         if voltage < 20*1000:
             "Initial battery voltage, %smV < 20,000mV" %voltage
             rospy.logerr(str)  
