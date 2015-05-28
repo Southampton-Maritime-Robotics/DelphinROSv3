@@ -96,13 +96,15 @@ def scrolling_plots(dataset):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     app = QtGui.QApplication(sys.argv)
-    win = pg.GraphicsWindow(title="Basic plotting examples")
-    win.setWindowTitle('pyqtgraph example: Plotting')
+    #win = pg.GraphicsWindow(title="Basic plotting examples")
+    #win.setWindowTitle('pyqtgraph example: Plotting')
+    win =  QtGui.QMainWindow()
 
 
     # Enable antialiasing for prettier plots
     pg.setConfigOptions(antialias=True)
 
+    """
     p1 = win.addPlot(title="Basic array plotting", y=numpy.random.normal(size=100))
 
     p2 = win.addPlot(title="lets go sonar")
@@ -111,10 +113,11 @@ def scrolling_plots(dataset):
     p2.plot(y)
 
     win.nextRow()
-    p3 = win.addPlot(title = "bins")
-    la = pg.image(dataset.bins)
-    p3.plot(la)
-
+    """
+    imv = pg.ImageView()
+    win.setCentralWidget(imv)
+    imv.setImage(numpy.array(dataset.bins))
+    """
     global curve, data, ptr, p6
     p6 = win.addPlot(title="Updating plot")
     curve = p6.plot(pen='y')
@@ -129,7 +132,7 @@ def scrolling_plots(dataset):
     timer = QtCore.QTimer()
     timer.timeout.connect(update)
     timer.start(50)
-
+    """
     win.show()
     print("%%%%%%%")
     QtGui.QApplication.instance().exec_()
