@@ -25,7 +25,6 @@ from hardware_interfaces.msg    import status
 from hardware_interfaces.msg    import camera
 from lowlevel_controllers.msg   import heading_control
 from hardware_interfaces.msg    import sonar_data
-from lowlevel_controllers.msg   import depthandpitch_MPC
 
 class library_highlevel:
 # library class for high-level controller.  Defines the inputs, output and basic functionality that
@@ -65,8 +64,7 @@ class library_highlevel:
         rospy.Subscriber('status', status, self.callback_status)
         rospy.Subscriber('tail_output', tail_feedback, self.callback_tail_feedback)
         rospy.Subscriber('Heading_controller_values', heading_control, self.callback_heading_control)      
-        rospy.Subscriber('sonar_processed', sonar_data, self.callback_sonar_range)       
-        rospy.Subscriber('DepthandPitch_MPC_values', depthandpitch_MPC, self.callback_depthandpitchMPC)
+        rospy.Subscriber('sonar_processed', sonar_data, self.callback_sonar_range)
         
         #gets parameters from server ####Don't Need to be Here ????????
         self.__maxDepthDemand = rospy.get_param('max-depth-demand')
@@ -89,6 +87,8 @@ class library_highlevel:
         self.__gps_status = 0
         self.__depth_transducer_status = 0
         self.__xsens_status = 0
+        self.__heading_ctrl_status = 0
+        self.__depth_ctrl_status = 0
         
         self.__heading_error=0.0
         self.__altitude=0.0
@@ -309,9 +309,7 @@ class library_highlevel:
     # Getter methods    
     ############# these might change depending on which compass is being used...
     ############# could I create PNI compass class? etc that could be instantiated in constructor of this class?
-    ############# or is that getting too complicated...?    
-#    def getDepthandpitchMPC(self):
-#        return self.__depthandpitchMPC
+    ############# or is that getting too complicated...?
     
     def getHeading(self):
         return self.__compass.heading
@@ -405,6 +403,12 @@ class library_highlevel:
 
     def getXsensStatus(self):
         return self.__xsens_status
+        
+    def getHeadingCtrlStatus(self):
+        return self.__heading_ctrl_status
+        
+    def getDepthCtrlStatus(self):
+        return self.__depth_ctrl_status
     
     def getCS_b(self):
         return self.__CS_b
@@ -451,8 +455,6 @@ class library_highlevel:
                 if l!=None:
                     EndLine=i-1
 
-
-
             waypoints=lines[StartLine]
 
             NosWaypoints=len(waypoints)
@@ -464,13 +466,12 @@ class library_highlevel:
             longitude=numpy.zeros(NosWaypoints)
             latitude=numpy.zeros(NosWaypoints)
 
-
-
             for i in xrange (0,NosWaypoints):
                 longitude[i]=float(data[2*i]) # east west
                 latitude[i]=float(data[2*i+1]) #north south
 
             Load=1
+            
         except IOError as e:
             Load=0
             longitude=0
@@ -516,18 +517,16 @@ class library_highlevel:
     #################################################
     # Callbacks
     #################################################
-    def callback_depthandpitchMPC(self, data):
-        self.__depthandpitchMPC = data
 
     def callback_compass(self, compass_data):
         self.__compass = compass_data
 
     def callback_depth(self, depth_data):
         self.__depth = depth_data
-#           if self.__depth.depth_filt > 15:
-#                str = "Depth exceeded 15m - aborting mission"
-#                rospy.logfatal(str)
-#                self.stop()
+####        if self.__depth.depth_filt > 15:
+####            str = "Depth exceeded 15m - aborting mission"
+####            rospy.logfatal(str)
+####            self.stop()
     
     def callback_position(self, position):
         self.__position = position   
@@ -557,11 +556,9 @@ class library_highlevel:
            
     def callback_heading_control(self, heading_control):
         self.__heading_error = heading_control.error
-              
            
     def callback_status(self, status):
         if status.nodeID == 1:
-            #TSL_board:
             self.__TSL_status = status.status
             return
         elif status.nodeID == 2:
@@ -578,5 +575,11 @@ class library_highlevel:
             return
         elif status.nodeID == 6:
             self.__xsens_status = status.status
+            return
+        elif status.nodeID == 7:
+            self.__heading_ctrl_status = status.status
+            return
+        elif status.nodeID == 8:
+            self.__depth_ctrl_status = status.status
             return
 
