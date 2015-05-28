@@ -31,9 +31,6 @@ from hardware_interfaces.msg import position
 from hardware_interfaces.msg import gps
 from hardware_interfaces.msg import altitude
 from hardware_interfaces.msg import sonar
-#from lowlevel_controllers.msg  import depthandspeed_MPC
-#from lowlevel_controllers.msg import depthandpitch_MPC
-#from lowlevel_controllers.msg import heading_MPC
 from hardware_interfaces.msg import dead_reckoner
 from lowlevel_controllers.msg import heading_control
 from lowlevel_controllers.msg import depth_pitch_control
@@ -112,21 +109,6 @@ def callback_depth(depth_data):
             print 'writerow error'
 
 ##############################################################
-##Modifying this one
-#def FandM_callback(data):
-
-#    stringtime = time.time()-time_zero
-#    List = [stringtime, data.ModelVelX,data.ModelZ,data.ModelVelZ,data.ModelPitch,data.ModelVelP,data.ModelDelta,data.FoilLift,data.FoilDrag, data.FoilMoment,data.HullLift,data.HullDrag,data.HullMomentDueToPitch,data.HullMomentDueToPitchVel,data.HullHeaveDueToZdot,data.RestoringMoment]
-
-#    with open('%s/ForceAndMomentLog.csv' %(dirname), "a") as f:
-#        try:
-#            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#            Writer.writerow(List)
-#        except ValueError:
-#            print 'writerow error'
-
-
-##############################################################
 
 #def temp_callback(temp_data):
 #    #outputs temperature sensor data to file
@@ -139,7 +121,7 @@ def callback_depth(depth_data):
 #            Writer.writerow(tempList)
 #        except ValueError:
 #            print 'writerow error'
-            
+
 ##############################################################
         
 def tsl_feedback_callback(data):
@@ -311,72 +293,33 @@ def sonar_callback(sonar): ## Problem with logging raw data
         
 ##############################################################
         
-#def headingMPC_callback(data): 
-#    stringtime = time.time()-time_zero
-#    
-#    if data.onOFF == True:
-#        data.onOFF = 1
-#    else:
-#        data.onOFF = 0
-#        
-#    headingMPCList = [stringtime, data.onOFF, data.heading, data.heading_demand, data.error, data.speed, data.ddelta, data.delta, data.dT2, data.dT3, data.T2, data.T3, data.thruster2, data.thruster3, data.delta_gain, data.thruster_gain, data.thruster_penalty, data.Np, data.Nc, data.delta_t, data.calc_time, data.km]
-#    
-#    with open('%s/headingMPCLog.csv' %(dirname), "a") as f:
-#        try:
-#            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#            Writer.writerow(headingMPCList)
-#        except ValueError:
-#            print 'writerow error'
-
-
-##############################################################
-
-#def depthandspeedMPC_callback(C): 
-#    stringtime = time.time()-time_zero
-#    
-#    if C.onOFF == True:
-#        C.onOFF = 1
-#    else:
-#        C.onOFF = 0
-#        
-#    depthandspeedMPCList = [stringtime, C.onOFF, C.depth, C.depth_demand, C.pitch, C.speed, C.speed_demand, C.prop, C.dprop, C.ddelta, C.delta, C.dT0, C.T0, C.T1, C.thruster0, C.thruster1, C.prop_gain, C.delta_gain, C.thruster_gain, C.Np, C.Nc, C.delta_t, C.calc_time, C.km, C.sim_time, C.Xf1, C.Xf2, C.Xf3, C.Xf4, C.Xf5, C.Xf6, C.Xf7, C.Xf8]
-#    
-#    with open('%s/depthandspeedMPCLog.csv' %(dirname), "a") as f:
-#        try:
-#            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#            Writer.writerow(depthandspeedMPCList)
-#        except ValueError:
-#            print 'writerow error'
-            
-##############################################################
-        
-def reckoner_callback(data): 
-    global KMLtime
-    global reckonertime
-    stringtime = time.time()-time_zero
-        
-    reckonerList = [stringtime, data.X ,data.Y ,data.Z ,data.distance ,data.heading ,data.pitch ,data.roll ,data.velX ,data.velY ,data.velZ ,data.velP ,data.velH ,data.latitude ,data.longitude ,data.altitude ,data.ValidGPSfix, data.X_dead, data.Y_dead, data.velX_dead, data.velY_dead, data.temperature, data.frame0,data.frame1, data.velP_dead] 
-    
-    if time.time() - reckonertime >= 0.2:
-        with open('%s/reckonerLog.csv' %(dirname), "a") as f:
-            try:
-                Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                Writer.writerow(reckonerList)
-            except ValueError:
-                print 'writerow error'
-        reckonertime = time.time()
-            
-    #Update KML file every 5s
-    if time.time()-KMLtime>5:
-        pathLine = '%.32f,%.32f,5 \n' %(data.latitude, data.longitude)
-        
-        with open('%s/path.kml' %(dirname), "a") as f:
-            try:
-                f.write(pathLine)
-            except ValueError:
-                print 'writerow error'
-    
-        KMLtime=time.time()
+####def reckoner_callback(data): 
+####    global KMLtime
+####    global reckonertime
+####    stringtime = time.time()-time_zero
+####        
+####    reckonerList = [stringtime, data.X ,data.Y ,data.Z ,data.distance ,data.heading ,data.pitch ,data.roll ,data.velX ,data.velY ,data.velZ ,data.velP ,data.velH ,data.latitude ,data.longitude ,data.altitude ,data.ValidGPSfix, data.X_dead, data.Y_dead, data.velX_dead, data.velY_dead, data.temperature, data.frame0,data.frame1, data.velP_dead] 
+####    
+####    if time.time() - reckonertime >= 0.2:
+####        with open('%s/reckonerLog.csv' %(dirname), "a") as f:
+####            try:
+####                Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+####                Writer.writerow(reckonerList)
+####            except ValueError:
+####                print 'writerow error'
+####        reckonertime = time.time()
+####            
+####    #Update KML file every 5s
+####    if time.time()-KMLtime>5:
+####        pathLine = '%.32f,%.32f,5 \n' %(data.latitude, data.longitude)
+####        
+####        with open('%s/path.kml' %(dirname), "a") as f:
+####            try:
+####                f.write(pathLine)
+####            except ValueError:
+####                print 'writerow error'
+####    
+####        KMLtime=time.time()
         
 ##############################################################
 
@@ -505,77 +448,6 @@ def SMS_callback(data):
             print 'writerow error'
 
 ##############################################################
-            
-#def gyro_callback(data): 
-#    stringtime = time.time()-time_zero
-#        
-#    rate_gyro_List = [stringtime, data.raw, data.rate, data.temp]
-##    print rate_gyro_List
-#    
-#    with open('%s/rate_gyroLog.csv' %(dirname), "a") as f:
-#        try:
-#            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#            Writer.writerow(rate_gyro_List)
-#        except ValueError:
-#            print 'writerow error'
-
-##############################################################
-            
-#def depthandpitchMPC_callback(data): 
-#    stringtime = time.time()-time_zero
-#    
-#    if data.onOFF == True:
-#        data.onOFF = 1
-#    else:
-#        data.onOFF = 0
-#        
-#    depthandpitchMPC_List = [stringtime, data.onOFF, data.depth, data.depth_demand, data.pitch, data.pitch_demand, data.dT0, data.dT1, data.T0, data.T1, data.thruster0, data.thruster1, data.gain, data.Np, data.Nc, data.delta_t, data.calc_time, data.km, data.xf1, data.xf2, data.xf3, data.xf4, data.xf5, data.xf6]
-#    
-#    with open('%s/depthandpitchMPC_Log.csv' %(dirname), "a") as f:
-#        try:
-#            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#            Writer.writerow(depthandpitchMPC_List)
-#        except ValueError:
-#            print 'writerow error'
-
-####def callback_IMU_msg(imu):
-####    stringtime = time.time()-time_zero
-####    lineList = [stringtime,
-####                imu.temperature,
-####                imu.orientation_roll,
-####                imu.orientation_pitch,
-####                imu.orientation_yaw,
-####                imu.angular_velocity_x,
-####                imu.angular_velocity_y,
-####                imu.angular_velocity_z,
-####                imu.linear_acceleration_x,
-####                imu.linear_acceleration_y,
-####                imu.linear_acceleration_z]
-
-####    with open('%s/IMU_Log.csv' %(dirname), "a") as f:
-####        try:
-####            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-####            Writer.writerow(lineList)
-####        except ValueError:
-####            print 'writerow error'
-
-####def callback_GPS_msg(gps):
-####    stringtime = time.time()-time_zero
-####    lineList = [stringtime, 
-####                gps.status,
-####                gps.latitude,
-####                gps.longitude,
-####                gps.X,
-####                gps.Y                ]
-
-####    with open('%s/GPS_Log.csv' %(dirname), "a") as f:
-####        try:
-####            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-####            Writer.writerow(lineList)
-####        except ValueError:
-####            print 'writerow error'            
-
-##############################################################
 
 def shutdown():
     #shutdown behaviour - close all files
@@ -648,7 +520,7 @@ if __name__ == '__main__':
         print 'made video folder'
         os.mkdir(vidfolder)
         
-    time.sleep(5)
+#    time.sleep(5)
     pub_folder.publish(dirname)
     pub_vidfolder.publish(vidfolder)
     
@@ -664,9 +536,9 @@ if __name__ == '__main__':
                 f.write('<name>Delphin2 Path</name>\n')
                 f.write('<LookAt>\n')
                 str = '<longitude>%s</longitude>\n' %long_orig
-                f.write(str) 
+                f.write(str)
                 str = '<latitude>%s</latitude>\n' %lat_orig
-                f.write(str) 
+                f.write(str)
                 f.write('<range>400</range>\n')
                 f.write('<tilt>25</tilt>\n')
                 f.write('<heading>-5</heading>\n')
@@ -700,9 +572,6 @@ if __name__ == '__main__':
     rospy.Subscriber('altimeter_out',altitude, altimeter_callback)
     rospy.Subscriber('sonar_processed', sonar_data, sonar_callback)
     rospy.Subscriber('MissionStrings', String, mission_callback)
-#    rospy.Subscriber('DepthandSpeed_MPC_values', depthandspeed_MPC, depthandspeedMPC_callback)
-#    rospy.Subscriber('Heading_MPC_values', heading_MPC, headingMPC_callback)
-#    rospy.Subscriber('DepthandPitch_MPC_values', depthandpitch_MPC, depthandpitchMPC_callback)
 ##    rospy.Subscriber('dead_reckoner', dead_reckoner, reckoner_callback) 
     rospy.Subscriber('Heading_controller_values', heading_control, headingPID_callback)
     rospy.Subscriber('Depth_pitch_controller_values', depth_pitch_control, depth_pitch_PID_callback)
@@ -710,8 +579,6 @@ if __name__ == '__main__':
     rospy.Subscriber('camera_info', camera_info, camera_callback)
     rospy.Subscriber('SMS_info', SMS, SMS_callback)
 #    rospy.Subscriber('water_temp', Float32, temp_callback)
-#    rospy.Subscriber('Model_ForcesAndMoments',ForcesAndMoments, FandM_callback)
-#    rospy.Subscriber('rate_gyro', gyro, gyro_callback)    
     
     str = "Logger online - output directory: %s" %(dirname)
     rospy.loginfo(str)
