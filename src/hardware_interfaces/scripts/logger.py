@@ -519,8 +519,7 @@ if __name__ == '__main__':
     if not os.path.isdir(vidfolder):
         print 'made video folder'
         os.mkdir(vidfolder)
-        
-#    time.sleep(5)
+
     pub_folder.publish(dirname)
     pub_vidfolder.publish(vidfolder)
     
