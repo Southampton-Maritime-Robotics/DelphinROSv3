@@ -566,10 +566,7 @@ class XSensDriver(object):
 				self.mt = MTDevice(device, self.__baudrate)
 			except serial.SerialException:
 				raise MTException("unable to open %s"%device)
-			
-		# initialize topics
-		self.COMPASS_pub = rospy.Publisher('compass_out',compass)
-		self.pubStatus = rospy.Publisher('status', status)
+
 		# create messages and default values
 		self.com = compass()
 
@@ -604,10 +601,11 @@ class XSensDriver(object):
 #			print "Current location : (id: %s)"%self.mt.ReqLatLonAlt()
 			self.mt.GoToMeasurement()
 			
-			self.pubStatus.publish(nodeID = 6, status = True)
-			
 			try:
 				while not rospy.is_shutdown():
+					
+					pubStatus.publish(nodeID = 6, status = True)
+					
 					timeRef = time.time()
 					self.spin_once()
 					timeElapse = time.time()-timeRef
@@ -686,10 +684,14 @@ class XSensDriver(object):
 			
 		# publish available information #
 		if pub_IMU:
-			self.COMPASS_pub.publish(self.com)
+			pubCompassOut.publish(self.com)
 			
 if __name__=='__main__':
 	rospy.init_node('xsens_driver')
+	
+	# initialize topics COMPASS_pub
+	pubCompassOut = rospy.Publisher('compass_out',compass)
+	pubStatus = rospy.Publisher('status', status)
 	
 	driver = XSensDriver()
 	
