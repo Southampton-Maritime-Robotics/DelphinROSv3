@@ -31,6 +31,7 @@ from std_msgs.msg               import Float32
 from std_msgs.msg               import Int8
 from std_msgs.msg               import Bool
 from std_msgs.msg               import String
+from hardware_interfaces.msg import status
 
 from delphin2_mission.utilities     import uti
 
@@ -202,6 +203,8 @@ def main_control_loop():
         [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(-1,0,0,0)
         
         while not rospy.is_shutdown():
+        
+            pubStatus.publish(nodeID = 8, status = True)
             
             if controller_onOff == True:
 
@@ -374,6 +377,7 @@ if __name__ == '__main__':
     pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
     pub_DPC  = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pubStatus = rospy.Publisher('status', status)
     
     rospy.loginfo("Depth-Pitch controller online")
 

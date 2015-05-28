@@ -28,6 +28,7 @@ from lowlevel_controllers.msg   import heading_control
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Bool
 from std_msgs.msg               import String
+from hardware_interfaces.msg import status
 
 from delphin2_mission.utilities     import uti
 
@@ -156,7 +157,9 @@ def main_control_loop():
         [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360) # On first loop, initialize relevant parameters
         
         while not rospy.is_shutdown():
-
+        
+            pubStatus.publish(nodeID = 7, status = True)
+            
             if controller_onOff == True:
 
                 timeRef = time.time()                
@@ -287,6 +290,7 @@ if __name__ == '__main__':
     pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
     pub_HC   = rospy.Publisher('Heading_controller_values', heading_control)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pubStatus = rospy.Publisher('status', status)
     
     rospy.loginfo("Heading controller online")
 
