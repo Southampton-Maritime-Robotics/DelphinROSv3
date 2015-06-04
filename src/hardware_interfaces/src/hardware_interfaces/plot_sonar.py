@@ -71,6 +71,13 @@ def round_bins(dataset, ax):
     return ax.pcolormesh(theta, r, values, cmap=pylab.get_cmap('gist_heat'), vmin = 0, vmax = 200)
 
 
+
+
+##########################################################################################
+## EXPERIMENTAL STARTS HERE
+##########################################################################################
+
+
         #circular.pcolormesh(a_grid, b_grid, z_grid)
         #pylab.ion()
         #pylab.draw()
@@ -92,6 +99,24 @@ def round_bins(dataset, ax):
         pylab.clf()
 
     """
+def image_plot_test(dataset):
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    app = QtGui.QApplication(sys.argv)
+    win =  QtGui.QMainWindow()
+
+    # Enable antialiasing for prettier plots
+    pg.setConfigOptions(antialias=True)
+    imv = pg.ImageView()
+    win.setCentralWidget(imv)
+    imv.setImage(numpy.array(dataset.bins))
+    win.show()
+    QtGui.QApplication.instance().exec_()
+
+
+
+
+
 def scrolling_plots(dataset):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -114,7 +139,9 @@ def scrolling_plots(dataset):
 
     win.nextRow()
     """
+    print("%%%%%% check1")
     imv = pg.ImageView()
+    print("%%%%%%%%check2")
     win.setCentralWidget(imv)
     imv.setImage(numpy.array(dataset.bins))
     """
@@ -129,10 +156,15 @@ def scrolling_plots(dataset):
         if ptr == 0:
             p6.enableAutoRange('xy', False)  ## stop auto-scaling after the first data set is plotted
         ptr += 1
+    """
+    def update():
+        #global imv
+        print("naaaaa %%%%%%%%")
+        imv.setImage(numpy.array(dataset.bins))
     timer = QtCore.QTimer()
     timer.timeout.connect(update)
     timer.start(50)
-    """
+
     win.show()
     print("%%%%%%%")
     QtGui.QApplication.instance().exec_()
