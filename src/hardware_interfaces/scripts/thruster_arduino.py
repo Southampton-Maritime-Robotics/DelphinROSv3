@@ -5,27 +5,29 @@ A driver for a costom thruster control board, consisting of an arduino and four 
 
 Developed based on "tsl_customer_mission.py" that was originally used to control thrusters via TSL motor control board
 
-# modification:
-  - 12 June 2014:
-  - 5 April 2015: make this node work at 10Hz. Rate is control by rospy.Rate()
+# thruster numbering
+    0 vert_front
+    1 vert_rear
+    2 hor_front
+    3 hor_rear
 
 # usage
   - get voltage: "faVcs"
   - get current: "faIcs"
   - get RPM: "faRcs" (20Hz approximately)
   - set thrusterSetpoint: "faPspeed_1,direction_1@speed_2,direction_2@speed_3,direction_3@speed_4,direction_4@cs"
-
-# the smallest value that setpoint in arduino world could be is 1 in whih correspoinds to a RPM of 138 approximately 
-
-# define
- thruster numbering
-    0 vert_front
-    1 vert_rear
-    2 hor_front
-    3 hor_rear
     
 # convention
-+ve demand contribute to +ve sway motion relative to the front-east-down body-fixed frame
++ve demand contribute to +ve force w.r.t. the front-east-down body-fixed frame convertion
+
+######################################
+#Modifications
+12/6/14: created the thruster interface
+5/4/15: maked this node work at 5Hz. Rate is control by rospy.Rate()
+10/5/15: compensated the voltage reading with a scale factor of 1.08
+4/6/15: remap a setpoint from [-2500,-150] U [150,2500] to [0,255] with direction of either 0 or 1.
+
+# NOTE: setpoint within (-150,150) will be set to 0, i.e. incorporate as a deadband
 
 """
 
@@ -53,13 +55,13 @@ delaySerial = 0.01 # [sec] just enough for arduino to get a data packet
 timeOut = 0.1 # [sec] timeout to wait for a data packet being sent back from arduino
 
 global ThrusterSetpoint_max
-ThrusterSetpoint_max = 255 # in a range of [0-255]
+ThrusterSetpoint_max = 2200 # a limit in motor speed in a range of [0-2500] rpm %
 global thrust_dr_ref
 thrust_dr_ref = [0,0,0,1] # a vector to correct thrust_direction
 global timeLastDemand_sat
 timeLastDemand_sat = 1 # [sec] associated thruster will be stopped if there is no new demand for longer than this many second
 
-############################# INITIALISE SERIAL ######################################    
+############################# INITIALISE SERIAL ######################################
 def init_serial():
     global serialPort
     global current_data
@@ -252,8 +254,11 @@ def motor_control(status):
     global timeVertLastDemand
     onOff_horiz = 1
     onOff_vert = 1
-    sp_max = 2300
-    sp_max_arduino = 255
+    sp_max = 2500.
+    sp_min = 145.
+    sp_max_arduino = 255.
+    slope = sp_max_arduino/(sp_max-sp_min)
+    interception = -slope*sp_min
     time_zero = time.time()
     timeHorizLastDemand = time.time()
     timeVertLastDemand = time.time()
@@ -275,31 +280,41 @@ def motor_control(status):
         timeRef = time.time()
         
         pubStatus.publish(nodeID = 1, status = status)
-        data_now = current_data #Get the data at the current time. This is in the range of [-2500,2500] 
+        data_now = current_data #Get the data at the current time. This is in the range of [-2500,2500]
         
         ############################# ON/OFF MSG ######################################    
         thrust_sp = [data_now['thruster0']*onOff_vert, data_now['thruster1']*onOff_vert, data_now['thruster2']*onOff_horiz, data_now['thruster3']*onOff_horiz]
         
         ############################# REMAP THRUSTER SETPOINT ######################################    
         thrust_dr = thrust_dr_ref[:] # create a deep copy of a vector to correct thrust_direction
-        # remap a setpoint from [-2500, 2500] to [0,255] with direction of 0 or 1
 
+        # remap a setpoint from [-2500,-150] U [150,2500] to [0,255] with direction of 0 or 1
         for i in range(len(thrust_sp)):
+            # correct direction vector
             if thrust_sp[i] > 0:
                 thrust_dr[i] = 1-thrust_dr[i]
-            thrust_sp[i] = float(abs(thrust_sp[i]))/sp_max*sp_max_arduino
+                
+            # check setpoint limits
+            if abs(thrust_sp[i]) < sp_min:
+                thrust_sp[i] = 0
+            elif abs(thrust_sp[i]) > ThrusterSetpoint_max:
+                thrust_sp[i] = ThrusterSetpoint_max*numpy.sign(thrust_sp[i])
+                
+            # remap from setpoinnt to arduino signal
+#            thrust_sp[i] = float(abs(thrust_sp[i]))/sp_max*sp_max_arduino
+            if thrust_sp[i] !=0:
+                thrust_sp[i] = slope*abs(thrust_sp[i])+interception
+                
+            # double check if the demand is interger and is within a valid range
             if thrust_sp[i] > 0:
                 if thrust_sp[i] <1: # if a setpoint is not zero but less than 1, force it to one
                     thrust_sp[i] = 1
                 else:
                     thrust_sp[i] = int(thrust_sp[i])
+
         # the smallest value that setpoint in arduino world could be is 1 in whih correspoinds to a RPM of 138 approximately
                 
         ############################# SETPOINT MSG ####################################    
-
-        for i in range(len(thrust_sp)):
-            if thrust_sp[i] > ThrusterSetpoint_max:
-                thrust_sp[i] = ThrusterSetpoint_max
 
         # Note: onOff flag will be pulled off by the stop function when terminate the mission
         if time.time()-timeVertLastDemand < timeLastDemand_sat:
@@ -317,7 +332,7 @@ def motor_control(status):
             
         setPoints = '%d,%d@%d,%d@%d,%d@%d,%d@' %(setpoint0,thrust_dr[0],setpoint1,thrust_dr[1],setpoint2,thrust_dr[2],setpoint3,thrust_dr[3])
         dataToSend = 'faP' + setPoints # add header to a data packet
-        dataToSend = dataToSend + 'cs' # add footer to a data packet        
+        dataToSend = dataToSend + 'cs' # add footer to a data packet
         
         ############################# SET SPEED ######################################    
         serialPort.write(dataToSend)
@@ -449,5 +464,3 @@ if __name__ == '__main__':
     
     rospy.on_shutdown(shutdown) #Defining shutdown behaviour
     motor_control(status) # entering the main loop
-
-
