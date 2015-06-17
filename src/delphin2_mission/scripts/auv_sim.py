@@ -83,7 +83,7 @@ def listenForData():
     
     # increment
     incHeading = 1.5 # [(deg)/s] how quick the heading can change FIXME: tune the value
-    incDepth = 0.1 # [(m)/s] how quick the depth can change FIXME: tune the value
+    incDepth = 0.05 # [(m)/s] how quick the depth can change FIXME: tune the value
     # saturation
     speedMax = 1. # [m/s] maximum surge speed
     swayMax = 1. # [m/s] maximum sway speed
