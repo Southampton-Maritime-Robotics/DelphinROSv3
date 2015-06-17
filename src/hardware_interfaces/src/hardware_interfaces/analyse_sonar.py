@@ -26,7 +26,6 @@ class sonar:
         self.header.append(self.allData[-1][0:52])   # 13 byte header are read from sonar
         self.bins.append(self.allData[-1][52:])      # the rest is bins
         angle= (self.header[-1][41]*255 + self.header[-1][40])/16
-        print(angle)
         self.angle.append(angle)       # this is where some of the angle seems to be
         self.update_polar()
         # TODO smaria:
