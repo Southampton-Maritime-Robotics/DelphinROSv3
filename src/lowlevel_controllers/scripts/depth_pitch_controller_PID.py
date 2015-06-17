@@ -152,8 +152,6 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
         DPC.crNose = cr
         
         ## distribute a generalised force onto each thruster based on a relative arm length
-#        thruster0 = float(DPC.Depth_Thrust)/float(Ltf)
-#        thruster1 = float(DPC.Depth_Thrust)/float(Ltr)
         thruster0 = float(DPC.Depth_Thrust)*float(Ltr)/float(Ltf+Ltr)
         thruster1 = float(DPC.Depth_Thrust)*float(Ltf)/float(Ltf+Ltr)
 
