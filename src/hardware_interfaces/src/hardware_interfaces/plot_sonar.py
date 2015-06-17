@@ -77,28 +77,6 @@ def round_bins(dataset, ax):
 ## EXPERIMENTAL STARTS HERE
 ##########################################################################################
 
-
-        #circular.pcolormesh(a_grid, b_grid, z_grid)
-        #pylab.ion()
-        #pylab.draw()
-        #pylab.show()
-
-    #circular.pcolormesh(dataset.angle, dataset.bins)
-
-    """
-    binData = []
-    while not rospy.is_shutdown():
-        for idx, a in enumerate(dataset.angle):
-            binData.append(dataset.bins[idx])
-        plotData = numpy.swapaxes(binData[len(binData)-testvariable:], 0, 1)
-        circular.imshow(plotData, origin='lower', cmap=pylab.get_cmap('gist_heat'), vmin = 0, vmax = 200, interpolation = 'none')
-        # zip(dataset.angle dataset.bins)
-        pylab.ion()
-        pylab.draw()
-        pylab.show()
-        pylab.clf()
-
-    """
 def image_plot_test(dataset):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -107,15 +85,40 @@ def image_plot_test(dataset):
 
     # Enable antialiasing for prettier plots
     pg.setConfigOptions(antialias=True)
+
     imv = pg.ImageView()
     win.setCentralWidget(imv)
     imv.setImage(numpy.array(dataset.bins))
     win.show()
+    #QtGui.QApplication.instance().exec_()
+
+def multiple_images_plot_test(dataset):
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    app = QtGui.QApplication(sys.argv)
+    #win =  QtGui.QMainWindow()
+    win = QtGui.QWidget()
+    #win = pg.GraphicsWindow()
+
+    # Enable antialiasing for prettier plots
+    pg.setConfigOptions(antialias=True)
+    
+    grid = QtGui.QGridLayout()
+    win.setLayout(grid)
+    imv = pg.ImageView()
+    imv.setImage(numpy.array(dataset.bins))
+    imv2 = pg.ImageView()
+    imv2.setImage(numpy.array(dataset.bins))
+    grid.addWidget(imv,0,0)
+    b1 = QtGui.QPushButton("test")
+    button = QtGui.QPushButton("test2")
+    grid.addWidget(button, 0,3)
+    grid.addWidget(imv2, 0,1)
+
+    win.move(30,15)
+    win.setWindowTitle("test")
+    win.show()
     QtGui.QApplication.instance().exec_()
-
-
-
-
 
 def scrolling_plots(dataset):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -129,36 +132,10 @@ def scrolling_plots(dataset):
     # Enable antialiasing for prettier plots
     pg.setConfigOptions(antialias=True)
 
-    """
-    p1 = win.addPlot(title="Basic array plotting", y=numpy.random.normal(size=100))
-
-    p2 = win.addPlot(title="lets go sonar")
-    y = dataset.angle
-    x = range(0,len(dataset.angle))
-    p2.plot(y)
-
-    win.nextRow()
-    """
-    print("%%%%%% check1")
     imv = pg.ImageView()
-    print("%%%%%%%%check2")
     win.setCentralWidget(imv)
     imv.setImage(numpy.array(dataset.bins))
-    """
-    global curve, data, ptr, p6
-    p6 = win.addPlot(title="Updating plot")
-    curve = p6.plot(pen='y')
-    data = numpy.random.normal(size=(10,1000))
-    ptr = 0
     def update():
-        global curve, data, ptr, p6
-        curve.setData(data[ptr%10])
-        if ptr == 0:
-            p6.enableAutoRange('xy', False)  ## stop auto-scaling after the first data set is plotted
-        ptr += 1
-    """
-    def update():
-        #global imv
         print("naaaaa %%%%%%%%")
         imv.setImage(numpy.array(dataset.bins))
     timer = QtCore.QTimer()
@@ -166,17 +143,5 @@ def scrolling_plots(dataset):
     timer.start(50)
 
     win.show()
-    print("%%%%%%%")
     QtGui.QApplication.instance().exec_()
-    print("%%%%")
-    #QtGui.closeAllWindows()
-
-
-
-"""
-
-                                    ## Start Qt event loop unless running in interactive mode or using pyside.
-                                    if __name__ == '__main__':
-                                        import sys
-                                            if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-"""
+    
