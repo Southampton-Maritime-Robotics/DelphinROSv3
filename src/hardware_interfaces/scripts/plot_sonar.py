@@ -19,7 +19,6 @@ from std_msgs.msg import Float32
 from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import sonar	
 
-from hardware_interfaces import plot_sonar
 from hardware_interfaces import analyse_sonar
 
 ################################################################
@@ -28,27 +27,6 @@ def get_sonar(msgData):
     # initialise figure
     sonar.add_message(msgData)
 
-def draw_figures_pyplot():
-    #plot_sonar.fixed_angle_time(sonar, 88, 50)
-    #plot_sonar.round(sonar, 1)
- 
-    pylab.ion()
-    fig1 = pylab.subplot(211)
-    fig2 = pylab.subplot(212, polar = True)
-    fig1.plot([1, 2, 3, 4])
-
-
-    while not rospy.is_shutdown():
-        #print("updating")
-        plot_sonar.time_plot(sonar.bins[-60:], fig1, 60)
-        #plot_sonar.round_bins(sonar, fig2)
-
-        plot_sonar.round_bins(sonar, fig2)
-        fig1.plot([1, 2, 2, 2])
-        #print(fig2)
-        #fig1 = fig2
-        pylab.draw()
-        pylab.show()
 
 def draw_figures():
     """
@@ -117,10 +95,4 @@ if __name__ == '__main__':
     draw_figures()
     
     
-    #plot_sonar.image_plot_test(sonar)
-    #plot_sonar.scrolling_plots(sonar)
-    #plot_sonar.multiple_images_plot_test(sonar)
-    #plot_sonar.polar_plot_test(sonar)
-
-
   
