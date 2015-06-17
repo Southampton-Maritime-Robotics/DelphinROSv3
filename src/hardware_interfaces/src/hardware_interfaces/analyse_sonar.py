@@ -14,7 +14,7 @@ class sonar:
         self.angleStep = 4      # degrees per sonar angle step
         # TODO get the value of the angle step from sonar data
         self.angle = []         # angle at which measurement was made
-        self.polarImage = numpy.zeros((400, 400))
+        self.polarImage = numpy.zeros((500, 500))
 
     def add_message(self, message):
         """
@@ -42,7 +42,8 @@ class sonar:
             cosine = numpy.cos(theta*numpy.pi/180)
 
             for idx, amplitude in enumerate(new_bins):
-                x_coord = int(idx * cosine) + 200
-                y_coord = int(idx * sine) + 200
+                idx +=25  # keep a black circle at the center'
+                x_coord = int(idx * cosine) + 250
+                y_coord = int(idx * sine) + 250
                 self.polarImage[x_coord, y_coord] = amplitude
 
