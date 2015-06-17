@@ -74,10 +74,6 @@ class depthPitchControlTest(smach.State):
                     str = "backSeatErrorFlag is raised"
                     rospy.loginfo(str)
                     pub.publish(str)
-                    self.__controller.setRearProp(0)
-                    self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
-                    self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
-                    self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                     return 'preempted'
                 
                 # assign the demands
