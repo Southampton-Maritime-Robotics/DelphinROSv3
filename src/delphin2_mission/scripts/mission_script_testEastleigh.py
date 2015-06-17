@@ -9,6 +9,9 @@ The tasks consist of various manoeuvrint test, e.g.
 --yaw manoeuvre
 --spiral manoeuvre
 
+specify:
+-reference points (A,B,O,M)
+
 '''
 
 import rospy
@@ -21,22 +24,19 @@ import numpy
 from delphin2_mission.library_highlevel             import library_highlevel
 from state_initialise             import Initialise
 from state_stop                   import Stop
-from state_goToDepth              import GoToDepth
-from state_goToHeading            import GoToHeading
-from state_trackFollow            import TrackFollow
-from state_trackAltitude          import trackAltitude
 from state_surface                import Surface
 from state_camera                 import camera
 from hardware_interfaces.msg      import compass
 from std_msgs.msg import String
-import matplotlib.pyplot as plt;
 
 from delphin2_mission.utilities     import uti
 from state_pathFollowingLOS         import pathFollowingLOS
-from state_testSurge                import testSurge
-from state_testYaw                  import testYaw
-from state_testSway                 import testSway
-from state_testTurningCircle        import testTurningCircle
+from state_manoeuvreSurge           import manoeuvreSurge
+from state_manoeuvreYaw             import manoeuvreYaw
+from state_manoeuvreSway            import manoeuvreSway
+from state_manoeuvreSpiral          import manoeuvreSpiral
+from state_manoeuvreZigZag          import manoeuvreZigZag
+
 ################################################################################
 
 def main():
@@ -49,6 +49,9 @@ def main():
     # Define an instance of highlevelcontrollibrary to pass to all action servers
     lib = library_highlevel()
     myUti = uti()
+    
+    missonTimeout = rospy.get_param('mission-timeout')
+    missionTimeout = missionTimeout*60 # turn timeout in minute to second
 
     ### points defined relative to the origin O # TODO: double-check if the LatLon ori, O, A and B are correct.
     # North pier of the Eastleigh lake (50.957024,-1.366769)
@@ -72,14 +75,14 @@ def main():
 
     # This while-true loop determines range and heading to the first waypoint in the list
     # use for double check if the AUV got the location right  # TODO: comment this block
-    while not rospy.is_shutdown():
-        X = lib.getX()
-        Y = lib.getY()
-        Px = pathAtoB[0][0]
-        Py = pathAtoB[1][0]
-        rang, bear = myUti.rangeBearing([X,Y], [Px, Py])
-        print "range to the point is ", rang, "deg"
-        print "bearing to the point is ", bear, "metre"
+####    while not rospy.is_shutdown():
+####        X = lib.getX()
+####        Y = lib.getY()
+####        Px = pathAtoB[0][0]
+####        Py = pathAtoB[1][0]
+####        rang, bear = myUti.rangeBearing([X,Y], [Px, Py])
+####        print "range to the point is ", rang, "deg"
+####        print "bearing to the point is ", bear, "metre"
     
     # guidance
     L_los = 5 # [m] line-of-sight distance
@@ -100,7 +103,7 @@ def main():
     time.sleep(10) # TODO: to be removed: tempolary used to allow the system to come online
     
     # for testing at depth # TODO:
-    depthDemand = 0. # [m].
+    depthDemand = 3. # [m].
     depthTol = 0.2 # [m]. It is account as the AUV get to the depth if the depth error is less than this.
     depthDemandMin = 0.5 # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
 
@@ -117,69 +120,69 @@ def main():
         # generic state
 
 #################################################################################
-#        # [1/3] Initialise State (Must Be Run First!)
-#        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-#            transitions={'succeeded':'SURGE', 'aborted':'STOP','preempted':'STOP'})  
+        # [1/3] Initialise State (Must Be Run First!)
+####        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
+####            transitions={'succeeded':'toWork', 'aborted':'STOP','preempted':'STOP'})
             
 ################################################################################
         # [2/3] Added States
 
         #=================================================
-        ## PATH FOLLOWING TEST 
+        ## PATH FOLLOWING 
         # This state will get the AUV moving along the pathTest [O->M->A->B->M]
-####        smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R), 
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         #=================================================
-        ## SURGE TEST
+        ## SURGE MANOEUVRE
         # This state will get the AUV transit to point A
 ####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'SURGE', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will guide the AUV back and forth between point A and B with different rudder RPM
-####        smach.StateMachine.add('SURGE', testSurge(lib,myUti,pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDelay, depthDemand, depthTol, depthDemandMin), 
+####        smach.StateMachine.add('SURGE', manoeuvreSurge(lib,myUti,pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDelay, depthDemand, depthTol, depthDemandMin, missionTimeout), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         #=================================================
-        ## YAW TEST 
+        ## YAW MANOEUVRE 
         # This state will get the AUV transit to point M
 ####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'YAW', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will keep the AUV at point M and perform yaw motion response test
-####        smach.StateMachine.add('YAW', testYaw(lib, myUti, M, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin), 
+####        smach.StateMachine.add('YAW', manoeuvreYaw(lib, myUti, M, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, missionTimeout), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         #=================================================
-        ## SWAY TEST 
+        ## SWAY MANOEUVRE 
         # This state will get the AUV transit to point M
-        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
-            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
-        # This state will keep the AUV at point M and perform sway motion response test: TODO check timeDemandHold
-        smach.StateMachine.add('SWAY', testSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin), 
-            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R), 
+####            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
+####        # This state will keep the AUV at point M and perform sway motion response test:
+####        smach.StateMachine.add('SWAY', manoeuvreSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, missionTimeout), 
+####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
 
         #=================================================
-        ## SPIRAL TEST 
-####        # This state will get the AUV transit to point A
+        ## SPIRAL MANOEUVRE 
+        # This state will get the AUV transit to point A
 ####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
 ####            transitions={'succeeded':'SPIRAL', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will get the AUV perform a spiral manoeuvre
-####        smach.StateMachine.add('SPIRAL', testSpiral(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle), 
+####        smach.StateMachine.add('SPIRAL', manoeuvreSpiral(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle, missionTimeout), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
-####        #-------------------------------------------------
+        #-------------------------------------------------
 
         #=================================================
-        ## TURNING CIRCLE TEST 
-####        # This state will get the AUV transit to point A
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
-####            transitions={'succeeded':'TURNING', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will get the AUV perform a turning curcle manoeuvre: TODO check timeDemandHold
-####        smach.StateMachine.add('TURNING', testTurningCircle(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay), 
-####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
-####        #-------------------------------------------------
+        ## ZIG-ZAG MANOEUVRE 
+        # This state will get the AUV transit to point A
+        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R), 
+            transitions={'succeeded':'ZIGZAG', 'aborted':'HOME','preempted':'HOME'})
+        # This state will get the AUV perform a spiral manoeuvre
+        smach.StateMachine.add('ZIGZAG', manoeuvreZigZag(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, missionTimeout), 
+            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        #-------------------------------------------------
         
         ## GENERIC STATE FOR EASTLEIGH LAKE
         # This state will get the AUV HOME
@@ -188,7 +191,7 @@ def main():
 
 ################################################################################
         # [3/3] Generic States (Come to this state just before terminating the mission)
-        smach.StateMachine.add('STOP', Stop(lib), 
+        smach.StateMachine.add('STOP', Stop(lib),
             transitions={'succeeded':'finish'})
 
 ################################################################################

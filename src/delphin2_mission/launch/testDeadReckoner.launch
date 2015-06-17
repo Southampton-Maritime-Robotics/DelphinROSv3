@@ -24,33 +24,11 @@
     <!--Coordinates are for south pier, middle south of lake (X,Y) = (-24.6,30.0) -->
     
     <!--Boldrewood Campus lat_orig=50.936545 long_orig=-1.405103 -->
-    
-    <node name="mission_script" pkg="delphin2_mission" type="mission_script_actions.py" output="screen" required="true" /> 
-    
-    <!-- Add all other nodes under here! -->
-
-    <node name="back_seat_driver" pkg="hardware_interfaces" type="BackSeatDriver.py" required="true" />
-	
-    <!-- <node name="compass_dummy" pkg="hardware_interfaces" type="compass_dummy.py" /> -->
-    <!-- need <node name="light_arduino" pkg="hardware_interfaces" type="light_arduino.py" /> -->
-    <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py" output="screen" />
-    <!-- <node name="temp_sensor" pkg="hardware_interfaces" type="temp_sensor.py" /> --> 
-    <!-- need <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py"/> -->
-    <!-- <node name="altimeter" pkg="hardware_interfaces" type="altimeter_micron.py" /> -->
-    <!--node name="Cameras" pkg="hardware_interfaces" type="camera.py" output = "screen"/> -->
-    <!-- <node name="SMS_modem" pkg="hardware_interfaces" type="SMS_modem.py" /> -->
-    <!--include file="$(find delphin2_mission)/launch/sonar_system.launch" /> -->
-    
-    <!-- <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner4.py"  /> -->
-    
-    <!-- need <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py" output = "screen"/> -->
-    <!-- need <node name="depth_pitch_controller" pkg="lowlevel_controllers" type="depth_pitch_controller_PID.py" output = "screen"/> -->
         
-    <include file="$(find delphin2_mission)/launch/thruster_system.launch" />
-    <!-- need <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py"/> -->
-    <include file="$(find xsens_driver)/launch/xsens_driver.launch" />
-
-    <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/>    
-    <!-- <node name="smach_viewer" pkg="smach_viewer" type="smach_viewer.py" /> -->
+    <!-- Add all other nodes under here! -->
+    <node name="dummySensorsAndDemands" pkg="delphin2_mission" type="dummySensorsAndDemands.py" /> 
+    <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner.py"  />
+    
+    <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/> 
 
 </launch>
