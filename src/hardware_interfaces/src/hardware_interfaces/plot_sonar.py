@@ -144,4 +144,12 @@ def scrolling_plots(dataset):
 
     win.show()
     QtGui.QApplication.instance().exec_()
-    
+
+def polar_plot_test(dataset):
+    app = QtGui.QApplication(sys.argv)
+    win =  QtGui.QMainWindow()
+    imv = pg.ImageView()
+    imv.setImage(dataset.polarImage)
+    win.setCentralWidget(imv)
+    win.show()
+    QtGui.QApplication.instance().exec_()
