@@ -18,6 +18,7 @@ import smach_ros
 import time
 from pylab import *
 from math import *
+from std_msgs.msg import String
 
 class pathFollowingLOS(smach.State):
     def __init__(self, lib, myUti, path, L_los, uGain, uMax, wp_R):
@@ -31,6 +32,9 @@ class pathFollowingLOS(smach.State):
         self.__wp_R = wp_R
         
     def execute(self, userdata):
+        
+        #Set Up Publisher for Mission Control Log
+        pubMissionLog = rospy.Publisher('MissionStrings', String)
         
         ####################################################################
         ### Perform actions ################################################
@@ -48,10 +52,15 @@ class pathFollowingLOS(smach.State):
         controlPeriod = 1/controlRate
         r = rospy.Rate(controlRate)
 
-        print 'Execute path following algorithm with a following path'
-        print 'X = ', self.__path[0,:]
-        print 'Y = ', self.__path[1,:]
-        print 'target waypoint ', self.__path[:,wpTarget]
+        str = 'Execute path following algorithm with a following path'
+        rospy.loginfo(str)
+        pubMissionLog.publish(str)
+        str = 'X = %s' %self.__path[0,:]
+        rospy.loginfo(str)
+        pubMissionLog.publish(str)
+        str = 'Y = %s' %self.__path[1,:]
+        rospy.loginfo(str)
+        pubMissionLog.publish(str)
         
         while not rospy.is_shutdown():
             
@@ -66,8 +75,14 @@ class pathFollowingLOS(smach.State):
             if (self.__uti.waypointSwitching(self.__path[:,wpTarget],eta,self.__wp_R)):
                 if wpTarget == pathLen-1:
                     # if arrive to the last waypoint, terminate the mission
-                    print 'arrived to within the circle of acceptance of the destination'
-                    print 'current location is ', eta
+                    
+                    str = 'arrived to within the circle of acceptance of the destination'
+                    rospy.loginfo(str)
+                    pubMissionLog.publish(str)
+                    str = 'current location: %s' %eta
+                    rospy.loginfo(str)
+                    pubMissionLog.publish(str)
+                    
                     self.__controller.setRearProp(0)
                     self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                     self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
@@ -75,7 +90,9 @@ class pathFollowingLOS(smach.State):
                 else:
                     # if reached the current waypoint, move onto the next line segment
                     wpTarget += 1
-                    print 'target waypoint ', self.__path[:,wpTarget]
+                    str = 'target waypoint: %s' %self.__path[:,wpTarget]
+                    rospy.loginfo(str)
+                    pubMissionLog.publish(str)
 
             # compute line-of-sight parameters
             t,p_inter = self.__uti.interPointLine(self.__path[:,wpTarget-1],self.__path[:,wpTarget],eta)

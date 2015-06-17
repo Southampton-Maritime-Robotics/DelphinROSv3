@@ -20,15 +20,16 @@ Procedure:
     at this one particular thruster command, vary rudder demand according to a given list 
     each combination of command will be held until the AUV has completed two turns
     stop and ascend to the surface
-    
-######################################
-#TODO
--make the AUV performs action at depth
--include a criterion to let the AUV stop when it have performed 720 degree turn
-
-@return: succeeded: if the AUV execute all the combination of actuator demands (propeller, thruster, rudder) in a given lists
 
 #Modifications
+25/May/2015: make the AUV capable of performing an action at depth
+26/May/2015: include a criterion to let the AUV stop when it have performed e.g. 720 degree turn
+28/May/2015: included the backSeatErrorFlag as a terminating criteria
+29/May/2015: keep the AUV heading during descent
+
+@return: preemped: if the backSeatErrorFlag has been raised
+@return: aborted: mission timeout
+@return: succeeded: if the AUV execute all the combination of actuator demands (propeller, thruster, rudder) in a given lists
 
 '''
 
@@ -71,31 +72,22 @@ class manoeuvreSpiral(smach.State):
 
         wpRang,_ = self.__uti.rangeBearing([self.__wp[0][0], self.__wp[1][0]],[self.__wp[0][1], self.__wp[1][1]]) # determine a range between waypoints as a reference
         wpIndex = 0
+        timeZero = time.time()
         
         #Set Up Publisher for Mission Control Log
         pubMissionLog = rospy.Publisher('MissionStrings', String)
 
         for demandProp in self.__listProp:
-            
-            if rospy.is_shutdown():
+            if rospy.is_shutdown() or time.time()-timeZero >= self.__missionTimeout or self.__controller.getBackSeatErrorFlag() == 1:
                 break
-                
             for demandThruster in self.__listThruster:
-            
-                if rospy.is_shutdown():
+                if if rospy.is_shutdown() or time.time()-timeZero >= self.__missionTimeout or self.__controller.getBackSeatErrorFlag() == 1:
                     break
-                
                 # go to the waypoint
                 str = 'go to start point'
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
-                while not rospy.is_shutdown():
-                
-                    if self.__controller.getBackSeatErrorFlag() == 1:
-                        str= 'manoeuvreSpiral preempted at time = %s' %(time.time())    
-                        rospy.loginfo(str)
-                        pubMissionLog.publish(str)
-                        return 'preempted'
+                while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
                     
                     X = self.__controller.getX()
                     Y = self.__controller.getY()
@@ -119,13 +111,7 @@ class manoeuvreSpiral(smach.State):
                 str = 'point to the target'
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
-                while not rospy.is_shutdown():
-                
-                    if self.__controller.getBackSeatErrorFlag() == 1:
-                        str= 'manoeuvreSpiral preempted at time = %s' %(time.time())    
-                        rospy.loginfo(str)
-                        pubMissionLog.publish(str)
-                        return 'preempted'
+                while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
                 
                     X = self.__controller.getX()
                     Y = self.__controller.getY()
@@ -146,38 +132,29 @@ class manoeuvreSpiral(smach.State):
                         
                 # bring the AUV to depth if the depth demand is specified
                 if self.__depthDemand>=self.__depthDemandMin:
-                    str = 'descend to desired depth'
+                    str = 'descend to a depth of %sm' % self.__depthDemand
                     rospy.loginfo(str)
                     pubMissionLog.publish(str)
                     timeStart = time.time()
-                    while not rospy.is_shutdown():
-                    
-                        if self.__controller.getBackSeatErrorFlag() == 1:
-                            str= 'manoeuvreSpiral preempted at time = %s' %(time.time())    
-                            rospy.loginfo(str)
-                            pubMissionLog.publish(str)
-                            return 'preempted'
-                    
+                    while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:                  
                         if abs(self.__controller.getDepth()-self.__depthDemand)>self.__depthTol:
-                            timeRef = time.time() # reset the reference time
+                            timeStart = time.time() # reset the reference time
                         if time.time()-timeStart <= self.__timeDelay:
                             self.__controller.setDepth(self.__depthDemand)
+                            self.__controller.detHeading(headingDemand)
                         else:
                             # if the AUV get to the depth and stay there long enough, move onto the next step
+                            str = 'steady at desired depth'
+                            rospy.loginfo(str)
+                            pubMissionLog.publish(str)
                             break
-                
+
                 # get the AUV accelerated then apply demand
                 str = "get the AUV accelerate"
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
-                while not rospy.is_shutdown():
-                
-                    if self.__controller.getBackSeatErrorFlag() == 1:
-                        str= 'manoeuvreSpiral preempted at time = %s' %(time.time())    
-                        rospy.loginfo(str)
-                        pubMissionLog.publish(str)
-                        return 'preempted'
-                
+                while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
+                               
                     X = self.__controller.getX()
                     Y = self.__controller.getY()
                     heading = self.__controller.getHeading()
@@ -190,8 +167,9 @@ class manoeuvreSpiral(smach.State):
                         break
                 # activate the actuator when AUV is far enough from the start location
                 for demandRudder in self.__listRudder:
-                    if rospy.is_shutdown():
+                    if rospy.is_shutdown() or time.time()-timeZero >= self.__missionTimeout or self.__controller.getBackSeatErrorFlag() == 1:
                         break
+                        
                     timeStart = time.time()
                     if demandRudder!=0 or demandThruster!=0: # if both actuator commands are zero, skip this combination
                         str = 'demand is [prop = %s, thruster = %s, rudder = %s] = ' %(demandProp, demandThruster, demandRudder)
@@ -199,14 +177,8 @@ class manoeuvreSpiral(smach.State):
                         pubMissionLog.publish(str)
                         headingAccu = 0.
                         headingOld = self.__controller.getHeading()
-                        while not rospy.is_shutdown():
-                        
-                            if self.__controller.getBackSeatErrorFlag() == 1:
-                                str= 'manoeuvreSpiral preempted at time = %s' %(time.time())    
-                                rospy.loginfo(str)
-                                pubMissionLog.publish(str)
-                                return 'preempted'
-                        
+                        while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
+                       
                             # compute the accumulate heading displacement
                             headingNow = self.__controller.getHeading()
                             headingDis = self.__uti.computeHeadingError(headingOld,headingNow)
@@ -236,4 +208,18 @@ class manoeuvreSpiral(smach.State):
                 # switch the role of two reference waypoints
                 wpIndex = 1-wpIndex
         
-        return 'succeeded' # exit with a flag of 'succeeded'
+        if self.__controller.getBackSeatErrorFlag() == 1:
+            str= 'manoeuvreSpiral preempted at time = %s' %(time.time())    
+            rospy.loginfo(str)
+            pubMissionLog.publish(str)
+            return 'preempted'
+        elif time.time()-timeZero >= self.__missionTimeout:
+            str= 'manoeuvreSpiral aborted at time = %s' %(time.time())    
+            rospy.loginfo(str)
+            pubMissionLog.publish(str)
+            return 'aborted'
+        else:
+            str= 'manoeuvreSpiral succeed at time = %s' %(time.time())    
+            rospy.loginfo(str)
+            pubMissionLog.publish(str)
+            return 'succeeded'

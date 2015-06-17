@@ -18,8 +18,13 @@ Procedure
     
 ######################################
 #Modifications
-19/May/2015: insert the depth control in the procedure
+19/May/2015: make the AUV capable of performing an action at depth
+28/May/2015: included the backSeatErrorFlag as a terminating criteria
+29/May/2015: keep the AUV heading during descent
 
+
+@return: preemped: if the backSeatErrorFlag has been raised
+@return: aborted: mission timeout
 @return: succeeded: if the AUV execute all the thruster demands in a given list
 
 '''
@@ -34,7 +39,7 @@ from math import *
 from std_msgs.msg import String
 
 class manoeuvreSway(smach.State):
-    def __init__(self, lib, myUti, wp, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin):
+    def __init__(self, lib, myUti, wp, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, missionTimeout):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__uti = myUti
@@ -48,6 +53,7 @@ class manoeuvreSway(smach.State):
         self.__depthDemand = depthDemand # [m].
         self.__depthTol = depthTol # [m]. It is account as the AUV get to the depth if the depth error is less than this.
         self.__depthDemandMin = depthDemandMin # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
+        self.__missionTimeout = missionTimeout # [sec] a criterion for mission abort
         self.__listThrusterDemand = [700, 1400, 2100] # [100, 200, 400, 700, 1400, 2100] # list of thruster demand used in experiment
         self.__direction = 1 # 1:right, -1:left
 
@@ -62,17 +68,16 @@ class manoeuvreSway(smach.State):
 
         # execute sway motion response test
         for demandThruster in self.__listThrusterDemand:
+        
+            if rospy.is_shutdown() or time.time()-timeZero >= self.__missionTimeout or self.__controller.getBackSeatErrorFlag() == 1:
+                break
+
             # go to the waypoint
             str = 'go to waypoint'
             rospy.loginfo(str)
             pubMissionLog.publish(str)
-            while not rospy.is_shutdown():
-            
-                if self.__controller.getBackSeatErrorFlag() == 1:
-                    str= 'manoeuvreSway preempted at time = %s' %(time.time())    
-                    rospy.loginfo(str)
-                    pubMissionLog.publish(str)
-                    return 'preempted'
+
+            while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
             
                 X = self.__controller.getX()
                 Y = self.__controller.getY()
@@ -94,13 +99,7 @@ class manoeuvreSway(smach.State):
             # point toward the origin (pier)
             print 'point toward start location'
             timeStart = time.time()
-            while not rospy.is_shutdown():
-            
-                if self.__controller.getBackSeatErrorFlag() == 1:
-                    str= 'manoeuvreSway preempted at time = %s' %(time.time())    
-                    rospy.loginfo(str)
-                    pubMissionLog.publish(str)
-                    return 'preempted'
+            while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
             
                 X = self.__controller.getX()
                 Y = self.__controller.getY()
@@ -120,24 +119,22 @@ class manoeuvreSway(smach.State):
 
             # bring the AUV to depth if the depth demand is specified
             if self.__depthDemand>=self.__depthDemandMin:
-                str = 'descend to desired depth'
+                str = 'descend to a depth of %sm' % self.__depthDemand
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
                 timeStart = time.time()
-                while not rospy.is_shutdown():
-                
-                    if self.__controller.getBackSeatErrorFlag() == 1:
-                        str= 'manoeuvreSway preempted at time = %s' %(time.time())    
-                        rospy.loginfo(str)
-                        pubMissionLog.publish(str)
-                        return 'preempted'
+                while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
                 
                     if abs(self.__controller.getDepth()-self.__depthDemand)>self.__depthTol:
                         timeRef = time.time() # reset the reference time
                     if time.time()-timeStart <= self.__timeDelay:
                         self.__controller.setDepth(self.__depthDemand)
+                        self.__controller.setHeading(bear)
                     else:
                         # if the AUV get to the depth and stay there long enough, move onto the next step
+                        str =  'steady at desired depth'
+                        rospy.loginfo(str)
+                        pubMissionLog.publish(str)
                         break
             
             # set demandThruster
@@ -145,13 +142,7 @@ class manoeuvreSway(smach.State):
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             timeStart = time.time()
-            while not rospy.is_shutdown():
-            
-                if self.__controller.getBackSeatErrorFlag() == 1:
-                    str= 'manoeuvreSway preempted at time = %s' %(time.time())    
-                    rospy.loginfo(str)
-                    pubMissionLog.publish(str)
-                    return 'preempted'
+            while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
             
                 if time.time()-timeStart <= self.__timeDemandHold:
                     self.__controller.setArduinoThrusterHorizontal(self.__direction*demandThruster,self.__direction*demandThruster) # (FrontHor,RearHor)
@@ -171,4 +162,18 @@ class manoeuvreSway(smach.State):
                 self.__controller.setDepth(0) # by defult, the depth controller will turn off on its own after 1sec of not reciving new demand
                 time.sleep(self.__timeDelay)
                     
-        return 'succeeded' # exit with a flag of 'succeeded'
+        if self.__controller.getBackSeatErrorFlag() == 1:
+            str= 'manoeuvreSway preempted at time = %s' %(time.time())    
+            rospy.loginfo(str)
+            pubMissionLog.publish(str)
+            return 'preempted'
+        elif time.time()-timeZero >= self.__missionTimeout:
+            str= 'manoeuvreSway aborted at time = %s' %(time.time())    
+            rospy.loginfo(str)
+            pubMissionLog.publish(str)
+            return 'aborted'
+        else:
+            str= 'manoeuvreSway succeed at time = %s' %(time.time())    
+            rospy.loginfo(str)
+            pubMissionLog.publish(str)
+            return 'succeeded'
