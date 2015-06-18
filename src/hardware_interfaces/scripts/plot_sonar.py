@@ -1,6 +1,6 @@
 #!/usr/bin/python
 ###########
-#  VERSION AS OF 18/05/2015
+#  VERSION AS OF 18/06/2015
 #  simple plotter for visualising sonar data live/from rosbag
 #  current plots:
 #  * live stream of all bins recorded (bins vs time)
