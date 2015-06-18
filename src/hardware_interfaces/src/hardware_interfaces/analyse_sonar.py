@@ -1,7 +1,13 @@
 import numpy
 
 """
+VERSION AS OF 18/06/2015
+
 Useful classes, functions for analysing sonar data
+sonar object contains the raw data as received from a ROS message,
+splits it into relevant information
+
+Current version is for Tritech Micron only
 """
 
 class sonar:
