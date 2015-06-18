@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# 18/06/2015 smaria:
+# moved to deprecated: the sonar polar range publisher
+# this node subscribes to doesn't exist anywhere in this repository
+
 # NOT IN USE
 # USED TO BUILD PLOT FROM SONAR DATA
 
