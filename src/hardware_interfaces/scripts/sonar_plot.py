@@ -9,7 +9,6 @@
 
 ###########
 
-import roslib; roslib.load_manifest('hardware_interfaces') 
 import rospy
 import numpy
 import time
@@ -28,7 +27,8 @@ from hardware_interfaces import analyse_sonar
 ################################################################
 
 def get_sonar(msgData):
-    # initialise figure
+    """ add sonar data to sonar object as it comes in from ROS messages as *msgData*
+    """
     sonar.add_message(msgData)
 
 
