@@ -1,5 +1,9 @@
 #!/usr/bin/python
 ###########
+
+# smaria moved to archive 19/06/2015
+# The funcitoning part of this was moved into the analyse_sonar.py library in src
+
 #  VERSION AS OF 2/4/2012 
 ###########
 import roslib; roslib.load_manifest('hardware_interfaces')
