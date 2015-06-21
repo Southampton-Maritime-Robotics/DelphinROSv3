@@ -60,7 +60,7 @@ def tail_section_loop(status):
     e_port = 70
     prop = 94
     
-    controlRate = 5. # [Hz]
+    controlRate = 5. # [Hz] limited by the response rate from arduino in tail section
     controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
     
