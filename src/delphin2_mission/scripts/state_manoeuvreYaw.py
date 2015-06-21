@@ -22,7 +22,6 @@ Procedure:
 29/May/2015: keep the AUV heading during descent
 
 @return: preemped: if the backSeatErrorFlag has been raised
-@return: aborted: mission timeout
 @return: succeeded: if the AUV execute all the thruster demands in a given list
 
 '''
@@ -37,7 +36,7 @@ from math import *
 from std_msgs.msg import String
 
 class manoeuvreYaw(smach.State):
-    def __init__(self, lib, myUti, wp, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, missionTimeout):
+    def __init__(self, lib, myUti, wp, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__uti = myUti
@@ -50,9 +49,9 @@ class manoeuvreYaw(smach.State):
         self.__depthDemand = depthDemand # [m].
         self.__depthTol = depthTol # [m]. It is account as the AUV get to the depth if the depth error is less than this.
         self.__depthDemandMin = depthDemandMin # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
-        self.__missionTimeout = missionTimeout # [sec] a criterion for mission abort
         self.__listThrusterDemand = [700, 1400, 2100] # [100, 200, 400, 700, 1400, 2100] # list of thruster demand used in experiment
         self.__direction = -1 # 1:cw, -1:ccw 
+        self.__controlRate = controlRate
 
     def execute(self, userdata):
     
@@ -62,18 +61,21 @@ class manoeuvreYaw(smach.State):
         ####################################################################
         ### Perform actions ################################################
         ####################################################################
+        
+        if self.__controlRate>0:
+            r = rospy.Rate(self.__controlRate)
 
         # execute yaw motion response test
         for demandThruster in self.__listThrusterDemand:
         
-            if rospy.is_shutdown() or time.time()-timeZero >= self.__missionTimeout or self.__controller.getBackSeatErrorFlag() == 1:
+            if rospy.is_shutdown() or self.__controller.getBackSeatErrorFlag() == 1:
                 break
                 
             # go to the waypoint
             str = 'go to waypoint'
             rospy.loginfo(str)
             pubMissionLog.publish(str)
-            while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
+            while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
             
                 X = self.__controller.getX()
                 Y = self.__controller.getY()
@@ -91,13 +93,16 @@ class manoeuvreYaw(smach.State):
                     time.sleep(self.__timeDelay) # allow the auv motion to decay
                     break
                     
+                if self.__controlRate>0:
+                    r.sleep()
+                    
             # bring the AUV to depth if the depth demand is specified
             if self.__depthDemand>=self.__depthDemandMin:
                 str = 'descend to a depth of %sm' % self.__depthDemand
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
                 timeStart = time.time()
-                while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
+                while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
                 
                     if abs(self.__controller.getDepth()-self.__depthDemand)>self.__depthTol:
                         timeStart = time.time() # reset the reference time
@@ -110,13 +115,16 @@ class manoeuvreYaw(smach.State):
                         rospy.loginfo(str)
                         pubMissionLog.publish(str)
                         break
+                        
+                    if self.__controlRate>0:
+                        r.sleep()
 
             # set demandThruster
             str = 'actuate thruster with demand = %s' %(demandThruster)
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             timeStart = time.time()
-            while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
+            while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
             
                 if time.time()-timeStart < self.__timeDemandHold:
                     self.__controller.setArduinoThrusterHorizontal(self.__direction*demandThruster,-self.__direction*demandThruster)
@@ -130,6 +138,9 @@ class manoeuvreYaw(smach.State):
                         self.__controller.setDepth(0)
                     break
                     
+                if self.__controlRate>0:
+                    r.sleep()
+                    
             # vehicle will stop for this many second as to let the AUV ascend to the surface
             if self.__depthDemand>=self.__depthDemandMin:
                 self.__controller.setDepth(0) # by defult, the depth controller will turn off on its own after 1sec of not reciving new demand
@@ -140,19 +151,8 @@ class manoeuvreYaw(smach.State):
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             return 'preempted'
-        elif time.time()-timeZero >= self.__missionTimeout:
-            str= 'manoeuvreYaw aborted at time = %s' %(time.time())    
-            rospy.loginfo(str)
-            pubMissionLog.publish(str)
-            return 'aborted'
         else:
             str= 'manoeuvreYaw succeed at time = %s' %(time.time())    
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             return 'succeeded'
-        
-####                if self.__controller.getBackSeatErrorFlag() == 1:
-####                    str= 'manoeuvreYaw preempted at time = %s' %(time.time())    
-####                    rospy.loginfo(str)
-####                    pubMissionLog.publish(str)
-####                    return 'preempted'

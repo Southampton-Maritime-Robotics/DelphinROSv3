@@ -4,6 +4,7 @@
 A state for horizontal plane path following algorithm based on line-of-sight technique
 
 execute:
+@return: preemped: if the backSeatErrorFlag has been raised
 @return: succeeded: when the AUV has arrived to the destination
 
 #TODO
@@ -21,7 +22,7 @@ from math import *
 from std_msgs.msg import String
 
 class pathFollowingLOS(smach.State):
-    def __init__(self, lib, myUti, path, L_los, uGain, uMax, wp_R):
+    def __init__(self, lib, myUti, path, L_los, uGain, uMax, wp_R, controlRate):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__uti = myUti
@@ -30,6 +31,7 @@ class pathFollowingLOS(smach.State):
         self.__uGain = uGain
         self.__uMax = uMax
         self.__wp_R = wp_R
+        self.__controlRate = controlRate
         
     def execute(self, userdata):
         
@@ -48,9 +50,8 @@ class pathFollowingLOS(smach.State):
         self.__path = numpy.vstack((eta,self.__path.T)).T # include the current location of the AUV as the first waypoint
         _,pathLen = self.__path.shape
         
-        controlRate = 50. # [Hz]
-        controlPeriod = 1/controlRate
-        r = rospy.Rate(controlRate)
+        if self.__controlRate>0:
+            r = rospy.Rate(self.__controlRate)
 
         str = 'Execute path following algorithm with a following path'
         rospy.loginfo(str)
@@ -62,8 +63,9 @@ class pathFollowingLOS(smach.State):
         rospy.loginfo(str)
         pubMissionLog.publish(str)
         
-        while not rospy.is_shutdown():
+        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0::
             
+            # reference time to control rate
             timeRef = time.time()
             
             X = self.__controller.getX()
@@ -86,6 +88,10 @@ class pathFollowingLOS(smach.State):
                     self.__controller.setRearProp(0)
                     self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                     self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+
+                    str= 'pathFollowingLOS succeeded at time = %s' %(time.time())    
+                    rospy.loginfo(str)
+                    pubMissionLog.publish(str)
                     return 'succeeded'
                 else:
                     # if reached the current waypoint, move onto the next line segment
@@ -118,9 +124,11 @@ class pathFollowingLOS(smach.State):
             # turn speedDemand into propeller demand and send
             self.__controller.setRearProp(round(u*22.))
             
-            timeElapse = time.time()-timeRef
-            if timeElapse < controlPeriod:
+            if self.__controlRate>0:
                 r.sleep()
-            else:
-                str = "pathFollowingLOS rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
-                rospy.logwarn(str)
+                
+        if self.__controller.getBackSeatErrorFlag() == 1:
+            str= 'pathFollowingLOS preempted at time = %s' %(time.time())    
+            rospy.loginfo(str)
+            pubMissionLog.publish(str)
+            return 'preempted'

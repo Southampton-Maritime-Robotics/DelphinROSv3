@@ -22,7 +22,6 @@ Procedure:
 29/May/2015: keep the AUV heading during descent
 
 @return: preemped: if the backSeatErrorFlag has been raised
-@return: aborted: mission timeout
 @return: succeeded: if the AUV execute all the combination of actuator demands (propeller, thruster, rudder) in a given lists
 
 '''
@@ -38,7 +37,7 @@ from std_msgs.msg import String
 from delphin2_mission.utilities     import uti
 
 class manoeuvreZigZag(smach.State):
-    def __init__(self, lib, myUti, wp, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, missionTimeout):
+    def __init__(self, lib, myUti, wp, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__uti = myUti
@@ -52,13 +51,13 @@ class manoeuvreZigZag(smach.State):
         self.__depthDemand = depthDemand # [m].
         self.__depthTol = depthTol # [m]. It is account as the AUV get to the depth if the depth error is less than this.
         self.__depthDemandMin = depthDemandMin # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
-        self.__missionTimeout = missionTimeout # [sec] a criterion for mission abort
-        self.__listProp = [16] # [10,16,22] # list of propeller demand used in experiment
+        self.__listProp = [10, 16, 22] # [10,16,22] # list of propeller demand used in experiment
         self.__listThruster = [0, 800, 1500] # [0,800,1500,2200] # TODO [0,800,1500,2000] list of thruster demand used in experiment [+ve yaw CW]
         self.__listRudder = [0, 10, 20] # [0,10,20,30] # TODO [0,10,20,30]] list of rudder angle used in experiment [+ve yaw CW] 
         self.__timeAccelerate = 5 # [sec] delay to let the AUV accelerate
         self.__cycleZigZagDemand = 5 # number of cycle that AUV have to execute in a zig-zag manoeuvre
         self.__amplitude = 20 # [deg]
+        self.__controlRate = controlRate
     
     def execute(self, userdata):
         
@@ -74,15 +73,18 @@ class manoeuvreZigZag(smach.State):
 
         wpRang,_ = self.__uti.rangeBearing([self.__wp[0][0], self.__wp[1][0]],[self.__wp[0][1], self.__wp[1][1]]) # determine a range between waypoints as a reference
         wpIndex = 0
+        
+        if self.__controlRate>0:
+            r = rospy.Rate(self.__controlRate)
 
         for demandProp in self.__listProp:
-            if rospy.is_shutdown() or time.time()-timeZero >= self.__missionTimeout or self.__controller.getBackSeatErrorFlag() == 1:
+            if rospy.is_shutdown() or self.__controller.getBackSeatErrorFlag() == 1:
                 break
             for demandThruster in self.__listThruster:
-                if rospy.is_shutdown() or time.time()-timeZero >= self.__missionTimeout or self.__controller.getBackSeatErrorFlag() == 1:
+                if rospy.is_shutdown() or self.__controller.getBackSeatErrorFlag() == 1:
                     break
                 for demandRudder in self.__listRudder:
-                    if rospy.is_shutdown() or time.time()-timeZero >= self.__missionTimeout or self.__controller.getBackSeatErrorFlag() == 1:
+                    if rospy.is_shutdown() or self.__controller.getBackSeatErrorFlag() == 1:
                         break
 
                     timeStart = time.time()
@@ -92,7 +94,7 @@ class manoeuvreZigZag(smach.State):
                         str = 'go to start point'
                         rospy.loginfo(str)
                         pubMissionLog.publish(str)
-                        while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
+                        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
                                                 
                             X = self.__controller.getX()
                             Y = sexecute:
@@ -111,13 +113,16 @@ class manoeuvreZigZag(smach.State):
                                 self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                                 time.sleep(self.__timeDelay) # vehicle will stop for this many second as to let its motion decay
                                 break
+                                
+                            if self.__controlRate>0:
+                                r.sleep()
 
                         # point toward anoter waypoint
                         timeStart = time.time()
                         str = 'point to the target'
                         rospy.loginfo(str)
                         pubMissionLog.publish(str)
-                        while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
+                        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
                         
                             X = self.__controller.getX()
                             Y = self.__controller.getY()
@@ -134,6 +139,8 @@ class manoeuvreZigZag(smach.State):
                                 self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                                 self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
                                 break
+                            if self.__controlRate>0:
+                                r.sleep()
                                 
                         # bring the AUV to depth if the depth demand is specified
                         if self.__depthDemand>=self.__depthDemandMin:
@@ -141,7 +148,7 @@ class manoeuvreZigZag(smach.State):
                             rospy.loginfo(str)
                             pubMissionLog.publish(str)
                             timeStart = time.time()
-                            while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
+                            while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
                             
                                 if abs(self.__controller.getDepth()-self.__depthDemand)>self.__depthTol:
                                     timeStart = time.time() # reset the reference time
@@ -154,17 +161,21 @@ class manoeuvreZigZag(smach.State):
                                     rospy.loginfo(str)
                                     pubMissionLog.publish(str)
                                     break
+                                if self.__controlRate>0:
+                                    r.sleep()
 
                         # get the AUV accelerated then apply demand
                         str = "get the AUV accelerate with prop = %s" %(demandProp)
                         rospy.loginfo(str)
                         pubMissionLog.publish(str)
                         timeStart = time.time()
-                        while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeAccelerate:
+                        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeAccelerate:
                         
                             self.__controller.setRearProp(demandProp)
                             self.__controller.setHeading(bear) # hold at the previous demand
                             self.__controller.setDepth(self.__depthDemand)
+                            if self.__controlRate>0:
+                                r.sleep()
                                 
                         # execute a zig-zag manoeuvre
                         str = 'execute a zig-zag manoeuvre with a demand [prop = %s, thruster = %s, rudder = %s] = ' %(demandProp, demandThruster, demandRudder)
@@ -175,7 +186,7 @@ class manoeuvreZigZag(smach.State):
                         direction = 1 # 1: yaw right, -1: yaw left
                         headingRef = self.__controller.getHeading()
                         
-                        while not rospy.is_shutdown() and time.time()-timeZero < self.__missionTimeout and self.__controller.getBackSeatErrorFlag() == 0:
+                        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
 
                             str = 'headingRef: %s, direction: %s, cycle: %s' %(headingRef,direction,cycleZigZag)
                             rospy.loginfo(str)
@@ -202,6 +213,8 @@ class manoeuvreZigZag(smach.State):
                                 if self.__depthDemand>=self.__depthDemandMin:
                                     self.__controller.setDepth(0) # by defult, the depth controller will turn off on its own after 1sec of not reciving new demand
                                 break
+                            if self.__controlRate>0:
+                                r.sleep()
                                         
                         # vehicle will stop for this many second as to let the AUV ascend to the surface
                         if self.__depthDemand>=self.__depthDemandMin:
@@ -216,11 +229,6 @@ class manoeuvreZigZag(smach.State):
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             return 'preempted'
-        elif time.time()-timeZero >= self.__missionTimeout:
-            str= 'manoeuvreZigZag aborted at time = %s' %(time.time())    
-            rospy.loginfo(str)
-            pubMissionLog.publish(str)
-            return 'aborted'
         else:
             str= 'manoeuvreZigZag succeed at time = %s' %(time.time())    
             rospy.loginfo(str)
