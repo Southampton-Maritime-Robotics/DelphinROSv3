@@ -572,7 +572,6 @@ class XSensDriver(object):
 
 	def spin(self):
 
-#		controlRate = 100. # Hz
 		r = rospy.Rate(_controlRate)
 		controlPeriod = 1./_controlRate
 
