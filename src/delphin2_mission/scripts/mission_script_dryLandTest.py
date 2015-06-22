@@ -93,14 +93,8 @@ def main():
   
 ################################################################################
         # [3/3] Generic States (Come to this state just before terminating the mission)
-        smach.StateMachine.add('STOP', Stop(lib), 
+        smach.StateMachine.add('STOP', Stop(lib),
             transitions={'succeeded':'finish'})    
-
-################################################################################
-
-        # [3/3] Generic States (Come to this state just before terminating the mission)
-        smach.StateMachine.add('STOP', Stop(lib), 
-            transitions={'succeeded':'finish'})
 
 ################################################################################
 ########### EXECUTE STATE MACHINE AND STOP #####################################
