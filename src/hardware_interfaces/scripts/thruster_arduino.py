@@ -25,9 +25,9 @@ Developed based on "tsl_customer_mission.py" that was originally used to control
 12/6/14: created the thruster interface
 5/4/15: maked this node work at 5Hz. Rate is control by rospy.Rate()
 10/5/15: compensated the voltage reading with a scale factor of 1.08
-4/6/15: remap a setpoint from [-2500,-150] U [150,2500] to [0,255] with direction of either 0 or 1.
+4/6/15: remap a setpoint from [-2500,-145] U [145,2500] to [0,255] with direction of either 0 or 1.
 
-# NOTE: setpoint within (-150,150) will be set to 0, i.e. incorporate as a deadband
+# NOTE: setpoint within (-145,145) will be set to 0, i.e. incorporate as a deadband
 
 """
 
