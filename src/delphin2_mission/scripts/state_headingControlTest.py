@@ -48,7 +48,7 @@ class headingControlTest(smach.State):
         
 ################################################################################
         # let the vehicle do heading tracking
-        listDemandHeading = [110,200,290]
+        listDemandHeading = [110,200,100]
         for demandHeading in listDemandHeading:
 
             str = "tracking a heading demand of = %s" %(demandHeading)
