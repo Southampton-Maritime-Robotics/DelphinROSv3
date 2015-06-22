@@ -91,14 +91,13 @@ class manoeuvreZigZag(smach.State):
                     if demandRudder!=0 or demandThruster!=0: # if both actuator commands are zero, skip this combination
 
                         # go to the waypoint
-                        str = 'go to start point'
+                        str = 'go to start point: %s' %self.__wp[:,wpIndex]
                         rospy.loginfo(str)
                         pubMissionLog.publish(str)
                         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
                                                 
                             X = self.__controller.getX()
-                            Y = sexecute:
-@return: succeeded: when the AUV has arrived to the destinationelf.__controller.getY()
+                            Y = self.__controller.getY()
                             heading = self.__controller.getHeading()
                             rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
                             if rang >= self.__wp_R:
@@ -119,7 +118,7 @@ class manoeuvreZigZag(smach.State):
 
                         # point toward anoter waypoint
                         timeStart = time.time()
-                        str = 'point to the target'
+                        str = 'point to the target: %s' %self.__wp[:,1-wpIndex]
                         rospy.loginfo(str)
                         pubMissionLog.publish(str)
                         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
@@ -185,16 +184,17 @@ class manoeuvreZigZag(smach.State):
                         cycleZigZag = 0
                         direction = 1 # 1: yaw right, -1: yaw left
                         headingRef = self.__controller.getHeading()
-                        
-                        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
 
-                            str = 'headingRef: %s, direction: %s, cycle: %s' %(headingRef,direction,cycleZigZag)
-                            rospy.loginfo(str)
+                        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
 
                             headingThreshold = mod(headingRef+self.__amplitude*direction, 360)
                             error = myUti.computeHeadingError(headingThreshold,self.__controller.getHeading())
                             
                             if error*direction <= 0:
+                                
+                                str = 'headingRef: %s, direction: %s, cycle: %s' %(headingRef,direction,cycleZigZag)
+                                rospy.loginfo(str)
+                                                                
                                 direction = -direction # switch direction
                                 if direction == 1:
                                     cycleZigZag += 1 #

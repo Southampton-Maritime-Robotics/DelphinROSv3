@@ -75,7 +75,7 @@ class manoeuvreSway(smach.State):
                 break
 
             # go to the waypoint
-            str = 'go to waypoint'
+            str = 'go to waypoint: %s' %self.__wp
             rospy.loginfo(str)
             pubMissionLog.publish(str)
 
@@ -101,7 +101,7 @@ class manoeuvreSway(smach.State):
                     r.sleep()
 
             # point toward the origin (pier)
-            print 'point toward start location'
+            print 'point toward the pier'
             timeStart = time.time()
             while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
             

@@ -84,10 +84,10 @@ class manoeuvreSpiral(smach.State):
             if rospy.is_shutdown() or self.__controller.getBackSeatErrorFlag() == 1:
                 break
             for demandThruster in self.__listThruster:
-                if if rospy.is_shutdown() or self.__controller.getBackSeatErrorFlag() == 1:
+                if rospy.is_shutdown() or self.__controller.getBackSeatErrorFlag() == 1:
                     break
                 # go to the waypoint
-                str = 'go to start point'
+                str = 'go to start point: %s' %self.__wp[:,wpIndex]
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
                 while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
@@ -114,7 +114,7 @@ class manoeuvreSpiral(smach.State):
 
                 # point toward anoter waypoint with a bias of headingBias
                 timeStart = time.time()
-                str = 'point to the target'
+                str = 'point to the target: %s' %self.__wp[:,wpIndex]
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
                 while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:

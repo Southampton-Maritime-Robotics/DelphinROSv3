@@ -74,7 +74,7 @@ class manoeuvreSurge(smach.State):
                 break
             
             # go to the waypoint
-            str = 'go to start point'
+            str = 'go to start point: %s' %self.__wp[:,wpIndex]
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
@@ -99,7 +99,7 @@ class manoeuvreSurge(smach.State):
                     r.sleep()
 
             # point toward anoter waypoint
-            str = 'head toward the target'
+            str = 'head toward the target: %s' %self.__wp[:,1-wpIndex]
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             timeStart = time.time()
