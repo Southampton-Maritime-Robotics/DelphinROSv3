@@ -22,7 +22,7 @@ import rospy
 import smach
 import smach_ros
 import time
-from std_msgs.msg import String
+from std_msgs.msg               import String
 
 class Initialise(smach.State):
     def __init__(self, lib, timeout):
@@ -50,7 +50,8 @@ class Initialise(smach.State):
                 and self.__controller.getDepthTransducerStatus()
                 and self.__controller.getXsensStatus()
                 and self.__controller.getHeadingCtrlStatus()
-                and self.__controller.getDepthCtrlStatus())
+                and self.__controller.getDepthCtrlStatus()
+                and self.__controller.getDeadreckonerStatus())
            time.sleep(0.5)
 
         rospy.loginfo('##############################################')
@@ -80,6 +81,9 @@ class Initialise(smach.State):
         pub.publish(str)
         rospy.loginfo(str)
         str='depth ctrl status = %r' %self.__controller.getDepthCtrlStatus()
+        pub.publish(str)
+        rospy.loginfo(str)
+        str='deadreckoner status = %r' %self.__controller.getDeadreckonerStatus()
         pub.publish(str)
         rospy.loginfo(str)
         rospy.loginfo('##############################################')
