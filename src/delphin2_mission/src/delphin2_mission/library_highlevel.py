@@ -89,6 +89,7 @@ class library_highlevel:
         self.__xsens_status = 0
         self.__heading_ctrl_status = 0
         self.__depth_ctrl_status = 0
+        self.__deadreckoner_status = 0
         
         self.__heading_error=0.0
         self.__altitude=0.0
@@ -410,6 +411,9 @@ class library_highlevel:
     def getDepthCtrlStatus(self):
         return self.__depth_ctrl_status
     
+    def getDeadreckonerStatus(self):
+        return self.__deadreckoner_status
+    
     def getCS_b(self):
         return self.__CS_b
     
@@ -529,7 +533,7 @@ class library_highlevel:
 ####            self.stop()
     
     def callback_position(self, position):
-        self.__position = position   
+        self.__position = position
 
     def callback_altitude(self, altitude):
         self.__altitude = altitude.altitude_filt
@@ -581,5 +585,8 @@ class library_highlevel:
             return
         elif status.nodeID == 8:
             self.__depth_ctrl_status = status.status
+            return
+        elif status.nodeID == 9:
+            self.__deadreckoner_status = status.status
             return
 
