@@ -30,6 +30,7 @@ from hardware_interfaces.msg import gps
 from hardware_interfaces.msg import altitude
 from hardware_interfaces.msg import dead_reckoner
 from hardware_interfaces.msg import camera_info
+from hardware_interfaces.msg import status
 import math
 
 ########## LOW LEVEL CONTROL ############################################################
@@ -86,6 +87,8 @@ def reckoner():
 
 ############ MAIN RECKONER LOOP ################################################
     while not rospy.is_shutdown():
+    
+        pubStatus.publish(nodeID = 9, status = True)
         
         delta_t = time.time() - time_zero
         
@@ -410,6 +413,7 @@ if __name__ == '__main__':
     rospy.Subscriber('camera_info', camera_info, camera_cb)
       
     pub  = rospy.Publisher('position_dead', position) # used in library_highlevel
+    pubStatus = rospy.Publisher('status', status)
 #    pub2 = rospy.Publisher('dead_reckoner', dead_reckoner)
 
     reckoner()
