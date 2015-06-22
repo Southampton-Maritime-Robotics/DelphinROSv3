@@ -63,7 +63,7 @@ class pathFollowingLOS(smach.State):
         rospy.loginfo(str)
         pubMissionLog.publish(str)
         
-        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0::
+        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
             
             # reference time to control rate
             timeRef = time.time()
