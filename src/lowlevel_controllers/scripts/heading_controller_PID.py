@@ -53,7 +53,7 @@ def set_params():
     ### CS Controller ###
     HC.CS_Pgain       = 0.5 # FIXME: tune me kantapon
     HC.CS_Igain       = 0
-    HC.CS_Dgain       = -0.3 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    HC.CS_Dgain       = 0 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     HC.CS_Smax         = 30
 #    HC.CS_min         = -HC.CS_max
     
