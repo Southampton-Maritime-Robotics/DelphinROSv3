@@ -16,16 +16,6 @@ from hardware_interfaces.msg import sonar_setting
 """ Interface for updating various sonar parameters
 """
 
-
-"""
-    while not rospy.is_shutdown():
-        rospy.loginfo("Publishing sonar parameters %s" % rospy.get_time())
-        pub.publish(RLim, LLim, heading, NBins, Range)
-        rate.sleep()
-
-"""
-
-
 class Settings(QtGui.QWidget):
  
     def __init__(self,pub):
@@ -144,8 +134,7 @@ class Settings(QtGui.QWidget):
 def sonarSettingTalker():
     pub = rospy.Publisher('sonar_updateSettings', sonar_setting, queue_size=10)
     rospy.init_node('sonar_updateSettings', anonymous=True)
-    rate = rospy.Rate(10) # 10hz
-
+ 
     app = QtGui.QApplication([])
     settings = Settings(pub)
     settings.initUI()   # use graphical interface
