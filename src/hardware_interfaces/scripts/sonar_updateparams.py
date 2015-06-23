@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import rospy
 import sys
+import traceback
 import serial
 import time
 import numpy
@@ -63,7 +64,17 @@ class Settings(QtGui.QWidget):
                       'range': 'range: ',
                       }
 
-        
+         # Edit lines where new values can be entered
+        self.editLines = {}
+        for key in self.settings:
+            self.editLines[key] = ''
+
+        # dict of QLabels, so they can be automatically updated
+        self.QLabels = {}
+        for key in self.settings:
+            self.QLabels[key] = QtGui.QLabel("")
+
+      
 
 
     def initUI(self):
@@ -95,20 +106,25 @@ class Settings(QtGui.QWidget):
         """
         Define what is shown where in the graphical interface
         """
-        self.label_RLim = QtGui.QLabel(self.UpdateText('RLim'))
-        self.grid.addWidget(self.label_RLim, 1, 0)
-
-        self.input_RLim = QtGui.QLineEdit()
-        self.grid.addWidget(self.input_RLim, 1, 1)
+        d = 0
+        for key in self.settings:
+            d +=1
+            self.QLabels[key].setText(self.UpdateText(key))
+            self.grid.addWidget(self.QLabels[key], d, 0)
+            self.editLines[key] = QtGui.QLineEdit()
+            self.grid.addWidget(self.editLines[key], d, 1)
 
         self.button = QtGui.QPushButton("Update Settings")
-        self.grid.addWidget(self.button, 2, 0)
+        self.grid.addWidget(self.button, d+1, 0)
         self.button.clicked.connect(self.buttonClicked)
 
     def buttonClicked(self):
         try:
-            self.settings['RLim'] = float(self.input_RLim.text())
-            self.label_RLim.setText(self.UpdateText('RLim'))
+            for key in self.settings:
+                print(self.editLines[key].text())
+                self.settings[key] = float(self.editLines[key].text())
+                print(self.UpdateText(key))
+                self.QLabels[key].setText(self.UpdateText(key))
 
             # publish new values
             self.Publish()
@@ -116,6 +132,7 @@ class Settings(QtGui.QWidget):
             
         except:
             print("Please check your input!")
+            traceback.print_exc(file=sys.stdout)
 
     def UpdateText(self, setting):
         text = self.text[setting] + str(self.settings[setting]) + "\n"
