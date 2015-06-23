@@ -121,9 +121,10 @@ class Settings(QtGui.QWidget):
     def buttonClicked(self):
         try:
             for key in self.settings:
-                print(self.editLines[key].text())
+                # TODO: before accepting values, checks using the limits dictionary
+                # should be done!
+                # TODO: make the lines display the current value instead of being empy
                 self.settings[key] = float(self.editLines[key].text())
-                print(self.UpdateText(key))
                 self.QLabels[key].setText(self.UpdateText(key))
 
             # publish new values
