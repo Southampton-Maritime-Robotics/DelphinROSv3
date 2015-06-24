@@ -18,6 +18,7 @@ import numpy
 from std_msgs.msg import String
 from std_msgs.msg import UInt16
 from hardware_interfaces.msg import sonar	
+from hardware_interfaces.msg import sonar_setting
 
 ################################################################
 def sonarTalker():
@@ -136,13 +137,12 @@ def setupSonar():
     
     global serialPort 
     
-    # Serial port settings for Micron Sonar #
-    #%%% use laptop serial port serialPort = serial.Serial(port='/dev/ttyS3', baudrate='115200') 
+    # Serial port settings for Micron Sonar
+    # serialPort = serial.Serial(port='/dev/ttyS3', baudrate='115200') 
 
-    rospy.logerr("made it here %%%%%")
+    # Serial Port setting when using Laptop
     serialPort = serial.Serial(port='/dev/ttyUSB0', baudrate='115200')
 
-    rospy.logerr("made it here %%%%%")
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
@@ -197,11 +197,11 @@ def get_mtHeadCommand():
     txPulseLength = [40, 0]                                                     # Hard coded as not used by DST sonars
     rangeScale = [60, 0]                                                        # Hard coded as not used by sonar head
    
-    LLim = rospy.get_param("/LLim")                                             # Convert anti-clockwise scan limit from degrees to 16ths of a gradian 
+    LLim = Sonar.p['LLim']                                             # Convert anti-clockwise scan limit from degrees to 16ths of a gradian 
     LLim = (LLim)%360
     LLim = LLim/360.0 * 6400
 
-    RLim = rospy.get_param("/RLim")                                             # Convert clockwise scan limit from degrees to 16ths of a gradian
+    RLim = Sonar.p['RLim']                                             # Convert clockwise scan limit from degrees to 16ths of a gradian
     RLim = (RLim)%360
     RLim = RLim/360.0 * 6400
 
@@ -220,8 +220,8 @@ def get_mtHeadCommand():
     moTime = rospy.get_param("/moTime")
     step = rospy.get_param("/step")
     
-    NBins = rospy.get_param("/NBins")
-    Range = rospy.get_param("/Range")
+    NBins = Sonar.p["NBins"]
+    Range = Sonar.p["Range"]
     
     ##################################
     ADInterval = uint16_to_uint8(int(round((((Range*2)/1500.0)/NBins)/0.000000640,0))) # Possibly not using it, not actually sent to sonar and only used for post-processing
@@ -258,24 +258,15 @@ def uint16_to_uint8(input16):
     return output8
 
 ################################################################
-def callback(data):
-    # Beta-code, used to update left and right limits during sonar operation.  Not currently used and needs testing. #
-    global updateFlag
-    updateFlag = 1
-    rospy.set_param("/LLim", int(data.LLim))
-    rospy.set_param("/RLim", int(data.RLim))
 
 ################################################################
 def sonarLoop():
     # Main operational loop #
     # Controls sonar message sequence (mtSendData->, ->mtHeadData, mtSendData->, ->mtHeadData,... etc.  #
 
-    rospy.Subscriber('sonar_update', sonar, callback)                           # Only used for receiving new parameters (callback(data))
-    
-    global updateFlag
     global serialPort
     
-    updateFlag = 0                                                              # updateFlag is set to 1 if new parameters are recieved
+    Sonar.updateFlag = 0
 
     setupSonar()
 
@@ -283,10 +274,10 @@ def sonarLoop():
         sonarTalker()                                                           # Constructs and send mtSendData message to request a ping
         sonarListener()                                                         # Waits for response then processes response
         
-        if updateFlag == 1:                                                     # If new parameters have been received then reconstruct and send mtHeadCommand
+        if Sonar.updateFlag == 1:                                                     # If new parameters have been received then reconstruct and send mtHeadCommand
+            Sonar.updateFlag = 0
             setupData = get_mtHeadCommand()
             serialPort.write(setupData)
-            updateFlag = 0
         
         time.sleep(0.001)
             
@@ -299,50 +290,57 @@ def shutdown():
     serialPort.close()
 
 ################################################################
+
+class SonarParameters:
+    def __init__(self):
+        self.p = {'RLim': rospy.get_param("/RLim"),
+                  'LLim': rospy.get_param("/LLim"),
+                  'NBins': rospy.get_param("/NBins"),
+                  'Range': rospy.get_param("/Range"),
+                  }
+
+        self.updateFlag = 0         # Update flag; set to 1 if a setting changed
+
+        # TODO add validity check of data
+
+    def update(self, message):
+        newRLim = message.RLim
+        if (newRLim != self.p['RLim']):
+            self.update = 1
+            self.p['RLim'] = newRLim
+
+        newLLim = message.LLim
+        if (newLLim != self.p['LLim']):
+            self.update = 1
+            self.p['LLim'] = newLLim
+
+
+        newNBins = message.NBins
+        if (newNBins != self.p['NBins']):
+            self.update = 1
+            self.p['NBins'] = int(newNBins)
+
+
+        newRange = message.Range
+        if (newRange != self.p['Range']):
+            self.update = 1
+            self.p['Range'] = newRange
+
+
+
 ################################################################
 if __name__ == '__main__':
 
     # if script is main, assume its run manually for debugging
     rospy.init_node('sonar', log_level=rospy.DEBUG)
-    # Default setup, normally replaced by setting in launch file
-    # %%%% this is not enough, script still doesn't run through
-    """
-    RLim = 95.0         # this is an Angle limit
-    LLim = 85.0         # this is an Angle limit
-    heading = 3200
-    NBins = 200         # 0 to 1500 #TODO smaria is this correct?
-    Range = 20          # in m
-    ADInterval = 0
-    GlitchCount = 1
-    Threshold = 10
-    BlankDist = 0.6
-    headType = 1
-    SID = 255
-    DID = 2
-    msgSeq = 128
-    Node = 255
-    HdCtrl1 = '00000101'
-    HdCtrl2 = '00100011'
-    DstHead = 11
-    ADSpan = 210
-    ADLow = 0
-    IGainB1 = 84
-    IGainB2 = 84
-    moTime = 25
-    step = 64           # step size of motor in radians
-    MaxADBuf = 500
-    Lockout = 100
-    MinorAxis = 1600
-    MajorAxis = 1
-    Ctl2 = 0
-    """
     
     global pub
-    global updateFlag
     
     pub        = rospy.Publisher('sonar_output', String)
-    updateFlag = 0
     
+    Sonar = SonarParameters()
+    rospy.Subscriber('sonar_updateSettings', sonar_setting, Sonar.update)
+
     rospy.on_shutdown(shutdown)
 
     sonarLoop()                                                                 # Main execution loop
