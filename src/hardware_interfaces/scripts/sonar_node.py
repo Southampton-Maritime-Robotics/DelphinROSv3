@@ -257,6 +257,8 @@ def uint16_to_uint8(input16):
     output8 = [B1, B2]
     return output8
 
+def updateParameters(data):
+    Sonar.update(data)
 ################################################################
 
 ################################################################
@@ -275,6 +277,7 @@ def sonarLoop():
         sonarListener()                                                         # Waits for response then processes response
         
         if Sonar.updateFlag == 1:                                                     # If new parameters have been received then reconstruct and send mtHeadCommand
+            rospy.loginfo("Updating sonar settings")
             Sonar.updateFlag = 0
             setupData = get_mtHeadCommand()
             serialPort.write(setupData)
@@ -306,24 +309,28 @@ class SonarParameters:
     def update(self, message):
         newRLim = message.RLim
         if (newRLim != self.p['RLim']):
-            self.update = 1
+            rospy.logwarn("RLim")
+            self.updateFlag = 1
             self.p['RLim'] = newRLim
 
         newLLim = message.LLim
         if (newLLim != self.p['LLim']):
-            self.update = 1
+            rospy.logwarn("LLim")
+            self.updateFlag = 1
             self.p['LLim'] = newLLim
 
 
         newNBins = message.NBins
         if (newNBins != self.p['NBins']):
-            self.update = 1
+            rospy.logwarn("NBins")
+            self.updateFlag = 1
             self.p['NBins'] = int(newNBins)
 
 
         newRange = message.Range
         if (newRange != self.p['Range']):
-            self.update = 1
+            rospy.logwarn("Range")
+            self.updateFlag = 1
             self.p['Range'] = newRange
 
 
@@ -339,7 +346,9 @@ if __name__ == '__main__':
     pub        = rospy.Publisher('sonar_output', String)
     
     Sonar = SonarParameters()
-    rospy.Subscriber('sonar_updateSettings', sonar_setting, Sonar.update)
+    rospy.logwarn("nananana")
+    print(Sonar)
+    rospy.Subscriber('sonar_updateSettings', sonar_setting, updateParameters)
 
     rospy.on_shutdown(shutdown)
 
