@@ -7,13 +7,15 @@ This node relies more on GPS when it is available, otherwise an equation of moti
 
 #TODO
 -include sway_demand in the model
+-thruster has too strong implication to the sway dynamic: this must be corrected!!
+-rudder has no effect at all to the sway dynamic: this must be corrected!!
 
 ######################################
 #Modifications
 6/1/12 Modified GPS callback to only operate if a valid fix is returned
 9/2/12 Modified definition of X and Y. X is east and Y is north to be consistant with everything else.
 22/4/15 Have seperate callback blocks that subscribe to different actuator demands instead of using the MPC-based topic.
-
+24/6/15 ignore the thruster and rudder setpoints for the time being: this will produce a very poor estimation of sway speed and the AUV location but including them will produce a very very unrealistic sway speed which is even higher than the forward speed.
 """
 
 import rospy
@@ -112,15 +114,16 @@ def reckoner():
             velP    = cur_compassInfo.angular_velocity_y # TODO: double check if this is of the convention
             
         #### ACTUATOR DATA #################################################
-
+            # FIXME: for the time being, only the force due tue thruster is considered
             prop    = float(cur_prop_demand)
-            sternP  = cur_sternP_demand
-            T0      = cur_thVert_demand.thruster0
-            T1      = cur_thVert_demand.thruster1
+
+            sternP  = 0*cur_sternP_demand
+            T0      = 0*cur_thVert_demand.thruster0
+            T1      = 0*cur_thVert_demand.thruster1
             
-            rudder  = cur_rudder_demand
-            T2      = cur_thHori_demand.thruster0
-            T3      = cur_thHori_demand.thruster1
+            rudder  = 0*cur_rudder_demand
+            T2      = 0*cur_thHori_demand.thruster0
+            T3      = 0*cur_thHori_demand.thruster1
             
         #### ACTUATOR CONSTANTS ############################################
             fCl = -0.0001574                                                   # Lift coefficient per degree
