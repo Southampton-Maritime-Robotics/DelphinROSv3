@@ -65,6 +65,19 @@ def draw_figures():
     grid.addWidget(polar_bins, 1, w + 1, w, w)
     grid.addWidget(QtGui.QLabel('Polar plot of recent bin intensities'), 0, w + 1, 1, w)
 
+    # detected distance
+    obstacle_detection = pg.PlotWidget()
+    obstacle_detection.plot(sonar.targetRange[-150:])
+    grid.addWidget(obstacle_detection, w+3, 1, w, w)
+    grid.addWidget(QtGui.QLabel('Obstacle range for all angles'), w+2, 1, 1, w)
+
+
+
+    # detect distance at fixed angle
+    obstacle_angle = pg.PlotWidget()
+    grid.addWidget(obstacle_angle, w+3, w+1, w, w)
+    grid.addWidget(QtGui.QLabel('Obstacle range for one fixed angle'), w+2, w + 1, 1, w)
+
 
 
     # minimum altitude
@@ -77,6 +90,15 @@ def draw_figures():
         #TODO make the figure zoom/drag etc. work again
         bins_vs_time.setImage(numpy.array(sonar.bins[-150:]))
         polar_bins.setImage(sonar.polarImage)
+        # update obstacle detection
+        sonar.detect_obstacle(0)
+        obstacle_detection.clear()
+        obstacle_detection.plot(sonar.targetRange[-150:])
+        obstacle_angle.clear()
+        obstacle_angle.setYRange(0,15)
+        obstacle_angle.plot(sonar.fixedAngleTarget[-150:])
+ 
+
 
     timer = QtCore.QTimer()
     timer.timeout.connect(update_figures)
