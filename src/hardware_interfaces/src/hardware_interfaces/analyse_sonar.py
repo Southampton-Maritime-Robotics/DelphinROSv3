@@ -30,6 +30,8 @@ class sonar:
         self.angle = []         # angle at which measurement was made
         self.pingPower = []     # power of sonar for this bin
         self.polarImage = numpy.zeros((500, 500))
+        self.targetRange = []
+        self.fixedAngleTarget = [-1]
 
     def add_message(self, message):
         """
@@ -84,8 +86,8 @@ class sonar:
         Range = rospy.get_param("/Range")           # Set range of sonar pin (in metres)
         NBins = rospy.get_param("/NBins")           # Number of bins: higher number == higher resolution, more noise
         """
-        Threshold = 10
-        BlankDist = 0.6
+        Threshold = 100
+        BlankDist = 0.7
         Range = 20
         NBins = 200
         # TODO put these values in messages so rosbag will record them; e.g. by publishing the parameters the sonar used with the raw sonar data, if its not allready in there!
@@ -112,9 +114,14 @@ class sonar:
         # may be of interest in identifying areas of interest
         meanIntensity = numpy.mean(self.pingPower[-1][StartBin:-1]) 
 
-        rospy.logdebug('bearing:',transBearing)
-        rospy.logdebug('range:',TargetRange)
-        rospy.logdebug(time.time())
+        #rospy.logdebug('bearing:',transBearing)
+        #rospy.logdebug('range:',TargetRange)
+        #rospy.logdebug(time.time())
+        self.targetRange.append(TargetRange)
+        if self.angle[-1] == 229:
+            self.fixedAngleTarget.append(TargetRange)
+        else:
+            self.fixedAngleTarget.append(self.fixedAngleTarget[-1])
         results = [transBearing, pitch, TargetRange, meanIntensity]
         return results
 
