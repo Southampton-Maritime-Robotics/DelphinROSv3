@@ -9,7 +9,7 @@ Given two reference points, the AUV will start from one point then accelerate in
 
 Procedure:
     go to reference point
-    head to another reference point
+    point to another reference point
     descent to the desired depth
     move forward with a fixed propeller setpoint for a few seconds
     execute the actuator command to zig-zag manoeuvre

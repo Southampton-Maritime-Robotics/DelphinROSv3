@@ -13,7 +13,7 @@ Hoever, the space of the Eastleigh is limited and can perform turning on only on
 
 Procedure:
     go to reference point
-    head to another reference point with a heading bias
+    point to another reference point with a heading bias
     descend to a desired depth
     move forward with a fixed propeller setpoint
     when travel far enough, execute the thruster command to start turning

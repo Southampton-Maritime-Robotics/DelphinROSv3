@@ -11,7 +11,7 @@ If the depth demand is less than 0.5m, it will accaount as no depth demand speci
 
 Procedure:
     go to one reference point
-    head to the other reference point
+    point to the other reference point
     descend to a desired depth
     move with a particular propeller demand
     stop and ascend to the surface
