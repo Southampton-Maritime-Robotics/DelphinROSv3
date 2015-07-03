@@ -47,11 +47,11 @@ class Settings(QtGui.QWidget):
                             }
 
         # Text that will be displayed to explain which value is changed
-        self.text = { 'RLim': 'RLim: ',
-                      'LLim': 'LLim: ',
-                      'heading': 'heading: ',
-                      'NBins': 'NBins: ',
-                      'range': 'range: ',
+        self.text = { 'RLim': 'RLim (default: 95.0): ',
+                      'LLim': 'LLim (default: 85.0): ',
+                      'heading': 'heading (default: 3200): ',
+                      'NBins': 'NBins (default: 200): ',
+                      'range': 'range (default: 20): ',
                       }
 
          # Edit lines where new values can be entered
