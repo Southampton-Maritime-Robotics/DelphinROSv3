@@ -55,16 +55,19 @@ class depthPitchControlTest(smach.State):
 ################################################################################
         # let the vehicle do depth-pitch tracking
 
-        listDemandDepth = [0.4,0.35]
+        listDemandDepth = [0.4]
         demandHeading = 280.
         demandPitch = 0.
+
+        controlRate = 10 # Hz
+        r = rospy.Rate(controlRate)
 
         for demandDepth in listDemandDepth:
 
             str = "tracking a depth demand of = %s" %(demandDepth)
             rospy.loginfo(str)
             pub.publish(str)
-
+            
             # initialise a reference time
             time_zero=time.time()
             while not rospy.is_shutdown() and (time.time()-time_zero)<self.delay_action: # in second
@@ -80,7 +83,9 @@ class depthPitchControlTest(smach.State):
                 self.__controller.setDepth(demandDepth) # specified depth demand in [metre]
                 self.__controller.setPitch(demandPitch) # specified pitch demand in [degree] 
                 self.__controller.setHeading(demandHeading)
-        
+                
+                r.sleep()
+                
 ################################################################################
         # stop all the actuators before leave the state
         self.__controller.setRearProp(0)
