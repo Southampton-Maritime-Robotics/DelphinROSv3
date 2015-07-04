@@ -48,7 +48,10 @@ class headingControlTest(smach.State):
         
 ################################################################################
         # let the vehicle do heading tracking
-        listDemandHeading = [110,200,100]
+        listDemandHeading = [0,90,180,270,180,90]
+        controlRate = 10 # Hz
+        r = rospy.Rate(controlRate)
+        
         for demandHeading in listDemandHeading:
 
             str = "tracking a heading demand of = %s" %(demandHeading)
@@ -68,6 +71,8 @@ class headingControlTest(smach.State):
 
                 # assign the demands
                 self.__controller.setHeading(demandHeading) # specified in a range of [0 360) degree
+                
+                r.sleep()
             
 ################################################################################
         # stop all the actuators before leave the state
