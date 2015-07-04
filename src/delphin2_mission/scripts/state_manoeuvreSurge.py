@@ -103,6 +103,7 @@ class manoeuvreSurge(smach.State):
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             timeStart = time.time()
+            flag = 1
             while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
             
                 X = self.__controller.getX()
@@ -114,6 +115,11 @@ class manoeuvreSurge(smach.State):
                     timeStart = time.time()
                 if time.time()-timeStart <= self.__timeDelay:
                     self.__controller.setHeading(bear)
+                    if flag:
+                        str = 'let the heading becomes stady for timeDelay = %s sec' %self.__timeDelay
+                        rospy.loginfo(str)
+                        pubMissionLog.publish(str)
+                        flag = 0
                 else:
                     # when the heading is steady, move onto the next step
                     self.__controller.setRearProp(0)
@@ -130,6 +136,7 @@ class manoeuvreSurge(smach.State):
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
                 timeStart = time.time()
+                flag = 1
                 while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
                 
                     if abs(self.__controller.getDepth()-self.__depthDemand)>self.__depthTol:
@@ -137,6 +144,11 @@ class manoeuvreSurge(smach.State):
                     if time.time()-timeStart <= self.__timeDelay:
                         self.__controller.setDepth(self.__depthDemand)
                         self.__controller.setHeading(bear)
+                        if flag:
+                            str = 'let the depth becomes stady for timeDelay = %s sec' %self.__timeDelay
+                            rospy.loginfo(str)
+                            pubMissionLog.publish(str)
+                            flag = 0
                     else:
                         # if the AUV get to the depth and stay there long enough, move onto the next step
                         str = 'steady at desired depth'
@@ -176,6 +188,10 @@ class manoeuvreSurge(smach.State):
             # vehicle will stop for this many second as to let the AUV ascend to the surface
             if self.__depthDemand>=self.__depthDemandMin:
                 self.__controller.setDepth(0) # by defult, the depth controller will turn off on its own after 1sec of not reciving new demand
+                str = 'rest for timeDelay = %s sec to let the AUV assend' %self.__timeDelay
+                rospy.loginfo(str)
+                pubMissionLog.publish(str)
+
                 time.sleep(self.__timeDelay)
             
             # switch the role of two reference waypoints

@@ -106,7 +106,6 @@ class manoeuvreSpiral(smach.State):
                         self.__controller.setRearProp(0)
                         self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                         self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-                        time.sleep(self.__timeDelay) # vehicle will stop for this many second as to let its motion decay
                         break
                         
                     if self.__controlRate>0:
@@ -114,9 +113,10 @@ class manoeuvreSpiral(smach.State):
 
                 # point toward anoter waypoint with a bias of headingBias
                 timeStart = time.time()
-                str = 'point to the target: %s' %self.__wp[:,wpIndex]
+                str = 'point to the target: %s' %self.__wp[:,1-wpIndex]
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
+                flag = 1
                 while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
                 
                     X = self.__controller.getX()
@@ -128,6 +128,11 @@ class manoeuvreSpiral(smach.State):
                     if abs(errHeading)>self.__errHeadingTol:
                         timeStart = time.time()
                     if time.time()-timeStart <= self.__timeDelay:
+                        if flag:
+                            str = 'let the heading becomes stady for timeDelay = %s sec' %self.__timeDelay
+                            rospy.loginfo(str)
+                            pubMissionLog.publish(str)
+                            flag = 0
                         self.__controller.setHeading(headingDemand)
                     else:
                         # when the heading is steady, move onto the next step
@@ -145,12 +150,18 @@ class manoeuvreSpiral(smach.State):
                     rospy.loginfo(str)
                     pubMissionLog.publish(str)
                     timeStart = time.time()
+                    flag = 1
                     while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:                  
                         if abs(self.__controller.getDepth()-self.__depthDemand)>self.__depthTol:
                             timeStart = time.time() # reset the reference time
                         if time.time()-timeStart <= self.__timeDelay:
                             self.__controller.setDepth(self.__depthDemand)
-                            self.__controller.detHeading(headingDemand)
+                            self.__controller.setHeading(headingDemand)
+                            if flag:
+                                str = 'let the depth becomes stady for timeDelay = %s sec' %self.__timeDelay
+                                rospy.loginfo(str)
+                                pubMissionLog.publish(str)
+                                flag = 0
                         else:
                             # if the AUV get to the depth and stay there long enough, move onto the next step
                             str = 'steady at desired depth'
@@ -162,16 +173,18 @@ class manoeuvreSpiral(smach.State):
                             r.sleep()
 
                 # get the AUV accelerated then apply demand
-                str = "get the AUV accelerate"
+                rangeAcc = wpRang*0.75
+                str = "get the AUV accelerates for %s m" %rangeAcc
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
+                
                 while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
                                
                     X = self.__controller.getX()
                     Y = self.__controller.getY()
                     heading = self.__controller.getHeading()
                     rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
-                    if rang <= wpRang*0.75:
+                    if rang <= rangeAcc:
                         self.__controller.setRearProp(demandProp)
                         self.__controller.setHeading(headingDemand) # hold at the previous demand
                         self.__controller.setDepth(self.__depthDemand)
@@ -186,7 +199,7 @@ class manoeuvreSpiral(smach.State):
                         
                     timeStart = time.time()
                     if demandRudder!=0 or demandThruster!=0: # if both actuator commands are zero, skip this combination
-                        str = 'demand is [prop = %s, thruster = %s, rudder = %s] = ' %(demandProp, demandThruster, demandRudder)
+                        str = 'execute demand: [prop = %s, thruster = %s, rudder = %s]' %(demandProp, demandThruster, demandRudder)
                         rospy.loginfo(str)
                         pubMissionLog.publish(str)
                         headingAccu = 0.
@@ -219,6 +232,9 @@ class manoeuvreSpiral(smach.State):
                 # vehicle will stop for this many second as to let the AUV ascend to the surface
                 if self.__depthDemand>=self.__depthDemandMin:
                     self.__controller.setDepth(0) # by defult, the depth controller will turn off on its own after 1sec of not reciving new demand
+                    str = 'rest for timeDelay = %s sec to let the AUV assend' %self.__timeDelay
+                    rospy.loginfo(str)
+                    pubMissionLog.publish(str)
                     time.sleep(self.__timeDelay)
                         
                 # switch the role of two reference waypoints

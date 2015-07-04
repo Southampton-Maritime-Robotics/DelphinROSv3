@@ -90,6 +90,10 @@ class manoeuvreYaw(smach.State):
                     self.__controller.setRearProp(0)
                     self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                     self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+                    
+                    str = 'rest at the waypoint for timeDelay = %s sec' %self.__timeDelay
+                    rospy.loginfo(str)
+                    pubMissionLog.publish(str)
                     time.sleep(self.__timeDelay) # allow the auv motion to decay
                     break
                     
@@ -97,18 +101,24 @@ class manoeuvreYaw(smach.State):
                     r.sleep()
                     
             # bring the AUV to depth if the depth demand is specified
+            # does not care where the AUV is pointing to
             if self.__depthDemand>=self.__depthDemandMin:
                 str = 'descend to a depth of %sm' % self.__depthDemand
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
                 timeStart = time.time()
+                flag = 1
                 while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
                 
                     if abs(self.__controller.getDepth()-self.__depthDemand)>self.__depthTol:
                         timeStart = time.time() # reset the reference time
                     if time.time()-timeStart <= self.__timeDelay:
+                        if flag:
+                            str = 'let the depth becomes stady for timeDelay = %s sec' %self.__timeDelay
+                            rospy.loginfo(str)
+                            pubMissionLog.publish(str)
+                            flag = 0
                         self.__controller.setDepth(self.__depthDemand)
-                        self.__controller.setHeading(bear)
                     else:
                         # if the AUV get to the depth and stay there long enough, move onto the next step
                         str = 'steady at desired depth'
@@ -120,14 +130,23 @@ class manoeuvreYaw(smach.State):
                         r.sleep()
 
             # set demandThruster
-            str = 'actuate thruster with demand = %s' %(demandThruster)
+            str = 'execute thruster with demand = %s' %(demandThruster)
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             timeStart = time.time()
+            flag = 1
             while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
             
                 if time.time()-timeStart < self.__timeDemandHold:
+                    
+                    if flag:
+                        str = 'hold the thruster demand for timeDemandHold = %s sec' %self.__timeDemandHold
+                        rospy.loginfo(str)
+                        pubMissionLog.publish(str)
+                        flag = 0
+             
                     self.__controller.setArduinoThrusterHorizontal(self.__direction*demandThruster,-self.__direction*demandThruster)
+                    
                     if self.__depthDemand>=self.__depthDemandMin:
                         self.__controller.setDepth(self.__depthDemand)
                 else:
@@ -144,6 +163,11 @@ class manoeuvreYaw(smach.State):
             # vehicle will stop for this many second as to let the AUV ascend to the surface
             if self.__depthDemand>=self.__depthDemandMin:
                 self.__controller.setDepth(0) # by defult, the depth controller will turn off on its own after 1sec of not reciving new demand
+                
+                str = 'rest for timeDelay = %s sec to let the AUV assend' %self.__timeDelay
+                rospy.loginfo(str)
+                pubMissionLog.publish(str)
+
                 time.sleep(self.__timeDelay)
                 
         if self.__controller.getBackSeatErrorFlag() == 1:
