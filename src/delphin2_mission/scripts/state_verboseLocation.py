@@ -54,11 +54,11 @@ class verboseLocation(smach.State):
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             
-            str = 'Range to the point: %s deg' %rang
+            str = 'Range to the point: %s m' %rang
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             
-            str = 'Bearing to the point: %s m' %bear
+            str = 'Bearing to the point: %s deg' %bear
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             
