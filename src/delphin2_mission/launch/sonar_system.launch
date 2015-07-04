@@ -43,6 +43,6 @@
 
     <node name="sonar_node" pkg="hardware_interfaces" type="sonar_node.py" />
     <node name="sonar_detectobstacle" pkg="hardware_interfaces" type="sonar_detectobstacle.py" />
-    <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/> 
+    <!-- <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/> -->
  
 </launch>
