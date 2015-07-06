@@ -70,6 +70,8 @@ class uti:
         return rang, bear
     
     def computeHeadingError(self,demand,actual):
+        demand = mod(demand,360)
+        actual = mod(actual,360)
         errHeading = demand-actual
         if errHeading<-180:
             errHeading = errHeading%360
