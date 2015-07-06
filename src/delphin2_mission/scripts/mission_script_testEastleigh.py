@@ -51,11 +51,11 @@ def main():
     lib = library_highlevel()
     myUti = uti()
 
-    ### points defined relative to the origin O # TODO: double-check if the LatLon ori, O, A and B are correct.
+    ### points defined relative to the origin O #
     # North pier of the Eastleigh lake (50.957024,-1.366769)
     O = array([-2.,2.]) # home: shifted from the origin a little to make sure it will not collide with the pier
-    A = array([-28.,12.]) # reference point A
-    B = array([-1.,64.]) # reference point B
+    A = array([-28.,-20.]) # reference point A
+    B = array([-1.,50.]) # reference point B
 #    # South pier of the Eastleigh lake (50.956473,-1.366835)
 #    O = array([-2.,2.]) # home: shifted from the origin a little to make sure it will not collide with the pier
 #    A = array([-20.,14.]) # reference point A
@@ -83,15 +83,13 @@ def main():
     errHeadingTol = 2. # TODO [deg] tolarance in heading error
     
     # general
-    controlRate = 1. # 20. # [Hz] control rate in each state, put in -1 to not control the rate
-    timeDemandHold = 5. # 60 sec TODO actuator demand will be hold for this many second. used in sway and yaw test
-    turningAngle = 720. # [deg] TODO the vehicle has to turn this many degree before move to the next step
-    timeDelay = 1. # 30 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
-    
-#    time.sleep(10) # TODO: to be removed: tempolary used to allow the system to come online
+    controlRate = 20. # 10. # [Hz] control rate in each state, put in -1 to not control the rate
+    timeDemandHold = 60. # 60 sec TODO actuator demand will be hold for this many second. used in sway and yaw test
+    turningAngle = 360. # [deg] TODO the vehicle has to turn this many degree before move to the next step
+    timeDelay = 30. # 30 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
     
     # for testing at depth # TODO:
-    depthDemand = 3. # [m].
+    depthDemand = 0. # [m].
     depthTol = 0.2 # [m]. It is account as the AUV get to the depth if the depth error is less than this.
     depthDemandMin = 0.5 # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
 
@@ -110,7 +108,7 @@ def main():
 #################################################################################
         # [1/3] Initialise State (Must Be Run First!)
         smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-            transitions={'succeeded':'toWork', 'aborted':'STOP','preempted':'STOP'})
+            transitions={'succeeded':'HOME', 'aborted':'STOP','preempted':'STOP'})
             
 ################################################################################
         # [2/3] Added States
@@ -118,8 +116,8 @@ def main():
         #=================================================
         ## VERBOSE LOCATION 
         # This state will keep publishing the range and bearing to the specified location
-        smach.StateMachine.add('toWork', verboseLocation(lib,myUti,B,controlRate), 
-            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+####        smach.StateMachine.add('toWork', verboseLocation(lib,myUti,B,controlRate), 
+####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
 
         #=================================================
@@ -172,11 +170,11 @@ def main():
         #=================================================
         ## ZIG-ZAG MANOEUVRE 
         # This state will get the AUV transit to point A
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R, controlRate), 
-####            transitions={'succeeded':'ZIGZAG', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will get the AUV perform a spiral manoeuvre
-####        smach.StateMachine.add('ZIGZAG', manoeuvreZigZag(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
-####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+#        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R, controlRate), 
+#            transitions={'succeeded':'ZIGZAG', 'aborted':'HOME','preempted':'HOME'})
+#        # This state will get the AUV perform a spiral manoeuvre
+#        smach.StateMachine.add('ZIGZAG', manoeuvreZigZag(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
+#            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         ## GENERIC STATE FOR EASTLEIGH LAKE

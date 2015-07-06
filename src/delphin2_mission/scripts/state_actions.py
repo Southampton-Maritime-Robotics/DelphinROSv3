@@ -51,6 +51,19 @@ class actions(smach.State):
         r = rospy.Rate(controlRate)
         
         time.sleep(5)
+
+        while not rospy.is_shutdown() and time.time()-timeStart < self.delay_action:
+            if self.__controller.getBackSeatErrorFlag() == 1:
+                str= 'state_actions preempted at time = %s' %(time.time())    
+                rospy.loginfo(str)
+                pubMissionLog.publish(str)
+                return 'preempted'
+            else:
+                self.__controller.setRearProp(-15)
+                self.__controller.setArduinoThrusterHorizontal(2000,2000) # (FrontHor,RearHor)
+                r.sleep()
+                pass
+
     
 ####        # check relationship between u_th and rpm
 ####        thList = [-250,-500,-1000,-1500,-2000]
@@ -70,28 +83,28 @@ class actions(smach.State):
 ####            self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
 ####            time.sleep(5)
             
-        # check transcient input with square wave
-        thList = [-500,-1000,-1500,-2000]
-        for thDemand in thList:
-        
-            for i in range(3):
-            
-                timeStart = time.time()
-                while not rospy.is_shutdown() and time.time()-timeStart < self.delay_action:
-                    if self.__controller.getBackSeatErrorFlag() == 1:
-                        str= 'state_actions preempted at time = %s' %(time.time())    
-                        rospy.loginfo(str)
-                        pubMissionLog.publish(str)
-                        return 'preempted'
-                    else:
-                        rospy.loginfo('thruster demand is %s' % thDemand)
-#                        self.__controller.setArduinoThrusterVertical(thDemand,0) # (FrontVer,RearVer)
-#                        self.__controller.setArduinoThrusterHorizontal(thDemand,0) # (FrontHor,RearHor)
-                        r.sleep()
-                        pass
-                        
-                self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-                time.sleep(3)
+####        # check transcient input with square wave
+####        thList = [-500,-1000,-1500,-2000]
+####        for thDemand in thList:
+####        
+####            for i in range(3):
+####            
+####                timeStart = time.time()
+####                while not rospy.is_shutdown() and time.time()-timeStart < self.delay_action:
+####                    if self.__controller.getBackSeatErrorFlag() == 1:
+####                        str= 'state_actions preempted at time = %s' %(time.time())    
+####                        rospy.loginfo(str)
+####                        pubMissionLog.publish(str)
+####                        return 'preempted'
+####                    else:
+####                        rospy.loginfo('thruster demand is %s' % thDemand)
+#####                        self.__controller.setArduinoThrusterVertical(thDemand,0) # (FrontVer,RearVer)
+#####                        self.__controller.setArduinoThrusterHorizontal(thDemand,0) # (FrontHor,RearHor)
+####                        r.sleep()
+####                        pass
+####                        
+####                self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+####                time.sleep(3)
         
         # stop all the actuators
         self.__controller.setRearProp(0)

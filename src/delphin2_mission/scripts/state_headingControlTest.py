@@ -27,7 +27,7 @@ class headingControlTest(smach.State):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.delay_thruster = 0 # allow the vehicle to gain a speed (value is specified in second) 
-        self.delay_action = self.delay_thruster+70 # let the vehicle doing those actions for a period of time (value is specified in second)
+        self.delay_action = self.delay_thruster+40 # let the vehicle doing those actions for a period of time (value is specified in second)
             
     def execute(self, userdata):
     

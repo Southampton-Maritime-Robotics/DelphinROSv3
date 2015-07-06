@@ -50,7 +50,7 @@ class manoeuvreSurge(smach.State):
         self.__depthDemand = depthDemand # [m].
         self.__depthTol = depthTol # [m]. It is account as the AUV get to the depth if the depth error is less than this.
         self.__depthDemandMin = depthDemandMin # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
-        self.__listProp = [10,13,16,19,22] # list of propeller demand used in experiment
+        self.__listProp = [22,19,16,13,10] # list of propeller demand used in experiment
         self.__controlRate = controlRate
 
     def execute(self, userdata):
