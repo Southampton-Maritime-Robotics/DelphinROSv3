@@ -66,6 +66,8 @@ class pathFollowingLOS(smach.State):
         rospy.loginfo(str)
         pubMissionLog.publish(str)
         
+        flag = 1
+        
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
             
             # reference time to control rate
@@ -75,6 +77,12 @@ class pathFollowingLOS(smach.State):
             Y = self.__controller.getY()
             heading = self.__controller.getHeading()
             eta = [X,Y] # state vector denoted following Fossen's convention
+
+            if flag:
+                str = 'target waypoint: %s' %self.__path[:,wpTarget]
+                rospy.loginfo(str)
+                pubMissionLog.publish(str)
+                flag = 0
             
             # waypoint switching criteria
             if (self.__uti.waypointSwitching(self.__path[:,wpTarget],eta,self.__wp_R)):
@@ -99,10 +107,8 @@ class pathFollowingLOS(smach.State):
                 else:
                     # if reached the current waypoint, move onto the next line segment
                     wpTarget += 1
-                    str = 'target waypoint: %s' %self.__path[:,wpTarget]
-                    rospy.loginfo(str)
-                    pubMissionLog.publish(str)
-
+                    flag = 1
+                    
             # compute line-of-sight parameters
             t,p_inter = self.__uti.interPointLine(self.__path[:,wpTarget-1],self.__path[:,wpTarget],eta)
             vecCross = p_inter-eta # cross track error
