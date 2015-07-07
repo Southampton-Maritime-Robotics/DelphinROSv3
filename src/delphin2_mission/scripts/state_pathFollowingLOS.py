@@ -3,6 +3,9 @@
 '''
 A state for horizontal plane path following algorithm based on line-of-sight technique
 
+Given a path, it will get the AUV follow the path starts from the current location
+Given a point, it will get the AUV to the point starts from the current location
+
 execute:
 @return: preemped: if the backSeatErrorFlag has been raised
 @return: succeeded: when the AUV has arrived to the destination
@@ -44,7 +47,7 @@ class pathFollowingLOS(smach.State):
         
         X = self.__controller.getX()
         Y = self.__controller.getY()
-        eta = [X,Y]
+        eta = array([X,Y])
         
         wpTarget = 1
         self.__path = numpy.vstack((eta,self.__path.T)).T # include the current location of the AUV as the first waypoint
