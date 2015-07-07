@@ -24,9 +24,6 @@ import numpy
 from delphin2_mission.library_highlevel             import library_highlevel
 from state_initialise             import Initialise
 from state_stop                   import Stop
-from state_surface                import Surface
-from state_camera                 import camera
-from hardware_interfaces.msg      import compass
 from std_msgs.msg import String
 
 from delphin2_mission.utilities     import uti
@@ -205,4 +202,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
