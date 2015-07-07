@@ -31,9 +31,7 @@ class Initialise(smach.State):
         self.__timeout = timeout
   		
     def execute(self,userdata):
-        
-        time.sleep(5) # allow the logger and critical nodes to come online
-	
+        	
         #Set Up Publisher for Mission Control Log
         pub = rospy.Publisher('MissionStrings', String)
                         
@@ -51,12 +49,16 @@ class Initialise(smach.State):
                 and self.__controller.getXsensStatus()
                 and self.__controller.getHeadingCtrlStatus()
                 and self.__controller.getDepthCtrlStatus()
-                and self.__controller.getDeadreckonerStatus())
-           time.sleep(0.5)
+                and self.__controller.getDeadreckonerStatus()
+                and self.__controller.getLoggerStatus())
+           time.sleep(0.5) # for controlling the rate
 
         rospy.loginfo('##############################################')
         rospy.loginfo('############ CRITICAL NODE STATUS ############')
         rospy.loginfo('##############################################')
+        pub.publish('##############################################')
+        pub.publish('############ CRITICAL NODE STATUS ############')
+        pub.publish('##############################################')
         str = 'thruster status = %r' % self.__controller.getThrusterStatus()
         pub.publish(str)
         rospy.loginfo(str)
@@ -77,6 +79,7 @@ class Initialise(smach.State):
         pub.publish(str)
         rospy.loginfo(str)
         rospy.loginfo('##############################################')
+        pub.publish('##############################################')
         str='heading ctrl status = %r' %self.__controller.getHeadingCtrlStatus()
         pub.publish(str)
         rospy.loginfo(str)
@@ -86,11 +89,12 @@ class Initialise(smach.State):
         str='deadreckoner status = %r' %self.__controller.getDeadreckonerStatus()
         pub.publish(str)
         rospy.loginfo(str)
+        str='logger status = %r' %self.__controller.getLoggerStatus()
+        pub.publish(str)
+        rospy.loginfo(str)
         rospy.loginfo('##############################################')
-####        str= 'all online = %r' %all_online
-####        pub.publish(str)
-####        rospy.loginfo(str)
-
+        pub.publish('##############################################')
+        
         #if timeout...                
         if all_online == False:    
             str="One or more critical systems have not come online within the timeout (%ss)" %self.__timeout 
@@ -110,6 +114,8 @@ class Initialise(smach.State):
         rospy.loginfo(str)
         rospy.loginfo('##############################################')
         rospy.loginfo('##############################################')
+        pub.publish('##############################################')
+        pub.publish('##############################################')
         
         if voltage < 20*1000:
             "Initial battery voltage, %smV < 20,000mV" %voltage

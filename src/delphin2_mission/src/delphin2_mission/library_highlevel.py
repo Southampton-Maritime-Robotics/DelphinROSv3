@@ -90,6 +90,7 @@ class library_highlevel:
         self.__heading_ctrl_status = 0
         self.__depth_ctrl_status = 0
         self.__deadreckoner_status = 0
+        self.__logger_status = 0
         
         self.__heading_error=0.0
         self.__altitude=0.0
@@ -413,6 +414,9 @@ class library_highlevel:
     
     def getDeadreckonerStatus(self):
         return self.__deadreckoner_status
+        
+    def getLoggerStatus(self):
+        return self.__logger_status
     
     def getCS_b(self):
         return self.__CS_b
@@ -589,4 +593,6 @@ class library_highlevel:
         elif status.nodeID == 9:
             self.__deadreckoner_status = status.status
             return
-
+        elif status.nodeID == 10:
+            self.__logger_status = status.status
+            return

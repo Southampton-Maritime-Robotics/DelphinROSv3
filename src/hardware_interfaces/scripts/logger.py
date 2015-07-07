@@ -16,6 +16,7 @@ import time
 import numpy
 import os
 from datetime import datetime
+from hardware_interfaces.msg import status
 
 from xsens_driver.msg import IMU_msg
 from hardware_interfaces.msg import compass
@@ -470,6 +471,7 @@ if __name__ == '__main__':
     rospy.loginfo('Logger started at %s.'%(stringtime))
     pub_folder = rospy.Publisher('folder', String)
     pub_vidfolder = rospy.Publisher('vidfolder', String)
+    pubStatus = rospy.Publisher('status', status)
     
     global heading_demand
     global depth_demand
@@ -579,10 +581,10 @@ if __name__ == '__main__':
     rospy.Subscriber('SMS_info', SMS, SMS_callback)
 #    rospy.Subscriber('water_temp', Float32, temp_callback)
     
-    str = "Logger online - output directory: %s" %(dirname)
-    rospy.loginfo(str)
-    
     rospy.on_shutdown(shutdown)
 
-    rospy.spin()
+    str = "Logger online - output directory: %s" %(dirname)
+    rospy.loginfo(str)
+    pubStatus.publish(nodeID = 10, status = True)
     
+    rospy.spin()
