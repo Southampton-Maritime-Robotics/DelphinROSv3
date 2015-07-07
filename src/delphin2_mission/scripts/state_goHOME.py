@@ -5,6 +5,8 @@ Possibly, a state to let the AUV navigate back home by using a pure pursuit (PP)
 
 May not functioning!
 
+Recommend calling the state_pathFollowingLOS with a home coordinate instead of path. It will get the AUV back to the location.
+
 '''
 
 
