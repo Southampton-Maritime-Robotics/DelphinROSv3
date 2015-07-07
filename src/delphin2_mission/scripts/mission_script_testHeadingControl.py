@@ -67,13 +67,10 @@ def main():
     str = 'Backseat Driver Parameter: mission-timeout %s min' %(missionTimeout)
     pub.publish(str) 
     rospy.loginfo(str)
-    
-    #Allow system to come online
-    time.sleep(5)
         
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
-
+    
     # Open the container
     with sm:
         # Add states to the container
