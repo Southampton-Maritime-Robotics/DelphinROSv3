@@ -13,20 +13,19 @@ import smach
 import smach_ros
 import time
 
-from delphin2_mission.library_highlevel            import library_highlevel
-from state_initialise             import Initialise
-from state_stop                   import Stop
-from state_goToDepth              import GoToDepth
-from state_goToHeading            import GoToHeading
-from state_trackFollow            import TrackFollow
-from state_trackAltitude          import trackAltitude
-from state_surface                import Surface
-from state_camera                 import camera
-from hardware_interfaces.msg      import compass
+from delphin2_mission.library_highlevel     import library_highlevel
+from delphin2_mission.utilities             import uti
+from state_initialise                       import Initialise
+from state_stop                             import Stop
+from state_goToDepth                        import GoToDepth
+from state_goToHeading                      import GoToHeading
+from state_goForwards                       import GoForwards
+from state_goSideway                        import GoSideway
+from state_pathFollowingLOS                 import pathFollowingLOS
 from std_msgs.msg import String
 import matplotlib.pyplot as plt;
 
-from state_actions                import actions
+from state_actions                          import actions
 
 ################################################################################
             
@@ -71,8 +70,10 @@ def main():
     pub.publish(str) 
     rospy.loginfo(str)
     
-    #Allow system to come online
+    # sleep for this many second to allow the system to come online
     time.sleep(5)
+    
+    controlRate = 10. # Hz
     
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
@@ -93,8 +94,20 @@ def main():
             
 ################################################################################
         # [2/3] Added States
-        smach.StateMachine.add('ACTIONS', actions(lib), 
+####        smach.StateMachine.add('ACTIONS', actions(lib), 
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        
+        smach.StateMachine.add('GoFORWARD', GoForwards(lib, myUti, 10, 10, controlRate), # (lib, myUti, timeout [sec], propDemand, controlRate [Hz])
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+
+####        smach.StateMachine.add('GoSIDEWAY', GoSideway(lib, myUti, 10, 1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+####            
+####        smach.StateMachine.add('GoHEADING', GoHeading(lib, myUti, 90, 5, 10, 120, controlRate), # (lib, myUti, demandHeading [deg], tolerance [deg], stable_time [sec], timeout [sec], controlRate [Hz])
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+
+####        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, pathMtoO, L_los, uGain, uMax, wp_R, controlRate),
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
 
