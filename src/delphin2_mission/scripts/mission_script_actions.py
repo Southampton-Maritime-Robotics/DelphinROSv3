@@ -5,13 +5,15 @@ A general purpose mission script that lets the user quickly manages a sequence o
 
 #Notes
 -X is defined as east, Y is defined as north
-
 """
+
 
 import rospy
 import smach
 import smach_ros
 import time
+import numpy
+from pylab import *
 
 from delphin2_mission.library_highlevel     import library_highlevel
 from delphin2_mission.utilities             import uti
@@ -35,6 +37,7 @@ def main():
     
     # Define an instance of highlevelcontrollibrary to pass to all action servers
     lib = library_highlevel()
+    myUti = uti()
     
     #Set Up Publisher for Mission Control Log
     pub = rospy.Publisher('MissionStrings', String)
@@ -72,9 +75,34 @@ def main():
     
     # sleep for this many second to allow the system to come online
     time.sleep(5)
-    
     controlRate = 10. # Hz
+
+    O = array([-2.,2.]) # home: shifted from the origin a little to make sure it will not collide with the pier
+    A = array([-28.,-20.]) # reference point A
+    B = array([-1.,50.]) # reference point B
     
+    M = array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
+
+    # Reference paths created from the reference points
+    pathAtoB = numpy.vstack((A,B)).T
+    pathBtoA = numpy.vstack((B,A)).T
+    pathMtoO = numpy.vstack((M,O)).T
+    pathMtoA = numpy.vstack((M,A)).T
+    pathOtoM = numpy.vstack((O,M)).T
+    pathTest = numpy.vstack((O,M,A,B,M)).T
+
+    
+    homeLocation = array([-2,2])
+    
+    
+    # guidance
+    L_los = 5. # [m] line-of-sight distance
+    wp_R = 3. # [m] radius of acceptance
+    
+    # speed control
+    uGain = 0.07 # gain to control speed variation: high value -> less overshoot -> more settling time
+    uMax = 1. # [m/s] maximum surge speed
+
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
 
@@ -97,17 +125,17 @@ def main():
 ####        smach.StateMachine.add('ACTIONS', actions(lib), 
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
         
-        smach.StateMachine.add('GoFORWARD', GoForwards(lib, myUti, 10, 10, controlRate), # (lib, myUti, timeout [sec], propDemand, controlRate [Hz])
+####        smach.StateMachine.add('GoFORWARD', GoForwards(lib, myUti, 10, 10, controlRate), # (lib, myUti, timeout [sec], propDemand, controlRate [Hz])
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+
+####        smach.StateMachine.add('GoSIDEWAY', GoSideway(lib, myUti, 30, -1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+            
+####        smach.StateMachine.add('GoToHEADING', GoToHeading(lib, myUti, 90, 5, 10, 30, controlRate), # (lib, myUti, demandHeading [deg], tolerance [deg], stable_time [sec], timeout [sec], controlRate [Hz])
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+
+        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R, controlRate),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-
-####        smach.StateMachine.add('GoSIDEWAY', GoSideway(lib, myUti, 10, 1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-####            
-####        smach.StateMachine.add('GoHEADING', GoHeading(lib, myUti, 90, 5, 10, 120, controlRate), # (lib, myUti, demandHeading [deg], tolerance [deg], stable_time [sec], timeout [sec], controlRate [Hz])
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-
-####        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, pathMtoO, L_los, uGain, uMax, wp_R, controlRate),
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
 
