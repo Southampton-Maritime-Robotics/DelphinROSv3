@@ -25,7 +25,6 @@ from state_goForwards                       import GoForwards
 from state_goSideway                        import GoSideway
 from state_pathFollowingLOS                 import pathFollowingLOS
 from std_msgs.msg import String
-import matplotlib.pyplot as plt;
 
 from state_actions                          import actions
 
@@ -91,9 +90,7 @@ def main():
     pathOtoM = numpy.vstack((O,M)).T
     pathTest = numpy.vstack((O,M,A,B,M)).T
 
-    
     homeLocation = array([-2,2])
-    
     
     # guidance
     L_los = 5. # [m] line-of-sight distance
@@ -105,6 +102,9 @@ def main():
 
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
+    
+    #Allow system to come online
+    time.sleep(10)
 
     # Open the container
     with sm:
@@ -119,7 +119,7 @@ def main():
         # [1/3] Initialise State (Must Be Run First!) # TODO uncomment me
 ####        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
 ####            transitions={'succeeded':'ACTIONS', 'aborted':'STOP','preempted':'STOP'})  
-            
+
 ################################################################################
         # [2/3] Added States
 ####        smach.StateMachine.add('ACTIONS', actions(lib), 
@@ -134,7 +134,7 @@ def main():
 ####        smach.StateMachine.add('GoToHEADING', GoToHeading(lib, myUti, 90, 5, 10, 30, controlRate), # (lib, myUti, demandHeading [deg], tolerance [deg], stable_time [sec], timeout [sec], controlRate [Hz])
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
-        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R, controlRate),
+        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
@@ -161,4 +161,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
