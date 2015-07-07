@@ -35,7 +35,7 @@ class GoForwards(smach.State):
         if self.__controlRate>0:
             r = rospy.Rate(self.__controlRate)
 
-        str='Entered GoForwards State with a propDemand = %.s' %(self.__propDemand)
+        str='Entered GoForwards State with a propDemand = %s' %(self.__propDemand)
         pubMissionLog.publish(str)
         rospy.loginfo(str)
         
@@ -48,7 +48,7 @@ class GoForwards(smach.State):
                 str= 'goForwards succeeded at time = %s' %(time.time())
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
-                return 'succeeded
+                return 'succeeded'
                 
             if self.__controlRate>0:
                 r.sleep()
