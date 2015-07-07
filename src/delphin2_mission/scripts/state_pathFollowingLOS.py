@@ -13,6 +13,10 @@ execute:
 #TODO
 -should also consider the side-slip angle when determine heading error
 
+# Note:
+- better add a 10sec time delay in the state container to ensure the current location is obtained from deadreckoner
+- locationWaitTimeout is used to double check if the current location is obtained
+
 '''
 
 import rospy
@@ -25,7 +29,7 @@ from math import *
 from std_msgs.msg import String
 
 class pathFollowingLOS(smach.State):
-    def __init__(self, lib, myUti, path, L_los, uGain, uMax, wp_R, controlRate):
+    def __init__(self, lib, myUti, path, L_los, uGain, uMax, wp_R, controlRate, locationWaitTimeout):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__uti = myUti
@@ -35,22 +39,41 @@ class pathFollowingLOS(smach.State):
         self.__uMax = uMax
         self.__wp_R = wp_R
         self.__controlRate = controlRate
+        self.__locationWaitTimeout = locationWaitTimeout
         
     def execute(self, userdata):
         
         #Set Up Publisher for Mission Control Log
         pubMissionLog = rospy.Publisher('MissionStrings', String)
-        
+
+        if self.__controlRate>0:
+            r = rospy.Rate(self.__controlRate)
+
         ####################################################################
         ### Perform actions ################################################
         ####################################################################
         
-        X = self.__controller.getX()
-        Y = self.__controller.getY()
-        eta = array([X,Y])
-        
+        # wait for the current location from gps
+        timeStartWait = time.time()
+        while True:
+            if time.time()-timeStartWait > self.__locationWaitTimeout:
+                str = 'GPS signal will not available: mission aborted'
+                rospy.loginfo(str)
+                pubMissionLog.publish(str)
+                return 'aborted'
+            X = self.__controller.getX()
+            Y = self.__controller.getY()
+            if X!=0 or Y!=0:
+                str = 'got the current location: [%s,%s]' %(X,Y)
+                rospy.loginfo(str)
+                pubMissionLog.publish(str)
+                eta_0 = array([X,Y]) # used when creating the path. Bare in mind that the eta_0 is an array while eta is a list
+                break # succeeded in getting the current location from gps: move on
+            if self.__controlRate>0:
+                r.sleep()
+                        
         wpTarget = 1
-        self.__path = numpy.vstack((eta,self.__path.T)).T # include the current location of the AUV as the first waypoint
+        self.__path = numpy.vstack((eta_0,self.__path.T)).T # include the current location of the AUV as the first waypoint
         _,pathLen = self.__path.shape
         
         if self.__controlRate>0:
