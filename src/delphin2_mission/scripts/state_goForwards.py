@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
 '''
-Possibly, the state to let the AUV run forward for a certain period of time.
+Get the AUV moving forward/backward.
 
-May not functioning!
+@return: preemped: if the backSeatErrorFlag has been raised
+@return: succeeded: if the timeout criteria has been reached
+@return: aborted: not in use
+
+# TODO
+- may need to assign the depthDemand at the same time
 
 '''
 
@@ -14,76 +19,49 @@ import time
 from std_msgs.msg import String
 
 class GoForwards(smach.State):
-    def __init__(self, lib, depth_demand, timeout, prop_demand):
-            smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
-            self.__controller           = lib
-            self.__depth_demand         = depth_demand
-            self.__timeout              = timeout
-            self.__prop_demand          = prop_demand
+    def __init__(self, lib, myUti, timeout, propDemand, controlRate):
+        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
+        self.__controller           = lib
+        self.__uti                  = myUti
+        self.__timeout              = timeout
+        self.__propDemand           = propDemand
+        self.__controlRate          = controlRate
             
     def execute(self,userdata):
         
-        ######## SETUP PUBLISHER FOR MISSION LOG ################
-            global pub
-            #Set Up Publisher for Mission Control Log
-            pub = rospy.Publisher('MissionStrings', String)
+        #Set Up Publisher for Mission Control Log
+        pubMissionLog = rospy.Publisher('MissionStrings', String)
         
-        ######## START OPERATION ################################
-            
-            time_zero = time.time()
-            
-            str= 'Entered goForwards State, started at time = %s' %(time_zero)
-            pub.publish(str)
-            
+        if self.__controlRate>0:
+            r = rospy.Rate(self.__controlRate)
 
-            heading_zero=self.__controller.getHeading()
-            str= 'Depth demand = %s, Initial Heading = %s, Prop demand = %s'  %(self.__depth_demand, heading_zero, self.__prop_demand)
-            pub.publish(str)
+        str='Entered GoForwards State with a propDemand = %.s' %(self.__propDemand)
+        pubMissionLog.publish(str)
+        rospy.loginfo(str)
         
-            self.__at_depth_time = time.time()
-            
-            self.__controller.setDepth(self.__depth_demand)
-            self.__controller.setHeading(heading_zero)
-            self.__controller.setRearProp(self.__prop_demand)
-            
-            ##### Main loop #####
-            count = 1
-            rpm_sum = 0
-            while (time.time()-time_zero < self.__timeout) and self.__controller.getBackSeatErrorFlag() == 0:
-                self.__controller.setRearProp(self.__prop_demand)
-                
-                #self.__controller.setRudderAngle(30)
-
-		rpm=self.__controller.getPropRPM()
-                rpm_sum += rpm
-
-                count += 1
-
-                #str = 'Current rpm = %s'%rpm
-                #rospy.loginfo(str)
-
-                time.sleep(0.05)
-	    
-            rpm_avg = rpm_sum/count
-
-            str = 'Averaged rpm = %s'%rpm_avg
-            rospy.loginfo(str)
-                
-            ##### Main loop #####
-            str= 'backSeatErrorFlag = %s' %(self.__controller.getBackSeatErrorFlag())
-            pub.publish(str)
-            
-            if (time.time()-time_zero < self.__timeout):
-                str= 'goForwards succeeded at time = %s' %(time.time())
-                pub.publish(str)
-                return 'succeeded'
-
-            if self.__controller.getBackSeatErrorFlag() == 1:
-                str= 'goForwards preempted at time = %s' %(time.time())    
-                pub.publish(str)
-                return 'preempted'
+        timeStart = time.time()
+        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
+            if time.time()-timeStart < self.__timeout:
+                self.__controller.setRearProp(self.__propDemand)
             else:
-                str= 'goForwards timed-out at time = %s' %(time.time())
-                pub.publish(str)
-                return 'aborted'  
-
+                self.__controller.setRearProp(0)
+                str= 'goForwards succeeded at time = %s' %(time.time())
+                pubMissionLog.publish(str)
+                rospy.loginfo(str)
+                return 'succeeded
+                
+            if self.__controlRate>0:
+                r.sleep()
+                
+        self.__controller.setRearProp(0)
+        
+        if self.__controller.getBackSeatErrorFlag() == 1:
+            str= 'goForwards preempted at time = %s' %(time.time())
+            pubMissionLog.publish(str)
+            rospy.loginfo(str)
+            return 'preempted'
+        else:
+            str= 'goForwards aborted at time = %s' %(time.time())
+            pubMissionLog.publish(str)
+            rospy.loginfo(str)
+            return 'aborted'
