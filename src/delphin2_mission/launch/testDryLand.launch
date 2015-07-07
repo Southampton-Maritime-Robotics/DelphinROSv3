@@ -1,0 +1,52 @@
+<launch>
+    <param name="max-depth-demand"    value="2.0" />                  <!-- Maximum depth demand (m) -->
+    <param name="over-depth"          value="3.0" />                  <!-- Maximum depth (m) - causes abort -->
+    <param name="over-pitch"          value="45" />                   <!-- Maximum pitch (deg) - causes abort -->
+    <param name="over-roll"           value="90" />                   <!-- Maximum roll (deg) - causes abort -->
+    <param name="max-internal-temp"   value="45" />                   <!-- Maximum internal pressure vessel temp (deg) - causes abort -->
+    <param name="min-motor-voltage"   value="19000" />                <!-- Minimum Motor voltage (mV) - causes abort -->
+    <param name="mission-timeout"     value="30" />                   <!-- Mission timeout (minutes) -->
+    <param name="lat_orig"            value="50.8669583333" />        <!-- Origin Latitude -->
+    <param name="long_orig"           value="-1.779375" />            <!-- Origin Longitude -->
+    <param name="ImportWaypoints"     value="False" />                <!-- Import Waypoints -->
+    <param name="look_ahead_distance" value="10" />                   <!-- look ahead distance (in m) for track following algorithm  effectivly inverse of gain-->    
+
+    <!--Notes-->
+    <!--Testwood lat_orig=50.93642234975332 long_orig=-1.507850997377956 -->
+    <!--Based on this origin X=12 and Y=15 is a good location for HOME at Testwood -->
+    
+    <!--Easleigh South lat_orig=50.95646666666666 long_orig=-1.366823 -->
+    <!--Coordinates are for south pier, middle south of lake (X,Y) = (-32.3,22.6) -->
+    
+    <!--Easleigh North lat_orig=50.95702499999999 long_orig=-1.36675104 -->
+    <!--Coordinates are for south pier, middle south of lake (X,Y) = (-24.6,30.0) -->
+
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_testDryLand.py"  output="screen" required="true" /> 
+    
+    <!-- Add all other nodes under here! -->
+    
+    <node name="back_seat_driver" pkg="hardware_interfaces" type="BackSeatDriver.py" required="true" />
+	
+    <!-- <node name="compass_dummy" pkg="hardware_interfaces" type="compass_dummy.py" /> -->
+    <!-- <node name="light_arduino" pkg="hardware_interfaces" type="light_arduino.py" /> -->
+    <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py"  output="screen" /> 
+    <!-- <node name="temp_sensor" pkg="hardware_interfaces" type="temp_sensor.py" /> --> 
+    <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py" /> 
+    <!-- <node name="altimeter" pkg="hardware_interfaces" type="altimeter_micron.py" /> -->
+    <!--node name="Cameras" pkg="hardware_interfaces" type="camera.py" output = "screen"/> -->
+    <!-- <node name="SMS_modem" pkg="hardware_interfaces" type="SMS_modem.py" /> -->
+    <include file="$(find delphin2_mission)/launch/sonar_system.launch" />
+    
+    <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner.py"  />
+    
+    <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py"/>
+    <node name="depth_pitch_controller" pkg="lowlevel_controllers" type="depth_pitch_controller_PID.py" output = "screen"/>
+        
+    <include file="$(find delphin2_mission)/launch/thruster_system.launch" />
+    <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py"/> 
+    <include file="$(find xsens_driver)/launch/xsens_driver.launch" />
+    
+    <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/>
+    <!-- <node name="smach_viewer" pkg="smach_viewer" type="smach_viewer.py" /> -->
+
+</launch>

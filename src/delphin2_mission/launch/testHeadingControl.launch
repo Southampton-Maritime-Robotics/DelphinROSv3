@@ -1,0 +1,42 @@
+
+<launch>
+    <param name="max-depth-demand"    value="2" />                    <!-- Maximum depth demand (m) -->
+    <param name="over-depth"          value="3" />                    <!-- Maximum depth (m) - causes abort -->
+    <param name="over-pitch"          value="45" />                   <!-- Maximum pitch (deg) - causes abort -->
+    <param name="over-roll"           value="90" />                   <!-- Maximum roll (deg) - causes abort -->
+    <param name="max-internal-temp"   value="45" />                   <!-- Maximum internal pressure vessel temp (deg) - causes abort -->
+    <param name="min-motor-voltage"   value="19000" />                <!-- Minimum Motor voltage (mV) - causes abort -->
+    <param name="mission-timeout"     value="30" />                   <!-- Mission timeout (minutes) -->
+    <param name="lat_orig"            value="50.957024" />            <!-- Origin Latitude -->
+    <param name="long_orig"           value="-1.366769" />            <!-- Origin Longitude -->
+    <param name="ImportWaypoints"     value="False" />                <!-- Import Waypoints -->
+    <param name="look_ahead_distance" value="10" />                   <!-- look ahead distance (in m) for track following algorithm  effectivly inverse of gain-->
+    
+    <!-- Eastleigh North Pier: (50.957024,-1.366769) -->
+    <!-- Eastleigh South Pier: (50.956473,-1.366835) -->    
+    
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_testHeadingControl.py"  output="screen" required="true" /> 
+    
+    <!-- Add all other nodes under here! -->
+    
+    <node name="back_seat_driver" pkg="hardware_interfaces" type="BackSeatDriver.py" required="true" />
+	
+    <node name="light_arduino" pkg="hardware_interfaces" type="light_arduino.py" /> 
+    <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py" />
+    <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py" />
+
+    <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner.py"  />
+    
+    <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py" output = "screen"/>
+    <node name="depth_pitch_controller" pkg="lowlevel_controllers" type="depth_pitch_controller_PID.py" output = "screen"/>
+    
+    <include file="$(find delphin2_mission)/launch/thruster_system.launch" />
+    <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py"/> 
+    <include file="$(find xsens_driver)/launch/xsens_driver.launch" />
+    
+    <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/> 
+    <!-- <node name="smach_viewer" pkg="smach_viewer" type="smach_viewer.py" /> -->
+
+    
+
+</launch>
