@@ -94,8 +94,8 @@ def listenForData():
     u = 0 # [m/s] initial surge velocity
     
     # eta: state vector
-    X = -10 # [m]
-    Y = -10 # [m]
+    X = 1 # [m]
+    Y = 1 # [m]
     Z = 0 # [m]
     heading = 0 # [deg] North CW
     
