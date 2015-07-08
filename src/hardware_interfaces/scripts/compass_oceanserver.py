@@ -42,8 +42,6 @@ def setUpSerial():
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
     print "Initialised OceanServer serial."
-    print serialPort.portstr
-    print serialPort.isOpen()
     serialPort.flushInput()
     serialPort.flushOutput()
     return serialPort.isOpen()
