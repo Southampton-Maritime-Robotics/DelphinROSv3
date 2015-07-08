@@ -20,7 +20,7 @@ import time
 import cv
 #from opencv.highgui import *
 
-class dryLandTest(smach.State):
+class testDryLand(smach.State):
     def __init__(self, lib):
             smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
             self.__controller = lib
