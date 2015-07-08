@@ -28,7 +28,6 @@ class uti:
             if dist<distMin:
                 distMin = dist
                 wpTarget = i
-#                print 'condition is hold'
         
         # identify the segment to follow
         if wpTarget == pathLen-1:
@@ -50,6 +49,10 @@ class uti:
         # determine intersection point that minimise a cross-track error
         # source http://www.fundza.com/vectors/point2line/index.html
         # source http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
+        
+        # bear in mind that the intersection point can appear outside the line segment.
+        # In that case, it is recommended to track the begining or the ending point of the line segment instead.
+        
         vec_wp = array([ float(wp2[0]-wp1[0]), float(wp2[1]-wp1[1]) ])
         vec_point = array([ float(p[0]-wp1[0]), float(p[1]-wp1[1]) ])
         
@@ -57,15 +60,13 @@ class uti:
         
         t =  dot(vec_wp,vec_point) / (vec_wp_len**2)
         p_inter = wp1+t*vec_wp
-        
+
         return t, p_inter
         
     def rangeBearing(self, p1, p2):
         rang = sqrt( (p2[0]-p1[0])**2 + (p2[1]-p1[1])**2 )
         bear = atan2( (p2[0]-p1[0]), (p2[1]-p1[1]) )*180/pi
         bear = mod(bear,360)
-#        if bear<0:
-#            bear = bear+360
             
         return rang, bear
     
