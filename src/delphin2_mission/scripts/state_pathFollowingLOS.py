@@ -14,7 +14,6 @@ execute:
 -should also consider the side-slip angle when determine heading error
 
 # Note:
-- better add a 10sec time delay in the state container to ensure the current location is obtained from deadreckoner
 - locationWaitTimeout is used to double check if the current location is obtained
 
 '''
@@ -139,10 +138,12 @@ class pathFollowingLOS(smach.State):
             if ye>=self.__L_los: # get the AUV perpendicularly moves toward the path
                 los_p = p_inter
             else:
-                if t>1: # if the AUV is already beyond the ending point of the line segment, get it moves back to the line segment
-                    direction = -1
+                if t==1: # track p_inter which is the ending point of the line segment
+                    direction = 0. # zero lookahead distance
+                elif t>1: # if the AUV is already beyond the ending point of the line segment, get it moves back to the line segment
+                    direction = -1. # negative lookahead distance
                 else:
-                    direction = 1
+                    direction = 1. # positive lookahead distance
                 xe = sqrt( self.__L_los**2 - ye**2 ) # compute lookahead distance
                 vecAlong = self.__path[:,wpTarget]-self.__path[:,wpTarget-1]
                 vecAlongLen = sqrt( vecAlong[0]**2 + vecAlong[1]**2 )
