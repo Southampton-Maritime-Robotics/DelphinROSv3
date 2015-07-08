@@ -50,7 +50,8 @@ class Initialise(smach.State):
                 and self.__controller.getHeadingCtrlStatus()
                 and self.__controller.getDepthCtrlStatus()
                 and self.__controller.getDeadreckonerStatus()
-                and self.__controller.getLoggerStatus())
+                and self.__controller.getLoggerStatus()
+                and self.__controller.getBackSeatDriverStatus())
            time.sleep(0.5) # for controlling the rate
 
         rospy.loginfo('##############################################')
@@ -90,6 +91,9 @@ class Initialise(smach.State):
         pub.publish(str)
         rospy.loginfo(str)
         str='logger status = %r' %self.__controller.getLoggerStatus()
+        pub.publish(str)
+        rospy.loginfo(str)
+        str='backSeatDriver status = %r' %self.__controller.getBackSeatDriverStatus()
         pub.publish(str)
         rospy.loginfo(str)
         rospy.loginfo('##############################################')

@@ -91,6 +91,7 @@ class library_highlevel:
         self.__depth_ctrl_status = 0
         self.__deadreckoner_status = 0
         self.__logger_status = 0
+        self.__backSeatDriver_status = 0
         
         self.__heading_error=0.0
         self.__altitude=0.0
@@ -417,6 +418,9 @@ class library_highlevel:
         
     def getLoggerStatus(self):
         return self.__logger_status
+        
+    def getBackSeatDriverStatus(self):
+        return self.__backSeatDriver_status
     
     def getCS_b(self):
         return self.__CS_b
@@ -595,4 +599,7 @@ class library_highlevel:
             return
         elif status.nodeID == 10:
             self.__logger_status = status.status
+            return
+        elif status.nodeID == 11:
+            self.__backSeatDriver_status = status.status
             return

@@ -20,9 +20,12 @@ from std_msgs.msg import String
 
 from delphin2_mission.library_highlevel import library_highlevel
 
+from hardware_interfaces.msg import status
+
 def main(controller):
     rospy.init_node('back_seat_driver')
     pub=rospy.Publisher('back_seat_flag',Int8)
+    pubStatus = rospy.Publisher('status', status)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
 
     controlRate = 10. # [Hz]
@@ -50,6 +53,8 @@ def main(controller):
     headingOld = 0. # [deg]
     timeXsensLastPublish = time.time() # [sec]
     timeXsensDead = 5 # [sec]
+    
+    pubStatus.publish(nodeID = 11, status = True)
     
     while not rospy.is_shutdown():
 
