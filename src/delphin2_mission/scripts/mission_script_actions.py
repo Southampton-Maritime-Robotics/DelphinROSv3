@@ -23,6 +23,7 @@ from state_goToDepth                        import GoToDepth
 from state_goToHeading                      import GoToHeading
 from state_goForwards                       import GoForwards
 from state_goSideway                        import GoSideway
+from state_goYaw                            import GoYaw
 from state_pathFollowingLOS                 import pathFollowingLOS
 from std_msgs.msg import String
 
@@ -102,9 +103,6 @@ def main():
 
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
-    
-    #Allow system to come online
-    time.sleep(10)
 
     # Open the container
     with sm:
@@ -129,6 +127,9 @@ def main():
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ####        smach.StateMachine.add('GoSIDEWAY', GoSideway(lib, myUti, 30, -1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+
+####        smach.StateMachine.add('GoYAW', GoYaw(lib, myUti, 30, 1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
             
 ####        smach.StateMachine.add('GoToHEADING', GoToHeading(lib, myUti, 90, 5, 10, 30, controlRate), # (lib, myUti, demandHeading [deg], tolerance [deg], stable_time [sec], timeout [sec], controlRate [Hz])
