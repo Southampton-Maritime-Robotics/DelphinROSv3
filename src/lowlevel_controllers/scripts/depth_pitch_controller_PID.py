@@ -11,6 +11,7 @@ Note:
 #Modifications
 2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
 5/4/2015: force CS and thruster demands to become Integer32
+8/7/2015: removed pitch_demand_callback: Maked it zero always
 
 # TODO
 - use pitch bias to indirectly control the depth of the AUV via control surfaces when undergoing a surge motion.
@@ -346,9 +347,9 @@ def depth_demand_callback(depthd):
     global DPC
     DPC.depth_demand = depthd.data
     
-def pitch_demand_callback(pitchd):
-    global DPC
-    DPC.pitch_demand = pitchd.data
+####def pitch_demand_callback(pitchd):
+####    global DPC
+####    DPC.pitch_demand = pitchd.data
     
 def prop_demand_callback(propd):
     global propDemand
@@ -363,9 +364,9 @@ if __name__ == '__main__':
     
     global DPC # Depth-Pitch Control
     DPC = depth_pitch_control()
-
+    
     rospy.Subscriber('depth_demand', Float32, depth_demand_callback)
-    rospy.Subscriber('pitch_demand', Float32, pitch_demand_callback)
+    DPC.pitch_demand = 0 # rospy.Subscriber('pitch_demand', Float32, pitch_demand_callback)
     rospy.Subscriber('compass_out', compass, compass_callback)
     rospy.Subscriber('depth_out', depth, depth_callback)
     rospy.Subscriber('Depth_onOFF', Bool, depth_onOff_callback)
