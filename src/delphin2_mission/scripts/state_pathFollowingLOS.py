@@ -136,13 +136,17 @@ class pathFollowingLOS(smach.State):
             t,p_inter = self.__uti.interPointLine(self.__path[:,wpTarget-1],self.__path[:,wpTarget],eta)
             vecCross = p_inter-eta # cross track error
             ye = sqrt( vecCross[0]**2 + vecCross[1]**2 )
-            if ye>=self.__L_los:
+            if ye>=self.__L_los: # get the AUV perpendicularly moves toward the path
                 los_p = p_inter
             else:
+                if t>1: # if the AUV is already beyond the ending point of the line segment, get it moves back to the line segment
+                    direction = -1
+                else:
+                    direction = 1
                 xe = sqrt( self.__L_los**2 - ye**2 ) # compute lookahead distance
                 vecAlong = self.__path[:,wpTarget]-self.__path[:,wpTarget-1]
                 vecAlongLen = sqrt( vecAlong[0]**2 + vecAlong[1]**2 )
-                los_p = p_inter + xe*vecAlong/vecAlongLen
+                los_p = p_inter + direction*xe*vecAlong/vecAlongLen
 
             los_vec = los_p-eta
             los_a = mod(atan2(los_vec[0],los_vec[1])*180/pi,360) # TODO: should also consider the side slip angle
