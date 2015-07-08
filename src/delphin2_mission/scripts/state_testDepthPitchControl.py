@@ -32,8 +32,7 @@ class testDepthPitchControl(smach.State):
     def __init__(self, lib):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
-        self.delay_thruster = 0 # allow the vehicle to gain a speed (value is specified in second) 
-        self.delay_action = self.delay_thruster+120 # let the vehicle doing those actions for a period of time (value is specified in second)
+        self.delay_action = 120 # let the vehicle doing those actions for a period of time (value is specified in second)
             
     def execute(self, userdata):
 
@@ -59,7 +58,7 @@ class testDepthPitchControl(smach.State):
         demandHeading = 280.
         demandPitch = 0.
 
-        controlRate = 10 # Hz
+        controlRate = 20 # Hz
         r = rospy.Rate(controlRate)
 
         for demandDepth in listDemandDepth:
