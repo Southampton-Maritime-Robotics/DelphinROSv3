@@ -41,6 +41,9 @@ def main():
     
     #Set Up Publisher for Mission Control Log
     pub = rospy.Publisher('MissionStrings', String)
+
+    # Allow the topic to come online
+    time.sleep(10)
     
     #Read back seat driver Settings
     overDepth = rospy.get_param('over-depth')
@@ -72,10 +75,8 @@ def main():
     str = 'Backseat Driver Parameter: mission-timeout %s min' %(missionTimeout)
     pub.publish(str) 
     rospy.loginfo(str)
-    
-    # sleep for this many second to allow the system to come online
-    time.sleep(5)
-    controlRate = 10. # Hz
+
+    controlRate = 20. # Hz
 
     O = array([-2.,2.]) # home: shifted from the origin a little to make sure it will not collide with the pier
     A = array([-28.,-20.]) # reference point A
@@ -120,8 +121,8 @@ def main():
 
 ################################################################################
         # [2/3] Added States
-####        smach.StateMachine.add('ACTIONS', actions(lib), 
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('ACTIONS', actions(lib, controlRate),
+            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
         
 ####        smach.StateMachine.add('GoFORWARD', GoForwards(lib, myUti, 10, 10, controlRate), # (lib, myUti, timeout [sec], propDemand, controlRate [Hz])
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
@@ -135,8 +136,8 @@ def main():
 ####        smach.StateMachine.add('GoToHEADING', GoToHeading(lib, myUti, 90, 5, 10, 30, controlRate), # (lib, myUti, demandHeading [deg], tolerance [deg], stable_time [sec], timeout [sec], controlRate [Hz])
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
-        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
-            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+####        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
 
