@@ -34,8 +34,10 @@ def main():
     #Set Up Publisher for Mission Control Log
     pub = rospy.Publisher('MissionStrings', String)
     
-    #Read back seat driver Settings
+    # Allow the topic to come online
+    time.sleep(10)
     
+    #Read back seat driver Settings    
     overDepth = rospy.get_param('over-depth')
     str = 'Backseat Driver Parameter: over depth set to %s m' %(overDepth)
     pub.publish(str)
