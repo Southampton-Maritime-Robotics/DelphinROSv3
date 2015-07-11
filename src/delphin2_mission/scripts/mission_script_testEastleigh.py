@@ -103,7 +103,7 @@ def main():
     pathTest = numpy.vstack((O,M,A,B,M)).T
     
     # guidance
-    L_los = 5. # [m] line-of-sight distance
+    L_los = 10. # [m] line-of-sight distance
     wp_R = 3. # [m] radius of acceptance
     
     # speed control

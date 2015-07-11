@@ -95,7 +95,7 @@ def main():
     homeLocation = array([-2,2])
     
     # guidance
-    L_los = 5. # [m] line-of-sight distance
+    L_los = 10. # [m] line-of-sight distance
     wp_R = 3. # [m] radius of acceptance
     
     # speed control
