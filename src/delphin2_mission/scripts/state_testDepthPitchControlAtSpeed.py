@@ -50,7 +50,6 @@ class testDepthPitchControlAtSpeed(smach.State):
         self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
         self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
         self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-        time.sleep(self.delay_thruster) # allow the vehicle to gain a speed (delay is specified in second)
         
 ################################################################################
         # let the vehicle do depth-pitch tracking

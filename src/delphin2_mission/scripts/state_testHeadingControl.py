@@ -26,8 +26,7 @@ class testHeadingControl(smach.State):
     def __init__(self, lib):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
-        self.delay_thruster = 0 # allow the vehicle to gain a speed (value is specified in second) 
-        self.delay_action = self.delay_thruster+40 # let the vehicle doing those actions for a period of time (value is specified in second)
+        self.delay_action = 40 # let the vehicle doing those actions for a period of time (value is specified in second)
             
     def execute(self, userdata):
     
@@ -44,7 +43,6 @@ class testHeadingControl(smach.State):
         self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
         self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
         self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-        time.sleep(self.delay_thruster) # allow the vehicle to gain a speed (delay is specified in second)
         
 ################################################################################
         # let the vehicle do heading tracking
