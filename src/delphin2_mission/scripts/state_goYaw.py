@@ -35,7 +35,7 @@ class GoYaw(smach.State):
         if self.__controlRate>0:
             r = rospy.Rate(self.__controlRate)
 
-        str='Entered GoSideway State with a thrusterDemand = %s' %(self.__thrusterDemand)
+        str='Entered GoYaw State with a thrusterDemand = %s; action hold %ss' %(self.__thrusterDemand, self.__timeout)
         pubMissionLog.publish(str)
         rospy.loginfo(str)
         
