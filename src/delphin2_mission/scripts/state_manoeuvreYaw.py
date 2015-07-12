@@ -72,7 +72,7 @@ class manoeuvreYaw(smach.State):
                 break
                 
             # go to the waypoint
-            str = 'go to waypoint'
+            str = 'go to waypoint: %s' %(self.__wp)
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:

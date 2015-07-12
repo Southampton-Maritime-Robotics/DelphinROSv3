@@ -54,7 +54,7 @@ class manoeuvreZigZag(smach.State):
         self.__listProp = [10, 16, 22] # [10,16,22] # list of propeller demand used in experiment
         self.__listThruster = [0, 800, 1500] # [0,800,1500,2200] # TODO [0,800,1500,2000] list of thruster demand used in experiment [+ve yaw CW]
         self.__listRudder = [0, 10, 20] # [0,10,20,30] # TODO [0,10,20,30]] list of rudder angle used in experiment [+ve yaw CW] 
-        self.__timeAccelerate = 5 # [sec] delay to let the AUV accelerate
+        self.__timeAccelerate = 15 # [sec] delay to let the AUV accelerate
         self.__cycleZigZagDemand = 5 # number of cycle that AUV have to execute in a zig-zag manoeuvre
         self.__amplitude = 20 # [deg]
         self.__controlRate = controlRate

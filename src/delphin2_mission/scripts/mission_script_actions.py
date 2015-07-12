@@ -90,7 +90,7 @@ def main():
     pathMtoO = numpy.vstack((M,O)).T
     pathMtoA = numpy.vstack((M,A)).T
     pathOtoM = numpy.vstack((O,M)).T
-    pathTest = numpy.vstack((O,M,A,B,M)).T
+    pathTest = numpy.vstack((M,A,B,M)).T
 
     homeLocation = array([-2,2])
     
@@ -121,13 +121,13 @@ def main():
 
 ################################################################################
         # [2/3] Added States
-        smach.StateMachine.add('ACTIONS', actions(lib, controlRate),
-            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+####        smach.StateMachine.add('ACTIONS', actions(lib, controlRate),
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
         
-####        smach.StateMachine.add('GoFORWARD', GoForwards(lib, myUti, 10, 10, controlRate), # (lib, myUti, timeout [sec], propDemand, controlRate [Hz])
+####        smach.StateMachine.add('GoFORWARD', GoForwards(lib, myUti, 30, 10, controlRate), # (lib, myUti, timeout [sec], propDemand, controlRate [Hz])
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
-####        smach.StateMachine.add('GoSIDEWAY', GoSideway(lib, myUti, 30, -1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
+####        smach.StateMachine.add('GoSIDEWAY', GoSideway(lib, myUti, 30, 1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ####        smach.StateMachine.add('GoYAW', GoYaw(lib, myUti, 30, 1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
@@ -136,8 +136,8 @@ def main():
 ####        smach.StateMachine.add('GoToHEADING', GoToHeading(lib, myUti, 90, 5, 10, 30, controlRate), # (lib, myUti, demandHeading [deg], tolerance [deg], stable_time [sec], timeout [sec], controlRate [Hz])
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
-####        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, O, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
 

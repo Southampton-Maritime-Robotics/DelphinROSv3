@@ -48,6 +48,9 @@ def main():
     lib = library_highlevel()
     myUti = uti()
     
+    #Set Up Publisher for Mission Control Log
+    pub = rospy.Publisher('MissionStrings', String)
+    
     # Allow the topic to come online
     time.sleep(10)
     
@@ -100,7 +103,7 @@ def main():
     pathMtoO = numpy.vstack((M,O)).T
     pathMtoA = numpy.vstack((M,A)).T
     pathOtoM = numpy.vstack((O,M)).T
-    pathTest = numpy.vstack((O,M,A,B,M)).T
+    pathTest = numpy.vstack((M,A,B,M)).T
     
     # guidance
     L_los = 10. # [m] line-of-sight distance
@@ -171,7 +174,7 @@ def main():
         #=================================================
         ## YAW MANOEUVRE 
         # This state will get the AUV transit to point M
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, M, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
 ####            transitions={'succeeded':'YAW', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will keep the AUV at point M and perform yaw motion response test
 ####        smach.StateMachine.add('YAW', manoeuvreYaw(lib, myUti, M, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
@@ -181,7 +184,7 @@ def main():
         #=================================================
         ## SWAY MANOEUVRE 
         # This state will get the AUV transit to point M
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathOtoM, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, M, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
 ####            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will keep the AUV at point M and perform sway motion response test:
 ####        smach.StateMachine.add('SWAY', manoeuvreSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
@@ -191,11 +194,11 @@ def main():
         #=================================================
         ## SPIRAL MANOEUVRE 
         # This state will get the AUV transit to point A
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
-####            transitions={'succeeded':'SPIRAL', 'aborted':'HOME','preempted':'HOME'})
-####        # This state will get the AUV perform a spiral manoeuvre
-####        smach.StateMachine.add('SPIRAL', manoeuvreSpiral(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle, controlRate), 
-####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
+        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+            transitions={'succeeded':'SPIRAL', 'aborted':'HOME','preempted':'HOME'})
+        # This state will get the AUV perform a spiral manoeuvre
+        smach.StateMachine.add('SPIRAL', manoeuvreSpiral(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle, controlRate), 
+            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
 
         #=================================================
