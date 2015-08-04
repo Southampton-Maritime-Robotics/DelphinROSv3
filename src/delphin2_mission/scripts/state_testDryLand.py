@@ -58,7 +58,7 @@ class testDryLand(smach.State):
             rpmT1_avg = 0
             time_ref = time.time()
             while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterVertical(-600,-600)
+                self.__controller.setArduinoThrusterVertical(-150,-150)
                 rpmT0_avg += numpy.abs(self.__controller.getT0rpm())
                 rpmT1_avg += numpy.abs(self.__controller.getT1rpm())
                 N += 1
@@ -66,7 +66,7 @@ class testDryLand(smach.State):
             
             time_ref = time.time()
             while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterVertical(600,600)
+                self.__controller.setArduinoThrusterVertical(150,150)
                 rpmT0_avg += numpy.abs(self.__controller.getT0rpm())
                 rpmT1_avg += numpy.abs(self.__controller.getT1rpm())
                 N += 1
@@ -75,11 +75,11 @@ class testDryLand(smach.State):
             rpmT0_avg = rpmT0_avg/float(N)
             rpmT1_avg = rpmT1_avg/float(N)
             
-            if (rpmT0_avg < 100):
+            if (rpmT0_avg < 50):
                 str = "Problem with thruster 0. Average speed = %s" %rpmT0_avg
                 rospy.logerr(str)
                 return 'aborted'
-            if (rpmT1_avg < 100):
+            if (rpmT1_avg < 50):
                 str = "Problem with thruster 1. Average speed = %s" %rpmT1_avg
                 rospy.logerr(str)
                 return 'aborted'
@@ -94,7 +94,7 @@ class testDryLand(smach.State):
             rpmT3_avg = 0
             time_ref = time.time()
             while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterHorizontal(600,600)
+                self.__controller.setArduinoThrusterHorizontal(150,150)
                 rpmT2_avg += numpy.abs(self.__controller.getT2rpm())
                 rpmT3_avg += numpy.abs(self.__controller.getT3rpm())
                 N += 1
@@ -102,7 +102,7 @@ class testDryLand(smach.State):
             
             time_ref = time.time()
             while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterHorizontal(-600,-600)
+                self.__controller.setArduinoThrusterHorizontal(-150,-150)
                 rpmT2_avg += numpy.abs(self.__controller.getT2rpm())
                 rpmT3_avg += numpy.abs(self.__controller.getT3rpm())
                 N += 1
@@ -111,11 +111,11 @@ class testDryLand(smach.State):
             rpmT2_avg = rpmT2_avg/float(N)
             rpmT3_avg = rpmT3_avg/float(N)
             
-            if (rpmT2_avg < 100):
+            if (rpmT2_avg < 50):
                 str = "Problem with thruster 2. Average speed = %s" %rpmT2_avg
                 rospy.logerr(str)
                 return 'aborted'
-            if (rpmT3_avg < 100):
+            if (rpmT3_avg < 50):
                 str = "Problem with thruster 3. Average speed = %s" %rpmT3_avg
                 rospy.logerr(str)
                 return 'aborted'
