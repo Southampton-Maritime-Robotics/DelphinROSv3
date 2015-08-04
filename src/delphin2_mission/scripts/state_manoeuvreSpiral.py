@@ -42,12 +42,11 @@ from math import *
 from std_msgs.msg import String
 
 class manoeuvreSpiral(smach.State):
-    def __init__(self, lib, myUti, wp, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle, controlRate):
+    def __init__(self, lib, myUti, wp, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle, controlRate):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__uti = myUti
         self.__wp = wp
-        self.__uGain = uGain
         self.__uMax = uMax
         self.__errHeadingTol = errHeadingTol
         self.__wp_R = wp_R
@@ -98,7 +97,7 @@ class manoeuvreSpiral(smach.State):
                     rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0][wpIndex], self.__wp[1][wpIndex]])
                     if rang >= self.__wp_R:
                         errHeading = self.__uti.computeHeadingError(bear,heading)
-                        u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__uGain,errHeading)
+                        u = self.__uti.surgeVelFromHeadingError(self.__uMax,errHeading)
                         self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
                         self.__controller.setHeading(bear)                        
                     else:
