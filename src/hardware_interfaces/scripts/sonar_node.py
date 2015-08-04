@@ -40,9 +40,9 @@ def sonarTalker():
     mtSendData = ''.join([chr(char) for char in mtSendData[:]])  # Converts from string to hex
     serialPort.write(mtSendData)                                 # Send mtSendData message to sonar
 
-    print "Sending ping trigger to sonar - mtSendData:"
-    print mtSendData
-    print "--------"
+    #print "Sending ping trigger to sonar - mtSendData:"
+    #print mtSendData
+    #print "--------"
 
 ################################################################
 def sonarListener():
@@ -65,37 +65,37 @@ def sonarListener():
 
         headerData = numpy.fromstring(headerData, dtype=numpy.uint8)            # Converts from string to UINT8 numpy array
 
-        print "Data from sonar: mtHeadData:"                                    
-        print headerData
-        print "--------"
+        #print "Data from sonar: mtHeadData:"                                    
+        #print headerData
+        #print "--------"
 
         if headerData[0] == 64:                                                 # Every message should start with an '@' (ASCII code 64)
             msgType = headerData[10]                                            # See manual
-            print "Message type:  ",msgType
+            #print "Message type:  ",msgType
            
             # From sonarPing.m: get the length of the rest of the data (see catherine harris for sonarping.m!)
             # calulate from mtAlive 22 bytes in total, header[5:7] = 16 bytes and we load in 13 bytes initially
             # thus number to remove = 16 - (22-13) = 7
             # headerData[5]+headerData[6]*256 = simulating Matlab typecast function - converting 2 uint8s to 1 uint16  
             msgLength = (headerData[5]+(headerData[6]*256))-7
-            print msgLength
-            print serialPort.inWaiting()
+            #print msgLength
+            #print serialPort.inWaiting()
 
             startTime = time.time()                                             # Reset time zero for next timeout
 
             while serialPort.inWaiting()<msgLength:                             # Makes sure full message is in buffer within timeout
                 time.sleep(0.001)
                 if startTime+timeOut < time.time():
-                    print "Timeout error"
+                    #print "Timeout error"
                     serialPort.flushInput()
                     return 0
 
             msgData = serialPort.read(serialPort.inWaiting())                   # Read rest of message
             msgData = numpy.fromstring(msgData, dtype=numpy.uint8)              # Convert to numpy array of UINT8
-            print msgData
+            #print msgData
            
             if msgData[-1] != 10:                                               # If the message does not end in an '\LF' then return 0
-                print "Message error: missing LF character" 
+                #print "Message error: missing LF character" 
                 serialPort.flushInput()
                 return 0
 
@@ -103,12 +103,12 @@ def sonarListener():
                 print "mtVersionData"
                 # mtVersionData                                                 # mtVersionData == 1 -> not currently used
             elif msgType == 2:
-                print "mtHeadData"
+                #print "mtHeadData"
                 
                 # Used only for debugging -> visualising sonar data #
                 transBearing = msgData[27]+(msgData[28]*256)                    # Converts 2 x UINT8 characters into 1 x UINT16
                 transBearing = (transBearing / 6400.0) *360                     # Converts from 1/16 of a gradian to degrees 
-                print transBearing
+                #print transBearing
                     
                 msgData = numpy.concatenate((headerData,msgData))               # Joins header and message data into one structure
                     
@@ -116,7 +116,7 @@ def sonarListener():
                 pub.publish(str(msgData))
 
             elif msgType == 4:                                                  # mtAlive == 4 -> not currently processed
-                print "mtAlive"
+                #print "mtAlive"
                 return 4
             else:
                 print "Error: Unknown message type"
@@ -138,9 +138,9 @@ def setupSonar():
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    print "Setup sonar: mtHeadCommand: "
-    print serialPort.portstr
-    print serialPort.isOpen()
+    #print "Setup sonar: mtHeadCommand: "
+    #print serialPort.portstr
+    #print serialPort.isOpen()
     
     # Below is an example of mtHeadCommand message with fixed parameters #
     # setupData = [64, 48, 48, 51, 67, 60, 0, 255, 2, 55, 19, 128, 255, 1, 1, 35, 11, 102, 102, 102, 5, 102, 102, 102, 5, 112, 61, 10, 9, 112, 61, 10, 9, 40, 0, 60, 0, 128, 12, 128, 12, 210, 0, 84, 84, 125, 0, 125, 0, 25, 64, 208, 0, 144, 1, 244, 1, 100, 0, 64, 6, 1, 0, 0, 0, 10]
@@ -150,7 +150,7 @@ def setupSonar():
         setupData = get_mtHeadCommand()
         serialPort.write(setupData)
         time.sleep(0.1)
-        print 'still waiting for mtAlive....'
+        #print 'still waiting for mtAlive....'
         message_flag = sonarListener()
         
     serialPort.flushOutput()                                                    # Flush serial buffers to ensure a clean start of operation                    
@@ -233,7 +233,7 @@ def get_mtHeadCommand():
     # Constructs mtHeadCommand to send to sonar #
     mtHeadCommand = AsciiBlock + hexLength + [SID, DID, count, msgNum, msgSeq, Node, headType, HdCtrl1, HdCtrl2, DstHead] + TXNChan + TXNChan + RXNChan + RXNChan + txPulseLength + rangeScale + LLim + RLim +[ADSpan, ADLow, IGainB1, IGainB2] + Slope + [moTime, step] + ADInterval+ NBins + MaxADBuf + Lockout + MinorAxis + [MajorAxis, Ctl2] + ScanZ + [LF]
 
-    print mtHeadCommand
+    #print mtHeadCommand
     try:
         mtHeadCommand = ''.join([chr(char) for char in mtHeadCommand[:]])
     except ValueError:
@@ -271,6 +271,7 @@ def sonarLoop():
 
     setupSonar()
 
+    r = rospy.Rate(10)  #10 Hz
     while not rospy.is_shutdown():                                              # Whilst ROS is running 
         sonarTalker()                                                           # Constructs and send mtSendData message to request a ping
         sonarListener()                                                         # Waits for response then processes response
@@ -280,7 +281,7 @@ def sonarLoop():
             serialPort.write(setupData)
             updateFlag = 0
         
-        time.sleep(0.001)
+        r.sleep()
             
 ################################################################
 
