@@ -55,7 +55,7 @@ delaySerial = 0.01 # [sec] just enough for arduino to get a data packet
 timeOut = 0.1 # [sec] timeout to wait for a data packet being sent back from arduino
 
 global ThrusterSetpoint_max
-ThrusterSetpoint_max = 2200 # a limit in motor speed in a range of [0-2500] rpm %
+ThrusterSetpoint_max = 2500 # a limit in motor speed in a range of [0-2500] rpm %
 global thrust_dr_ref
 thrust_dr_ref = [0,0,0,1] # a vector to correct thrust_direction
 global timeLastDemand_sat
@@ -287,49 +287,49 @@ def motor_control(status):
         
         ############################# REMAP THRUSTER SETPOINT ######################################    
         thrust_dr = thrust_dr_ref[:] # create a deep copy of a vector to correct thrust_direction
-
+        thrust_sp_arduino = [0,0,0,0]
         # remap a setpoint from [-2500,-150] U [150,2500] to [0,255] with direction of 0 or 1
         for i in range(len(thrust_sp)):
             # correct direction vector
             if thrust_sp[i] > 0:
                 thrust_dr[i] = 1-thrust_dr[i]
                 
-            # check setpoint limits
+            # apply setpoint deadband and saturation
             if abs(thrust_sp[i]) < sp_min:
                 thrust_sp[i] = 0
             elif abs(thrust_sp[i]) > ThrusterSetpoint_max:
                 thrust_sp[i] = ThrusterSetpoint_max*numpy.sign(thrust_sp[i])
                 
-            # remap from setpoinnt to arduino signal
-#            thrust_sp[i] = float(abs(thrust_sp[i]))/sp_max*sp_max_arduino
+            # remap from setpoint to arduino signal
             if thrust_sp[i] !=0:
-                thrust_sp[i] = slope*abs(thrust_sp[i])+interception
+                thrust_sp_arduino[i] = slope*abs(thrust_sp[i])+interception
                 
             # double check if the demand is interger and is within a valid range
-            if thrust_sp[i] > 0:
-                if thrust_sp[i] <1: # if a setpoint is not zero but less than 1, force it to one
-                    thrust_sp[i] = 1
+            if thrust_sp_arduino[i] > 0:
+                if thrust_sp_arduino[i] <1: # if a setpoint is not zero but less than 1, force it to one
+                    thrust_sp_arduino[i] = 1
                 else:
-                    thrust_sp[i] = int(thrust_sp[i])
+                    thrust_sp_arduino[i] = int(thrust_sp_arduino[i])
 
-        # the smallest value that setpoint in arduino world could be is 1 in whih correspoinds to a RPM of 138 approximately
+        # the smallest value that setpoint in arduino world could be is 1 in whih correspoinds to a RPM of 145 approximately
                 
         ############################# SETPOINT MSG ####################################    
 
         # Note: onOff flag will be pulled off by the stop function when terminate the mission
         if time.time()-timeVertLastDemand < timeLastDemand_sat:
-            setpoint0= onOff_vert*thrust_sp[0]
-            setpoint1= onOff_vert*thrust_sp[1]
+            setpoint0= onOff_vert*thrust_sp_arduino[0]
+            setpoint1= onOff_vert*thrust_sp_arduino[1]
         else: # if there is no update on vert thruster for longer than timeLastDemand_sat, turn off the vert thruster
             setpoint0= 0
             setpoint1= 0
         if time.time()-timeHorizLastDemand < timeLastDemand_sat:
-            setpoint2= onOff_horiz*thrust_sp[2]
-            setpoint3= onOff_horiz*thrust_sp[3]
+            setpoint2= onOff_horiz*thrust_sp_arduino[2]
+            setpoint3= onOff_horiz*thrust_sp_arduino[3]
         else: # if there is no update on horiz thruster for longer than timeLastDemand_sat, turn off the horiz thruster
             setpoint2= 0
             setpoint3= 0
             
+        
         setPoints = '%d,%d@%d,%d@%d,%d@%d,%d@' %(setpoint0,thrust_dr[0],setpoint1,thrust_dr[1],setpoint2,thrust_dr[2],setpoint3,thrust_dr[3])
         dataToSend = 'faP' + setPoints # add header to a data packet
         dataToSend = dataToSend + 'cs' # add footer to a data packet
@@ -376,10 +376,19 @@ def motor_control(status):
         speed2 = rpm[2]
         speed3 = rpm[3]
         
-        pub.publish(setpoint0 = setpoint0*(2*thrust_dr[0]-1), setpoint1 = setpoint1*(2*thrust_dr[1]-1), setpoint2 = setpoint2*(2*thrust_dr[2]-1), setpoint3 = setpoint3*(2*thrust_dr[3]-1), 
-            speed0 = speed0, speed1 = speed1, speed2 = speed2, speed3 = speed3, 
-            current0 = current0, current1 = current1, current2 = current2, current3 = current3, 
-            voltage = voltage)
+        pub.publish(setpoint0 = thrust_sp[0], 
+                    setpoint1 = thrust_sp[1], 
+                    setpoint2 = thrust_sp[2], 
+                    setpoint3 = thrust_sp[3],
+                    speed0 = speed0, 
+                    speed1 = speed1, 
+                    speed2 = speed2, 
+                    speed3 = speed3, 
+                    current0 = current0, 
+                    current1 = current1, 
+                    current2 = current2, 
+                    current3 = current3, 
+                    voltage = voltage)
         
         timeElapse = time.time()-timeRef
         if timeElapse < controlPeriod:
