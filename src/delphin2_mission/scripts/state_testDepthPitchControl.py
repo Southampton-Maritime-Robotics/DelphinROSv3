@@ -53,7 +53,7 @@ class testDepthPitchControl(smach.State):
 ################################################################################
         # let the vehicle do depth-pitch tracking
 
-        listDemandDepth = [0.4]
+        listDemandDepth = [2]
         demandHeading = 280.
         demandPitch = 0.
 
@@ -90,4 +90,5 @@ class testDepthPitchControl(smach.State):
         self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
         self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
         self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+        time.sleep(30)
         return 'succeeded' # exit with a flag of 'succeeded'
