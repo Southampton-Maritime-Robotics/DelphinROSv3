@@ -28,13 +28,12 @@ from math import *
 from std_msgs.msg import String
 
 class pathFollowingLOS(smach.State):
-    def __init__(self, lib, myUti, path, L_los, uGain, uMax, wp_R, controlRate, locationWaitTimeout):
+    def __init__(self, lib, myUti, path, L_los, uMax, wp_R, controlRate, locationWaitTimeout):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__uti = myUti
         self.__path = path
         self.__L_los = L_los
-        self.__uGain = uGain
         self.__uMax = uMax
         self.__wp_R = wp_R
         self.__controlRate = controlRate
@@ -154,7 +153,7 @@ class pathFollowingLOS(smach.State):
 
             # determine heading error
             errHeading = self.__uti.computeHeadingError(los_a,heading)
-            u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__uGain,errHeading)
+            u = self.__uti.surgeVelFromHeadingError(self.__uMax,errHeading)
  
             # publish heading demand
             self.__controller.setHeading(los_a)
