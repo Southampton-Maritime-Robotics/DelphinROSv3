@@ -89,14 +89,14 @@ class uti:
         
     def surgeVelFromHeadingError(self,uMax,errHeading):
 ####        u = uMax*exp(-uGain*abs(errHeading))
-        errTolerance = 5
+        errTolerance = 10
         errThreshold = 50
         
         errHeading = abs(errHeading)
         if errHeading <= errTolerance:
             u = uMax
         elif errHeading <= errThreshold:
-            u = uMax - float(uMax)*(errHeading-errTolerance)/(errThreshold-errTolerance)l
+            u = uMax - float(uMax)*(errHeading-errTolerance)/(errThreshold-errTolerance)
         else:
             u = 0
                 
