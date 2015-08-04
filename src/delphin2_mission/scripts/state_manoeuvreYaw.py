@@ -36,12 +36,11 @@ from math import *
 from std_msgs.msg import String
 
 class manoeuvreYaw(smach.State):
-    def __init__(self, lib, myUti, wp, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate):
+    def __init__(self, lib, myUti, wp, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__uti = myUti
         self.__wp = wp
-        self.__uGain = uGain
         self.__uMax = uMax
         self.__wp_R = wp_R
         self.__timeDemandHold = timeDemandHold # thruster demand will be hold for this many second
@@ -83,7 +82,7 @@ class manoeuvreYaw(smach.State):
                 rang, bear = self.__uti.rangeBearing([X,Y], [self.__wp[0], self.__wp[1]])
                 if rang >= self.__wp_R:
                     errHeading = self.__uti.computeHeadingError(bear,heading)
-                    u = self.__uti.surgeVelFromHeadingError(self.__uMax,self.__uGain,errHeading)
+                    u = self.__uti.surgeVelFromHeadingError(self.__uMax,errHeading)
                     self.__controller.setRearProp(round(u*22.)) # turn speedDemand into propeller demand and send
                     self.__controller.setHeading(bear)  
                 else:
