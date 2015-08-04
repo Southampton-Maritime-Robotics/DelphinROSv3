@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 '''
-A mission script to test the PID-based depth-pitch controller (see depthPitchPID.py).
+A mission script to test the PID-based depth-pitch controller(see depthPitchPID.py).
+There are two state:
+- depthPitchControl is used when testing at zero speed
+- depthPitchControlAtSpeed is used when testing at forward speeds
 
 '''
 
@@ -23,6 +26,7 @@ from std_msgs.msg import String
 import matplotlib.pyplot as plt;
 
 from state_testDepthPitchControl             import testDepthPitchControl
+from state_testDepthPitchControlAtSpeed      import testDepthPitchControlAtSpeed
 
 ################################################################################
            
@@ -97,7 +101,10 @@ def main():
             
 ################################################################################
         # [2/3] Added States
-        smach.StateMachine.add('depthPitchControl', testDepthPitchControl(lib), 
+####        smach.StateMachine.add('depthPitchControl', testDepthPitchControl(lib), 
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+            
+        smach.StateMachine.add('depthPitchControl', testDepthPitchControlAtSpeed(lib), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################

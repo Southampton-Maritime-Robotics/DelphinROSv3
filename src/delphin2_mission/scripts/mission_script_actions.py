@@ -78,7 +78,7 @@ def main():
 
     controlRate = 20. # Hz
 
-    O = array([-2.,2.]) # home: shifted from the origin a little to make sure it will not collide with the pier
+    O = array([0.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
     A = array([-28.,-20.]) # reference point A
     B = array([-1.,50.]) # reference point B
     
@@ -99,8 +99,7 @@ def main():
     wp_R = 3. # [m] radius of acceptance
     
     # speed control
-    uGain = 0.07 # gain to control speed variation: high value -> less overshoot -> more settling time
-    uMax = 1. # [m/s] maximum surge speed
+    uMax = 1.2 # [m/s] maximum surge speed
 
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
@@ -116,13 +115,13 @@ def main():
 
 ################################################################################
         # [1/3] Initialise State (Must Be Run First!) # TODO uncomment me
-####        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-####            transitions={'succeeded':'ACTIONS', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
+            transitions={'succeeded':'ACTIONS', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
         # [2/3] Added States
-####        smach.StateMachine.add('ACTIONS', actions(lib, controlRate),
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('ACTIONS', actions(lib, controlRate),
+            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
         
 ####        smach.StateMachine.add('GoFORWARD', GoForwards(lib, myUti, 30, 10, controlRate), # (lib, myUti, timeout [sec], propDemand, controlRate [Hz])
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
@@ -136,8 +135,8 @@ def main():
 ####        smach.StateMachine.add('GoToHEADING', GoToHeading(lib, myUti, 90, 5, 10, 30, controlRate), # (lib, myUti, demandHeading [deg], tolerance [deg], stable_time [sec], timeout [sec], controlRate [Hz])
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
-        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, O, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
-            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+####        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, O, L_los, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
 
