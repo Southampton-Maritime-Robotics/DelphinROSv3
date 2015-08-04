@@ -271,8 +271,12 @@ def sonarLoop():
 
     setupSonar()
 
-    r = rospy.Rate(10)  #10 Hz
+    controlRate = 10. # Hz
+    controlPeriod = 1/controlRate
+    r = rospy.Rate(controlRate)
     while not rospy.is_shutdown():                                              # Whilst ROS is running 
+        timeRef = time.time()
+        
         sonarTalker()                                                           # Constructs and send mtSendData message to request a ping
         sonarListener()                                                         # Waits for response then processes response
         
@@ -280,8 +284,14 @@ def sonarLoop():
             setupData = get_mtHeadCommand()
             serialPort.write(setupData)
             updateFlag = 0
-        
-        r.sleep()
+
+        timeElapse = time.time()-timeRef
+        if timeElapse < controlPeriod:
+            r.sleep()
+        else:
+            str = "sonar_node rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
+            pubMissionLog.publish(str)
             
 ################################################################
 
@@ -301,6 +311,7 @@ if __name__ == '__main__':
     global updateFlag
     
     pub        = rospy.Publisher('sonar_output', String)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     updateFlag = 0
     
     rospy.on_shutdown(shutdown)
