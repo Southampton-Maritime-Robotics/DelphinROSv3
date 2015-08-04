@@ -16,6 +16,7 @@ This node relies more on GPS when it is available, otherwise an equation of moti
 9/2/12 Modified definition of X and Y. X is east and Y is north to be consistant with everything else.
 22/4/15 Have seperate callback blocks that subscribe to different actuator demands instead of using the MPC-based topic.
 24/6/15 ignore the thruster and rudder setpoints for the time being: this will produce a very poor estimation of sway speed and the AUV location but including them will produce a very very unrealistic sway speed which is even higher than the forward speed.
+17/7/17 added watchdog to set prop demand to zero if there is no updated for some period of time
 """
 
 import rospy
@@ -36,8 +37,9 @@ from hardware_interfaces.msg import status
 import math
 
 ########## LOW LEVEL CONTROL ############################################################
+
 def reckoner():
-                
+
 #### CONSTANTS ####
     mass     = 167.5
     massX    = 90.0
@@ -114,8 +116,11 @@ def reckoner():
             velP    = cur_compassInfo.angular_velocity_y # TODO: double check if this is of the convention
             
         #### ACTUATOR DATA #################################################
-            # FIXME: for the time being, only the force due tue thruster is considered
-            prop    = float(cur_prop_demand)
+            # FIXME: for the time being, only the force due to the propeller is considered
+            if time.time()-timeLastDemand_prop < timeLastDemand_sat:
+                prop = float(cur_prop_demand)
+            else:
+                prop = 0.
 
             sternP  = 0*cur_sternP_demand
             T0      = 0*cur_thVert_demand.thruster0
@@ -327,7 +332,9 @@ def depthDemand_cb(depthd):
 
 def prop_cb(prop):
     global cur_prop_demand
+    global timeLastDemand_prop
     cur_prop_demand = prop.data
+    timeLastDemand_prop = time.time()
     
 def cs_hori_cb(data):
     global cur_sternP_demand
@@ -385,7 +392,9 @@ if __name__ == '__main__':
     global tempInfo
     global frame0
     global frame1
-
+    global timeLastDemand_prop
+    global timeLastDemand_sat
+    
     cur_compassInfo = compass()
     cur_depthInfo = depth()
     cur_depth_demand = 0.
@@ -400,6 +409,8 @@ if __name__ == '__main__':
     tempInfo        = 0.
     frame0=0
     frame1=0
+    timeLastDemand_prop = time.time()
+    timeLastDemand_sat = 1 # [sec] Set the demand to zero if there is no demand updated for longer than this many seconds.
     
     rospy.Subscriber('altimeter_out',altitude, altimeter_callback) # Will not be used in here, just subscribe and pass it through the publisher.
     rospy.Subscriber('compass_out', compass, compass_cb)
