@@ -35,5 +35,6 @@
     <node name="depth_pitch_controller" pkg="lowlevel_controllers" type="depth_pitch_controller_PID.py" output = "screen"/>
 
     <node name="logger" pkg="hardware_interfaces" type="logger.py" required="true" output="screen"/>
+    <node pkg="rosbag" type="record" name="rosbag_record_all" args="record -a -o boldrewood"/>
 
 </launch>
