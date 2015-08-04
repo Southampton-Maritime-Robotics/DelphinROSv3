@@ -33,10 +33,10 @@
     <include file="$(find delphin2_mission)/launch/thruster_system.launch" />
     <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py"/> 
     <include file="$(find xsens_driver)/launch/xsens_driver.launch" />
+    <include file="$(find delphin2_mission)/launch/sonar_system.launch" />
     
-    <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/> 
+    <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/>
+    <node pkg="rosbag" type="record" name="rosbag_record_all" args="record -a -o boldrewood"/> 
     <!-- <node name="smach_viewer" pkg="smach_viewer" type="smach_viewer.py" /> -->
-
-    
 
 </launch>
