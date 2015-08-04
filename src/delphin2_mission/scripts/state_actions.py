@@ -24,7 +24,7 @@ class actions(smach.State):
     def __init__(self, lib, controlRate):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
-        self.__delay_action = 60 # let the vehicle doing those actions for a period of time (value is specified in second)
+        self.__delay_action = 10 # let the vehicle doing those actions for a period of time (value is specified in second)
         self.__controlRate = controlRate
             
     def execute(self, userdata):
@@ -58,7 +58,7 @@ class actions(smach.State):
                 pubMissionLog.publish(str)
                 return 'preempted'
             else:
-                self.__controller.setRearProp(0)
+                self.__controller.setRearProp(30)
                 self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
                 self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
                 self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
