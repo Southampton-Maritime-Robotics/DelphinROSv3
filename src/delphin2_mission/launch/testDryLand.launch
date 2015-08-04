@@ -43,5 +43,6 @@
     <include file="$(find xsens_driver)/launch/xsens_driver.launch" />
     
     <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/>
+    <node pkg="rosbag" type="record" name="rosbag_record_all" args="record -a -o boldrewood"/>
 
 </launch>
