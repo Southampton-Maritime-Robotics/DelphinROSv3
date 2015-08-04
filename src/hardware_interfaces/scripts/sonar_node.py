@@ -100,7 +100,7 @@ def sonarListener():
                 return 0
 
             if msgType == 1:                                                    # Each if/elseif statement defines how to process each message type
-                #print "mtVersionData"
+                print "mtVersionData"
                 # mtVersionData                                                 # mtVersionData == 1 -> not currently used
             elif msgType == 2:
                 #print "mtHeadData"
@@ -237,7 +237,7 @@ def get_mtHeadCommand():
     try:
         mtHeadCommand = ''.join([chr(char) for char in mtHeadCommand[:]])
     except ValueError:
-        #print 'Error with mtHeadCommand line 231'
+        print 'Error with mtHeadCommand line 231'
         
     return mtHeadCommand
 
@@ -271,6 +271,7 @@ def sonarLoop():
 
     setupSonar()
 
+    r = rospy.Rate(10)  #10 Hz
     while not rospy.is_shutdown():                                              # Whilst ROS is running 
         sonarTalker()                                                           # Constructs and send mtSendData message to request a ping
         sonarListener()                                                         # Waits for response then processes response
@@ -280,7 +281,7 @@ def sonarLoop():
             serialPort.write(setupData)
             updateFlag = 0
         
-        time.sleep(0.001)
+        r.sleep()
             
 ################################################################
 
