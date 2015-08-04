@@ -29,9 +29,8 @@ def setUpSerial(): # set up the serial port
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    print "Initialised EchoSounder serial."
-    print serialPort.portstr
-    print serialPort.isOpen()
+####    print serialPort.portstr
+####    print serialPort.isOpen()
     return serialPort.isOpen()
 
 ################################################################

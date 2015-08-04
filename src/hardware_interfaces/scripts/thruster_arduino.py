@@ -71,7 +71,6 @@ def init_serial():
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    print serialPort.isOpen()
     return serialPort.isOpen()
 
 ############################# INITIALISE BOARD ######################################    

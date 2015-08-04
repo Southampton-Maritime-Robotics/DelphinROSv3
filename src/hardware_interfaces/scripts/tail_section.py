@@ -219,7 +219,6 @@ def prop_callback(new_prop):
     
     timeLastDemandProp = time.time()
     prop_demand = new_prop.data
-    print 'Prop dmenad = ',prop_demand
 
 ################################################################################
 
@@ -256,8 +255,6 @@ def process_feedback(feedback):
      output.current = prop_current
      output.rpm = prop_rpm
      pub.publish(output)
-     
-     print 'Feedback', output
     
 ################################################################################
 

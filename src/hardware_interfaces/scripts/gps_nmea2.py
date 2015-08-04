@@ -199,7 +199,7 @@ def listenForData(status):
                 pubStatus.publish(nodeID = 4, status = status)
                 data = serialPort.readline() 		#Read in line of data
                 split_data = string.split(data,',')				#Split message by comma separator
-                print 'Data: ', data
+####                print 'Data: ', data
 
                 message_identifier = split_data[0]				#Message identifier is the first part of the message and defines message format
                 identifier[message_identifier](split_data)			#Process message according to indentifier type
@@ -241,7 +241,6 @@ def listenForData(status):
                     gpsOut.x = X
                     gpsOut.y = Y
                     pub.publish(gpsOut)
-                    print "========= get all =========="
                     
                     timeElapse = time.time()-timeRef
                     if timeElapse < controlPeriod:

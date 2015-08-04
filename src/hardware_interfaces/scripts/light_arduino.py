@@ -21,7 +21,7 @@ def setUpSerial(): # set up the serial port
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    print "Initialised arduino serial."
+####    print "Initialised arduino serial."
 
     return serialPort.isOpen()
 
@@ -31,10 +31,10 @@ def light_callback(data):
     
     if data.data == True:
         serialPort.write('L1')
-        print 'Light switched on'
+####        print 'Light switched on'
     else:
         serialPort.write('L0')
-        print 'Light switched off'
+####        print 'Light switched off'
 
 
 ################################################################
@@ -42,7 +42,7 @@ def phone_callback(data):
     
     if data.data == True:
         serialPort.write('P')
-        print 'Phone switching on'
+####        print 'Phone switching on'
     else:
         pass
         

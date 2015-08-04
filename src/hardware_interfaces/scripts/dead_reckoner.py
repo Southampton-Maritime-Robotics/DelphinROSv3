@@ -87,8 +87,6 @@ def reckoner():
     
     t0      = time.time()
 
-    print 'Entering main loop!!!'
-
 ############ MAIN RECKONER LOOP ################################################
     while not rospy.is_shutdown():
     
