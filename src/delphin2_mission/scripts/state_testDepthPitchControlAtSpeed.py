@@ -38,7 +38,7 @@ class testDepthPitchControlAtSpeed(smach.State):
     def execute(self, userdata):
 
         #Set Up Publisher for Mission Control Log
-        pub = rospy.Publisher('MissionStrings', String)        
+        pubMissionLog = rospy.Publisher('MissionStrings', String)        
         
         ####################################################################
         ### Perform actions ################################################
@@ -54,11 +54,11 @@ class testDepthPitchControlAtSpeed(smach.State):
 ################################################################################
         # let the vehicle do depth-pitch tracking
 
-        demandDepth = 0.4 # [m]
+        demandDepth = 1 # [m]
         depthTol = 0.2 # [m] tolerant that counts as approach the demandDepth
         demandHeading = 280. # [deg] 
         demandPitch = 0. # [deg]
-        demandProp = 0
+        demandProp = 10
         timeDepthSteady = 60. # [sec] the depth is steady for this many second then propeller will start spining
         timePropHold = 10. # [sec] time that propeller will keep spining
 
@@ -78,9 +78,9 @@ class testDepthPitchControlAtSpeed(smach.State):
             if time.time()-timeStart <= timeDepthSteady:
                 self.__controller.setDepth(demandDepth)
                 self.__controller.setPitch(demandPitch) # specified pitch demand in [degree] 
-                self.__controller.setHeading(demandHeading)
+####                self.__controller.setHeading(demandHeading)
                 if flag:
-                    str = 'let the depth becomes stady for timeDelay = %s sec' %self.__timeDelay
+s                    str = 'let the depth becomes stady for timeDelay = %s sec' %timeDepthSteady
                     rospy.loginfo(str)
                     pubMissionLog.publish(str)
                     flag = 0
@@ -101,7 +101,8 @@ class testDepthPitchControlAtSpeed(smach.State):
         
             self.__controller.setRearProp(demandProp)
             self.__controller.setDepth(depthDemand)
-            self.__controller.setDepth(depthPitch)
+            self.__controller.setPitch(demandPitch)
+            # self.__controller.setHeading(demandHeading) ignore heading demand for now
             if time.time()-timeStart>timePropHold:
                 break
             r.sleep()
