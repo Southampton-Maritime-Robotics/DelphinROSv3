@@ -585,6 +585,9 @@ if __name__ == '__main__':
 
     str = "Logger online - output directory: %s" %(dirname)
     rospy.loginfo(str)
-    pubStatus.publish(nodeID = 10, status = True)
+    
+    for i in range(5): # publish node status 10 times consecutively
+        pubStatus.publish(nodeID = 10, status = True)
+        time.sleep(0.01)
     
     rospy.spin()
