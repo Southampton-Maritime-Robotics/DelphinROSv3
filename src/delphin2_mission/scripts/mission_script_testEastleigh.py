@@ -87,7 +87,7 @@ def main():
 
     ### points defined relative to the origin O #
     # North pier of the Eastleigh lake (50.957024,-1.366769)
-    O = array([-2.,2.]) # home: shifted from the origin a little to make sure it will not collide with the pier
+    O = array([-0.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
     A = array([-28.,-20.]) # reference point A
     B = array([-1.,50.]) # reference point B
 #    # South pier of the Eastleigh lake (50.956473,-1.366835)
@@ -110,7 +110,6 @@ def main():
     wp_R = 3. # [m] radius of acceptance
     
     # speed control
-    uGain = 0.07 # gain to control speed variation: high value -> less overshoot -> more settling time
     uMax = 1. # [m/s] maximum surge speed
 
     # tolerant
@@ -157,63 +156,63 @@ def main():
         #=================================================
         ## PATH FOLLOWING 
         # This state will get the AUV moving along the pathTest [O->M->A->B->M]
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathTest, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathTest, L_los, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         #=================================================
         ## SURGE MANOEUVRE
         # This state will get the AUV transit to point A
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
 ####            transitions={'succeeded':'SURGE', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will guide the AUV back and forth between point A and B with different rudder RPM
-####        smach.StateMachine.add('SURGE', manoeuvreSurge(lib,myUti,pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
+####        smach.StateMachine.add('SURGE', manoeuvreSurge(lib,myUti,pathAtoB, uMax, errHeadingTol, wp_R, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         #=================================================
         ## YAW MANOEUVRE 
         # This state will get the AUV transit to point M
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, M, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, M, L_los, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
 ####            transitions={'succeeded':'YAW', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will keep the AUV at point M and perform yaw motion response test
-####        smach.StateMachine.add('YAW', manoeuvreYaw(lib, myUti, M, uGain, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
+####        smach.StateMachine.add('YAW', manoeuvreYaw(lib, myUti, M, uMax, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         #=================================================
         ## SWAY MANOEUVRE 
         # This state will get the AUV transit to point M
-####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, M, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+####        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, M, L_los, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
 ####            transitions={'succeeded':'SWAY', 'aborted':'HOME','preempted':'HOME'})
 ####        # This state will keep the AUV at point M and perform sway motion response test:
-####        smach.StateMachine.add('SWAY', manoeuvreSway(lib, myUti, M, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
+####        smach.StateMachine.add('SWAY', manoeuvreSway(lib, myUti, M, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
 ####            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
 
         #=================================================
         ## SPIRAL MANOEUVRE 
         # This state will get the AUV transit to point A
-        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
             transitions={'succeeded':'SPIRAL', 'aborted':'HOME','preempted':'HOME'})
         # This state will get the AUV perform a spiral manoeuvre
-        smach.StateMachine.add('SPIRAL', manoeuvreSpiral(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle, controlRate), 
+        smach.StateMachine.add('SPIRAL', manoeuvreSpiral(lib, myUti, pathAtoB, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle, controlRate), 
             transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
 
         #=================================================
         ## ZIG-ZAG MANOEUVRE 
         # This state will get the AUV transit to point A
-#        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+#        smach.StateMachine.add('toWork', pathFollowingLOS(lib,myUti, pathMtoA, L_los, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
 #            transitions={'succeeded':'ZIGZAG', 'aborted':'HOME','preempted':'HOME'})
 #        # This state will get the AUV perform a spiral manoeuvre
-#        smach.StateMachine.add('ZIGZAG', manoeuvreZigZag(lib, myUti, pathAtoB, uGain, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
+#        smach.StateMachine.add('ZIGZAG', manoeuvreZigZag(lib, myUti, pathAtoB, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, controlRate), 
 #            transitions={'succeeded':'HOME', 'aborted':'HOME','preempted':'HOME'})
         #-------------------------------------------------
         
         ## GENERIC STATE FOR EASTLEIGH LAKE
         # This state will get the AUV HOME
-        smach.StateMachine.add('HOME', pathFollowingLOS(lib,myUti, pathMtoO, L_los, uGain, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
+        smach.StateMachine.add('HOME', pathFollowingLOS(lib,myUti, pathMtoO, L_los, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
