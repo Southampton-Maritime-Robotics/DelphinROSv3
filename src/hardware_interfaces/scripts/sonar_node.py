@@ -86,7 +86,7 @@ def sonarListener():
             while serialPort.inWaiting()<msgLength:                             # Makes sure full message is in buffer within timeout
                 time.sleep(0.001)
                 if startTime+timeOut < time.time():
-                    #print "Timeout error"
+                    print "Timeout error"
                     serialPort.flushInput()
                     return 0
 
@@ -138,9 +138,9 @@ def setupSonar():
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    #print "Setup sonar: mtHeadCommand: "
-    #print serialPort.portstr
-    #print serialPort.isOpen()
+    print "Setup sonar: mtHeadCommand: "
+    print serialPort.portstr
+    print serialPort.isOpen()
     
     # Below is an example of mtHeadCommand message with fixed parameters #
     # setupData = [64, 48, 48, 51, 67, 60, 0, 255, 2, 55, 19, 128, 255, 1, 1, 35, 11, 102, 102, 102, 5, 102, 102, 102, 5, 112, 61, 10, 9, 112, 61, 10, 9, 40, 0, 60, 0, 128, 12, 128, 12, 210, 0, 84, 84, 125, 0, 125, 0, 25, 64, 208, 0, 144, 1, 244, 1, 100, 0, 64, 6, 1, 0, 0, 0, 10]
@@ -150,7 +150,7 @@ def setupSonar():
         setupData = get_mtHeadCommand()
         serialPort.write(setupData)
         time.sleep(0.1)
-        #print 'still waiting for mtAlive....'
+        print 'still waiting for mtAlive....'
         message_flag = sonarListener()
         
     serialPort.flushOutput()                                                    # Flush serial buffers to ensure a clean start of operation                    
@@ -233,7 +233,7 @@ def get_mtHeadCommand():
     # Constructs mtHeadCommand to send to sonar #
     mtHeadCommand = AsciiBlock + hexLength + [SID, DID, count, msgNum, msgSeq, Node, headType, HdCtrl1, HdCtrl2, DstHead] + TXNChan + TXNChan + RXNChan + RXNChan + txPulseLength + rangeScale + LLim + RLim +[ADSpan, ADLow, IGainB1, IGainB2] + Slope + [moTime, step] + ADInterval+ NBins + MaxADBuf + Lockout + MinorAxis + [MajorAxis, Ctl2] + ScanZ + [LF]
 
-    #print mtHeadCommand
+    print mtHeadCommand
     try:
         mtHeadCommand = ''.join([chr(char) for char in mtHeadCommand[:]])
     except ValueError:
@@ -280,7 +280,7 @@ def sonarLoop():
             setupData = get_mtHeadCommand()
             serialPort.write(setupData)
             updateFlag = 0
-        
+        time.sleep(0.001) 
         r.sleep()
             
 ################################################################
