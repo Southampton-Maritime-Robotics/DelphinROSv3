@@ -4,7 +4,7 @@
 A depth-pitch controller based on the PI-D strategy.
 
 Note:
-- control surface and pitchBias are not in use yet. This will be very important part when the AUV operates at non-zero speeds.
+- control surface and pitchBias are not in use yet. This will be very important part when the AUV operates at forward speeds.
 - pitch_Dgain makes the system becomes worse possibly due to the delay response of the thruster control boards
 
 ######################################
@@ -12,9 +12,10 @@ Note:
 2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
 5/4/2015: force CS and thruster demands to become Integer32
 8/7/2015: removed pitch_demand_callback: Maked it zero always
+18/8/2015: added anti-windup scheme to when computing the depth integral term
 
 # TODO
-- use pitch bias to indirectly control the depth of the AUV via control surfaces when undergoing a surge motion.
+- use pitch bias to indirectly control the depth of the AUV via control surfaces when undergoing surge motions.
 
 """
 
@@ -51,6 +52,8 @@ def set_params():
     global propDemand
     global crMax
     global crMin
+    global windup_err_thr
+    global windup_der_err_thr
     
     ### General ###
     propDemand = 0
@@ -69,12 +72,12 @@ def set_params():
     
     # thruster
     DPC.Depth_Pgain = 2500000.00 # 700000.00 # FIXME: tune me kantapon
-    DPC.Depth_Igain = 120000.00 # 50000.00 # FIXME: tune me kantapon
-    DPC.Depth_Dgain = -3000000.00 # -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Depth_Igain = 200000.00 # 50000.00 # FIXME: tune me kantapon
+    DPC.Depth_Dgain = -5000000.00 # -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
     DPC.Pitch_Pgain = 0.01 # 0.01 # 0.02 # FIXME: tune me kantapon
-    DPC.Pitch_Igain = 0.0005 # 0.0005 # 0.001 # FIXME: tune me kantapon
-    DPC.Pitch_Dgain = -0.005 # -0.005 # -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Pitch_Igain = 0.001 # 0.0005 # 0.001 # FIXME: tune me kantapon
+    DPC.Pitch_Dgain = -0.008 # -0.005 # -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
     DPC.Thrust_Smax = 1800       # maximum thruster setpoint # FIXME: unleash me kantapon
 
@@ -83,15 +86,20 @@ def set_params():
 
     ### determine relative arm lengths for thrust allocation ###
     L_th = 1.06             # distance between two vertical thrusters [metre]: measured
-    cr_approx = 1.05 # 0.98        # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
+    cr_approx = 0.85 # 1.05 # 0.98        # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
     Ltf_nose = 0.28         # location of the front vertical thruster from nose: measured
 #    DPC.crTol = 0.05        # FIXME change the message structure and logger. to bound the cr between front and rear thruster with this gap from the bound [metre]: chosen
     
-    crTol = 0.15
+    crTol = 0.25
     crMax = crTol
     crMin = -crTol
 #    crMin = cr_approx - Ltf_nose -L_th + crTol      # length from cr_approx to front thruster
 #    crMax = cr_approx - Ltf_nose - crTol            # length from cr_approx to rear thruster
+
+    ### Parameter for Anti-Windup Scheme ###
+    windup_err_thr = 0.8 # if abs(depth_error) goes beyond this and,
+    windup_der_err_thr = 0.05 # if abs(depth_error) goes beyond this, the the integrator will be paused
+
     ### Utility Object ###
     myUti = uti()
     
@@ -261,11 +269,12 @@ def main_control_loop():
 ################################################################################
 
 def determinePitchBias(depth_current,depth_demand):
-    if propDemand > 10:
-        pitchBias = DPC.pitchBiasGain*(depth_demand-depth_current)
-        myUti.limits(pitchBias,-DPC.pitchBiasMax,DPC.pitchBiasMax)
-    else:
-        pitchBias = 0
+####    if propDemand > 10:
+####        pitchBias = DPC.pitchBiasGain*(depth_demand-depth_current)
+####        myUti.limits(pitchBias,-DPC.pitchBiasMax,DPC.pitchBiasMax)
+####    else:
+####        pitchBias = 0
+    pitchBias = 0
     return pitchBias
 
 def system_state_depth(dt,depth_current,depth_demand,der_error_depth):
@@ -280,7 +289,15 @@ def system_state_depth(dt,depth_current,depth_demand,der_error_depth):
         ### ERROR ###
         error_depth  = depth_demand - depth_current
         ### INTEGRAL ###
-        int_error_depth += dt*error_depth					# Calculate the integral error       
+        
+        # conditional integration
+        if numpy.abs(error_depth)<windup_err_thr and numpy.abs(der_error_depth)<windup_der_err_thr:
+            int_error_depth += dt*error_depth # Calculate the integral error
+        elif depth_current < 0.4 and numpy.abs(der_error_depth)<windup_der_err_thr:
+            int_error_depth += dt*error_depth
+#        # conventional integration
+#        int_error_depth += dt*error_depth
+        
         ### DERIVATIVE ###
         # derivative depth is determined using PT-type filter by compass_oceanserver.py.
         # remember, this is the PI-D strategy that use derivative of actual depth rathen than the derivative of err_depth
