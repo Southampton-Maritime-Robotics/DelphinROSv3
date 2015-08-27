@@ -341,7 +341,7 @@ def headingPID_callback(data):
                       data.CS_Dgain,         # no need
                       data.CS_Smax ,         # no need
                       data.CS_Pterm, 
-                      data.CS_Iterm ,
+                      data.CS_Iterm,
                       data.CS_Dterm, 
                       data.CS_demand, 
                       data.Thrust_Pgain,     # no need 
@@ -586,8 +586,10 @@ if __name__ == '__main__':
     str = "Logger online - output directory: %s" %(dirname)
     rospy.loginfo(str)
     
-    for i in range(5): # publish node status 10 times consecutively
+    time.sleep(3)
+    
+    for i in range(15): # publish node status 10 times consecutively
         pubStatus.publish(nodeID = 10, status = True)
-        time.sleep(0.01)
+        time.sleep(0.1)
     
     rospy.spin()
