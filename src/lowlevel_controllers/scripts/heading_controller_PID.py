@@ -48,14 +48,13 @@ def set_params():
     timeLastCallback = time.time()
 
     ### General ###
-    HC.deadzone   = 1   # deadzone of the heading error [degree]
+    HC.deadzone   = 0   # deadzone of the heading error [degree]
     
     ### CS Controller ###
-    HC.CS_Pgain       = 0.5 # FIXME: tune me kantapon
+    HC.CS_Pgain       = 6 # FIXME: tune me kantapon
     HC.CS_Igain       = 0
-    HC.CS_Dgain       = 0 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    HC.CS_Dgain       = -13 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     HC.CS_Smax         = 30
-#    HC.CS_min         = -HC.CS_max
     
     ### Thrust Controller ###
     HC.Thrust_Pgain = 30000.00
@@ -80,10 +79,8 @@ def set_params():
 def CS_controller(error, int_error, der_error):
     global HC
     HC.CS_Pterm      = error*HC.CS_Pgain
-    HC.CS_Iterm      = 0 # TODO int_error*HC.CS_Igain
-    HC.CS_Dterm      = 0 # TODO der_err*HC.CS_Dgain
-# TODO may incorporate a forward speed into a consideration using gain schedualing
-# TODO other option: divide the gains by u^2. If the speed is less than a threshold, all gain will be set to zero
+    HC.CS_Iterm      = int_error*HC.CS_Igain
+    HC.CS_Dterm      = der_error*HC.CS_Dgain
 
     CS_demand = HC.CS_Pterm + HC.CS_Iterm + HC.CS_Dterm
     CS_demand  = myUti.limits(CS_demand,-HC.CS_Smax,HC.CS_Smax)
@@ -127,6 +124,8 @@ def thrust_controller(error, int_error, der_error):
             thruster1 = thruster1*scale_factor
 
     else:
+        HC.Thrust_Pterm = 0.
+        HC.Thrust_Dterm = 0.
         thruster0 = 0.
         thruster1 = 0.
         
@@ -142,71 +141,55 @@ def thrust_controller(error, int_error, der_error):
 def main_control_loop():
 
     #### SETUP ####
-        global controller_onOff
-        global speed
-        global HC
+    global controller_onOff
+    global speed
+    global HC
 
-        speed            = 0
-        controller_onOff = Bool()
-        set_params()
+    speed            = 0
+    controller_onOff = Bool()
+    set_params()
 
-        controlRate = 5. # [Hz]
-        r = rospy.Rate(controlRate)
-        controlPeriod = 1/controlRate # [sec]
+    controlRate = 5. # [Hz]
+    r = rospy.Rate(controlRate)
+    controlPeriod = 1/controlRate # [sec]
+    
+    [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360) # On first loop, initialize relevant parameters
+    
+    while not rospy.is_shutdown():
+    
+        pubStatus.publish(nodeID = 7, status = True)
         
-        [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360) # On first loop, initialize relevant parameters
-        
-        while not rospy.is_shutdown():
-        
-            pubStatus.publish(nodeID = 7, status = True)
+        timeRef = time.time()                
+        if controller_onOff == True:
+            # get sampling
+            heading_current = HC.heading
+            heading_demand = (HC.heading_demand)%360
             
-            if controller_onOff == True:
+            # Get system state #
+            [error, int_error, der_error] = system_state(controlPeriod,heading_current,heading_demand)
 
-                timeRef = time.time()                
-
-                # get sampling
-                heading_current = HC.heading
-                heading_demand = (HC.heading_demand)%360
-                
-                # Get system state #
-                [error, int_error, der_error] = system_state(controlPeriod,heading_current,heading_demand)
-
-                # Control Surface Controller # Nb CSp = Sternplane port, CSt = Rudder top
-                CS_demand = CS_controller(error, int_error, der_error)
-                # Thruster controller # 
-                [thruster0, thruster1] = thrust_controller(error, int_error, der_error)
-                
-                # update the heading_control.msg, and this will be subscribed by the logger.py
-                pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
-                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
-                pub_HC.publish(HC)
-                
-                # verbose activity in thrust_controller
-#                str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %(heading_demand) 
-#                rospy.loginfo(str)  
-#                str = ">>>>>>>>>>>>>>>>Current heading is %.2fdeg" %(heading_current) 
-#                rospy.loginfo(str)
-#                str = ">>>>>>>>>>>>>>>>Heading error is %.2fdeg" %(error) 
-#                rospy.loginfo(str)
-#                str = ">>>>>>>>>>>>>>>>Control surface demand is %d" %(CS_demand) 
-#                rospy.loginfo(str)
-#                str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(thruster0) 
-#                rospy.loginfo(str)
-#                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
-#                rospy.loginfo(str)
-#                print ''
-
-                if time.time()-timeLastCallback > timeLastDemandMax:
-                    controller_onOff = False
-                    
-                timeElapse = time.time()-timeRef
-                
-                if timeElapse < controlPeriod:
-                    r.sleep()
-                else:
-                    str = "Heading control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
-                    rospy.logwarn(str)
-                    pubMissionLog.publish(str)
+            # Control Surface Controller # Nb CSp = Sternplane port, CSt = Rudder top
+            CS_demand = CS_controller(error, int_error, der_error)
+            # Thruster controller # 
+            [thruster0, thruster1] = thrust_controller(error, int_error, der_error)
+            
+            # update the heading_control.msg, and this will be subscribed by the logger.py
+            pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
+            pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+            pub_HC.publish(HC)
+            
+            # watch to inactivate the controller when there is no demand specified
+            if time.time()-timeLastCallback > timeLastDemandMax:
+                controller_onOff = False
+            
+        # verify and maintain the control rate
+        timeElapse = time.time()-timeRef        
+        if timeElapse < controlPeriod:
+            r.sleep()
+        else:
+            str = "Heading control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
+            pubMissionLog.publish(str)
 
 ################################################################################
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
