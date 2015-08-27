@@ -49,6 +49,7 @@ def tail_section_loop(status):
     global d_bottom
     global e_port
     global prop
+    global prop_demand
     
     dt = 0
     prop_full_time = 1.0
@@ -79,6 +80,7 @@ def tail_section_loop(status):
             [prop, prop_on] = speedToSetpoint(0, prop_on, prop_full_time)
         else:
             [prop, prop_on] = speedToSetpoint(prop_demand, prop_on, prop_full_time)
+            prop_demand = 0
         if time.time()-timeLastDemandCsHor>timeLastDemandMax:
             c_starb = angleToSetpoint(0, 70)
             e_port = angleToSetpoint(0, 70)
