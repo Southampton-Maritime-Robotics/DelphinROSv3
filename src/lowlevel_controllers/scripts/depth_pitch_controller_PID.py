@@ -54,6 +54,7 @@ def set_params():
     global crMin
     global windup_err_thr
     global windup_der_err_thr
+    global int_error_depth
     
     ### General ###
     propDemand = 0
@@ -63,10 +64,14 @@ def set_params():
     DPC.deadzone_Depth = 0   # deadzone of the depth error [metre]
     DPC.deadzone_Pitch = 0      # deadzone of the pitch error [degree]
     
+    int_error_depth = 0 # initialise the integrator for depth error signal
+    int_error_pitch_th = 0 # initialise the integrator for pitch error signal used in thruster control allocation
+    int_error_pitch_cs = 0 # initialise the integrator for pitch error signal used in control surface control law
+    
     # control surfaces
-    DPC.CS_Pgain = 0. # P gain for control surface
-    DPC.CS_Igain = 0. # I gain for control surface
-    DPC.CS_Dgain = 0. # D gain for control surface
+    DPC.CS_Pgain = 6. # P gain for control surface
+    DPC.CS_Igain = 0# 0.5 # I gain for control surface
+    DPC.CS_Dgain = -13 # D gain for control surface
     
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
@@ -79,22 +84,18 @@ def set_params():
     DPC.Pitch_Igain = 0.001 # 0.0005 # 0.001 # FIXME: tune me kantapon
     DPC.Pitch_Dgain = -0.008 # -0.005 # -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
-    DPC.Thrust_Smax = 1800       # maximum thruster setpoint # FIXME: unleash me kantapon
+    DPC.Thrust_Smax = 2500       # maximum thruster setpoint # FIXME: unleash me kantapon
 
     DPC.pitchBiasMax = 5. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
-    DPC.pitchBiasGain = -5. # p gain to compute bias: has to be -VE
-
+    DPC.pitchBiasGain = 20. # p gain to compute bias: has to be -VE
+    
     ### determine relative arm lengths for thrust allocation ###
     L_th = 1.06             # distance between two vertical thrusters [metre]: measured
     cr_approx = 0.85 # 1.05 # 0.98        # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
     Ltf_nose = 0.28         # location of the front vertical thruster from nose: measured
-#    DPC.crTol = 0.05        # FIXME change the message structure and logger. to bound the cr between front and rear thruster with this gap from the bound [metre]: chosen
-    
-    crTol = 0.25
+    crTol = 0.2 # to bound the cr between front and rear thruster with this gap from the bound [metre]: chosen
     crMax = crTol
     crMin = -crTol
-#    crMin = cr_approx - Ltf_nose -L_th + crTol      # length from cr_approx to front thruster
-#    crMax = cr_approx - Ltf_nose - crTol            # length from cr_approx to rear thruster
 
     ### Parameter for Anti-Windup Scheme ###
     windup_err_thr = 0.8 # if abs(depth_error) goes beyond this and,
@@ -107,14 +108,22 @@ def set_params():
 ##### CONTROL SURFACE CONTROLLER ################################################
 #################################################################################
 
-def CS_controller(error_pitch, int_error_pitch, der_error_pitch):
+def CS_controller(error_pitch, int_error_pitch, der_error_pitch, dt):
     global DPC
+    global int_error_pitch_cs
+    
+    # update integrator and apply saturation
+    int_error_pitch_cs += dt*error_pitch
+    int_error_pitch_cs = myUti.limits(int_error_pitch_cs,-DPC.CS_Smax,DPC.CS_Smax)
+    
     DPC.CS_Pterm      = error_pitch*DPC.CS_Pgain
-    DPC.CS_Iterm      = 0 # TODO int_error*DPC.CS_Igain
-    DPC.CS_Dterm      = 0 # TODO der_err*DPC.CS_Dgain
+    DPC.CS_Iterm      = int_error_pitch_cs*DPC.CS_Igain
+    DPC.CS_Dterm      = der_error_pitch*DPC.CS_Dgain
 
     CS_demand = DPC.CS_Pterm + DPC.CS_Iterm + DPC.CS_Dterm
+    CS_demand_ref = CS_demand
     CS_demand = myUti.limits(CS_demand,-DPC.CS_Smax,DPC.CS_Smax)
+
     
     DPC.CS_demand = int(round(CS_demand))
 
@@ -124,14 +133,22 @@ def CS_controller(error_pitch, int_error_pitch, der_error_pitch):
 ########## THRUST CONTROLLER ###################################################
 ################################################################################
 
-def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch):
+def thrust_controller(error_depth, der_error_depth, error_pitch, der_error_pitch, dt):
     global DPC
     global L_th
     global cr_approx
     global Ltf_nose
-    
-    if numpy.abs(error_depth) > DPC.deadzone_Depth:
-    
+    global flag_pitch_clamping
+    global int_error_depth
+    global int_error_pitch_th
+
+    if numpy.abs(error_depth) > DPC.deadzone_Depth:    
+        # conditional integrator for depth signal
+        if numpy.abs(error_depth)<windup_err_thr and numpy.abs(der_error_depth)<windup_der_err_thr:
+            int_error_depth += dt*error_depth # Calculate the integral error
+        elif depth_current < 0.4 and numpy.abs(der_error_depth)<windup_der_err_thr: # guarantee the integrators is active when the sub is near the water surface
+            int_error_depth += dt*error_depth
+        
         DPC.Depth_Pterm = error_depth*DPC.Depth_Pgain
         DPC.Depth_Iterm = int_error_depth*DPC.Depth_Igain
         DPC.Depth_Dterm = der_error_depth*DPC.Depth_Dgain
@@ -139,16 +156,21 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
         DPC.Depth_Thrust = DPC.Depth_Pterm + DPC.Depth_Iterm + DPC.Depth_Dterm # determine a required generalised force to bring the AUV down to a desired depth
         
         if numpy.abs(error_pitch) > DPC.deadzone_Pitch:        
+
+            # update the integrator and apply saturation
+            int_error_pitch_th += dt*error_pitch
+            int_error_pitch_th = myUti.limits(int_error_pitch_th, crMin/2., crMax/2.)
         
             DPC.Pitch_Pterm = error_pitch*DPC.Pitch_Pgain
-            DPC.Pitch_Iterm = int_error_pitch*DPC.Pitch_Igain
+            DPC.Pitch_Iterm = int_error_pitch_th*DPC.Pitch_Igain
             DPC.Pitch_Dterm = der_error_pitch*DPC.Pitch_Dgain
 
             cr = DPC.Pitch_Pterm + DPC.Pitch_Iterm + DPC.Pitch_Dterm # determine a deviation of a center of rotation to stabilise the pitching
 
         else:
             cr = 0
-        
+            
+        cr_ref = cr
         cr = myUti.limits(-cr, crMin, crMax)       # Function to contrain within defined limits (w.r.t. cr_approx)
         
         DPC.cr = cr
@@ -181,7 +203,7 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
     
         DPC.thruster0 = 0.
         DPC.thruster1 = 0.
-        
+
     DPC.thruster0 = int(round(thruster0))
     DPC.thruster1 = int(round(thruster1))
     
@@ -194,138 +216,106 @@ def thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch
 def main_control_loop():
 
     #### SETUP ####
-        global controller_onOff
-        global DPC
-        global depth_der # depth derivative from PT-type filter in compass_oceanserver.py
-        
-        controller_onOff = Bool()
-        set_params()
-        
-        controlRate = 5. # [Hz]
-        r = rospy.Rate(controlRate)
-        controlPeriod = 1/controlRate # [sec]
-        
-        # On first loop, initialize relevant parameters in system_state updaters
-        [error_depth, int_error_depth] = system_state_depth(-1,0,0,0)
-        [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(-1,0,0,0)
-        
-        while not rospy.is_shutdown():
-        
-            pubStatus.publish(nodeID = 8, status = True)
-            
-            if controller_onOff == True:
-
-                timeRef = time.time()
-                
-                # get sampling
-                depth_current = DPC.depth # depth filtered by PT_filter in compass_oceanserver.py
-                der_error_depth = depth_der # derivative depth filtered by PT_filter in compass_oceanserver.py
-                depth_demand = DPC.depth_demand
-                pitch_current = DPC.pitch # pitch angle measured by xsens
-                pitch_demand = DPC.pitch_demand
-                
-                # Get system state #
-                DPC.pitchBias = determinePitchBias(depth_current,depth_demand)
-                [error_depth, int_error_depth] = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
-                [error_pitch, int_error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
-                
-                CS_demand = CS_controller(error_pitch, int_error_pitch, der_error_pitch)
-                [thruster0, thruster1] = thrust_controller(error_depth, int_error_depth, der_error_depth, error_pitch, int_error_pitch, der_error_pitch)
-                
-                # update the heading_control.msg, and this will be subscribed by the logger.py
-                pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
-                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
-#                print thruster0, thruster1
-                pub_DPC.publish(DPC)
-                
-##                # verbose activity in thrust_controller
-##                str = ">>>>>>>>>>>>>>>>Depth demand is %.2fdeg" %(depth_demand) 
-##                rospy.loginfo(str)  
-##                str = ">>>>>>>>>>>>>>>>Current depth is %.2fdeg" %(depth_current) 
-##                rospy.loginfo(str)
-##                str = ">>>>>>>>>>>>>>>>Depth error is %.2fdeg" %(error_depth) 
-##                rospy.loginfo(str)
-##                str = ">>>>>>>>>>>>>>>>Current pitch is %.2fdeg" %(depth_current) 
-##                rospy.loginfo(str)
-##                str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(thruster0) 
-##                rospy.loginfo(str)
-##                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
-##                rospy.loginfo(str)
-##                print ''
-                
-                if time.time()-timeLastCallback > timeLastDemandMax:
-                    controller_onOff = False
+    global controller_onOff
+    global DPC
+    global depth_der # depth derivative from PT-type filter in compass_oceanserver.py
     
-                timeElapse = time.time()-timeRef
-                if timeElapse < controlPeriod:
-                    r.sleep()
-                else:
-                    str = "Pitch-Depth control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse)
-                    rospy.logwarn(str)
-                    pubMissionLog.publish(str)
+    controller_onOff = Bool()
+    set_params()
+    
+    controlRate = 5. # [Hz]
+    r = rospy.Rate(controlRate)
+    controlPeriod = 1/controlRate # [sec]
+    
+    # On first loop, initialize relevant parameters in system_state updaters
+    error_depth = system_state_depth(-1,0,0,0)
+    [error_pitch, der_error_pitch] = system_state_pitch(-1,0,0,0)
+    
+    while not rospy.is_shutdown():
+    
+        pubStatus.publish(nodeID = 8, status = True)        
+
+        timeRef = time.time()
+        if controller_onOff == True:
+            # get sampling
+            depth_current = DPC.depth # depth filtered by PT_filter in compass_oceanserver.py
+            der_error_depth = depth_der # derivative depth filtered by PT_filter in compass_oceanserver.py
+            depth_demand = DPC.depth_demand
+            pitch_current = DPC.pitch # pitch angle measured by xsens
+            pitch_demand = DPC.pitch_demand
+            
+            # get system state
+            DPC.pitchBias = determinePitchBias(depth_current,depth_demand)
+            error_depth = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
+            [error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
+            
+            # determine actuator demands
+            CS_demand = CS_controller(error_pitch, der_error_pitch, controlPeriod)
+            [thruster0, thruster1] = thrust_controller(error_depth, der_error_depth, error_pitch, der_error_pitch, controlPeriod)
+            
+            # update the depth_pitch_control.msg, and this will be subscribed by the logger.py
+            pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
+            pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+            pub_DPC.publish(DPC)
+            
+            # watchdog to deactivate the controller when there is no demand specified
+            if time.time()-timeLastCallback > timeLastDemandMax:
+                controller_onOff = False
+
+        # verify and maintain the control rate
+        timeElapse = time.time()-timeRef
+        if timeElapse < controlPeriod:
+            r.sleep()
+        else:
+            str = "Pitch-Depth control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse)
+            rospy.logwarn(str)
+            pubMissionLog.publish(str)
 
 ################################################################################
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
 ################################################################################
 
 def determinePitchBias(depth_current,depth_demand):
-####    if propDemand > 10:
-####        pitchBias = DPC.pitchBiasGain*(depth_demand-depth_current)
-####        myUti.limits(pitchBias,-DPC.pitchBiasMax,DPC.pitchBiasMax)
-####    else:
-####        pitchBias = 0
-    pitchBias = 0
+    pitchBias = DPC.pitchBiasGain*(depth_demand-depth_current)
+    pitchBias = myUti.limits(pitchBias,-DPC.pitchBiasMax,DPC.pitchBiasMax)
     return pitchBias
 
 def system_state_depth(dt,depth_current,depth_demand,der_error_depth):
     global DPC
-    global int_error_depth
 
     if dt == -1:
         error_depth = 0
-        int_error_depth = 0
         der_error_depth = 0
     else:
         ### ERROR ###
         error_depth  = depth_demand - depth_current
         ### INTEGRAL ###
-        
-        # conditional integration
-        if numpy.abs(error_depth)<windup_err_thr and numpy.abs(der_error_depth)<windup_der_err_thr:
-            int_error_depth += dt*error_depth # Calculate the integral error
-        elif depth_current < 0.4 and numpy.abs(der_error_depth)<windup_der_err_thr:
-            int_error_depth += dt*error_depth
-#        # conventional integration
-#        int_error_depth += dt*error_depth
-        
+        # integrater is moved into thrust_control()
         ### DERIVATIVE ###
         # derivative depth is determined using PT-type filter by compass_oceanserver.py.
         # remember, this is the PI-D strategy that use derivative of actual depth rathen than the derivative of err_depth
 
     # update the error terms. These will be subscribed by the logger node.
     DPC.error_depth = error_depth
-    DPC.int_error_depth = int_error_depth
     DPC.der_error_depth = der_error_depth
 
-    return [error_depth, int_error_depth]
+    return error_depth
 
 ################################################################################
 
 def system_state_pitch(dt,pitch_current,pitch_demand,pitchBias):
     global DPC
-    global int_error_pitch
     global sample_pitch
 
     if dt == -1:
         sample_pitch = numpy.zeros(2)
         error_pitch = 0
         der_error_pitch = 0
-        int_error_pitch = 0               
     else:
         ### ERROR ###
-        error_pitch  = pitch_demand - pitch_current + pitchBias
+        error_pitch  = pitch_demand - pitch_current - pitchBias
         ### INTEGRAL ###
-        int_error_pitch += dt*error_pitch
+        # integrator is moved to thrust_controller as int_error_pitch_th and CS_controller as int_error_pitch_cs
         ### DERIVATIVE ###
         # this simple calculation is good enough for the xsens
         # PI-D strategy (compute the derivative of pitch)
@@ -335,10 +325,9 @@ def system_state_pitch(dt,pitch_current,pitch_demand,pitchBias):
         
     # update the error terms. These will be subscribed by the logger node.
     DPC.error_pitch = error_pitch
-    DPC.int_error_pitch = int_error_pitch
     DPC.der_error_pitch = der_error_pitch
 
-    return [error_pitch, int_error_pitch, der_error_pitch]
+    return [error_pitch, der_error_pitch]
 
 ################################################################################
 ######## UPDATE PARAMETERS FROM TOPICS #########################################
