@@ -11,6 +11,13 @@
     <param name="long_orig"           value="-1.366769" />            <!-- Origin Longitude -->
     <param name="ImportWaypoints"     value="False" />                <!-- Import Waypoints -->
     <param name="look_ahead_distance" value="10" />                   <!-- look ahead distance (in m) for track following algorithm  effectivly inverse of gain-->
+    <param name="xsens_filter_profile"     value="43" />                <!-- Import Waypoints -->
+    <!--
+        ## filter profile
+        # available option {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
+        # use dynamic for most cases
+        # use vru_general when the magnetic reading can not be thrusted at all.
+    -->
     
     <!-- Eastleigh North Pier: (50.957024,-1.366769) -->
     <!-- Eastleigh South Pier: (50.956473,-1.366835) -->    
