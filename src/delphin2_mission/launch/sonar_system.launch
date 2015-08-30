@@ -1,9 +1,9 @@
 <launch>
-    <param name="RLim" value="350.0" />		<!-- Right limit for Heading in 1/16th of gradian -->
-    <param name="LLim" value="25.0" />		<!-- Left limit for Heading in 1/16th of gradian -->
+    <param name="RLim" value="180.0" />		<!-- Right limit for Heading in 1/16th of gradian -->
+    <param name="LLim" value="95.0" />		<!-- Left limit for Heading in 1/16th of gradian -->
     <param name="heading" value="3200" />	<!-- NOT CURRENTLY IN USE - Heading in 1/16th of gradian -->
     <param name="NBins" value="200" />	      	<!-- Number of bins -->
-    <param name="Range" value="20" />           <!-- in metres -->
+    <param name="Range" value="5" />           <!-- in metres -->
     <param name="ADInterval" value="0" />
     <param name="GlitchCount" value="1" />      <!-- Number of repeated returns (+1 (from SonarPing.m)) to remove glitches -->
     <param name="Threshold" value="10" />	<!-- Power level (0-250) above which sonar 'sees' a target -->
@@ -41,7 +41,7 @@
 
     <!-- NODES ################################################ -->
 
-    <node name="sonar_node" pkg="hardware_interfaces" type="sonar_node.py" />
+    <node name="sonar_node" pkg="hardware_interfaces" type="sonar_node.py" output="screen" />
     <node name="sonar_detectobstacle" pkg="hardware_interfaces" type="sonar_detectobstacle.py" />
     <!-- <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/> -->
  
