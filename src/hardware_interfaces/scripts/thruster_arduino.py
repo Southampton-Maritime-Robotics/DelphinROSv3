@@ -14,7 +14,7 @@ Developed based on "tsl_customer_mission.py" that was originally used to control
 # usage
   - get voltage: "faVcs"
   - get current: "faIcs"
-  - get RPM: "faRcs" (20Hz approximately)
+  - get RPM: "faRcs" (the fastest rate is 20Hz approximately)
   - set thrusterSetpoint: "faPspeed_1,direction_1@speed_2,direction_2@speed_3,direction_3@speed_4,direction_4@cs"
     
 # convention
@@ -71,30 +71,15 @@ def init_serial():
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
+    
+    serialPort.flushInput()
+    serialPort.flushOutput()
+    
     return serialPort.isOpen()
-
-############################# INITIALISE BOARD ######################################    
-def init_board():
-    global serialPort
-
-    # check board status
-    serialPort.flushInput() # flush to be safe
-    motor_shutdown() # Shut down motors just in case.
-
-    time.sleep(1) # put a delay to give enought time for the board to response for voltage reading
-    voltage = getVoltage() #Gets voltage data from board to check that board is sending and recieving messages
-    return True
-    if voltage == 0:
-        return False
-    else:
-        return True
 
 ############################# GET VOLTAGE ######################################    
 
 def getVoltage():
-
-    global timeOut # timeout to wait for a data packet being sent back from arduino
-    global delaySerial
     
     # request a voltage measurement
     try:
@@ -135,18 +120,15 @@ def getVoltage():
                             pass
                         
                 timeElapse = time.time()-timeStart # elapsed time for finding a header
+                
     except:
         pass
-    vol = vol*1.08 # compensate the voltage reading
     
     return vol # return in mili vol
     
 ############################# GET AMPARE ######################################    
 
 def getAmp():
-
-    global timeOut
-    global delaySerial
     
     # request a current measurement
     try:
@@ -186,6 +168,8 @@ def getAmp():
                             pass
                         
                 timeElapse = time.time()-timeStart # elapsed time for finding a header
+                
+                
     except:
         pass
             
@@ -194,9 +178,6 @@ def getAmp():
 ############################# GET RPM ######################################    
 
 def getRPM():
-
-    global timeOut
-    global delaySerial
 
     # request a RPM measurement
     try:
@@ -236,13 +217,17 @@ def getRPM():
                                     msg+=_in
                                 timeElapse = time.time()-timeStart # elapsed time for getting the rest of data packet
                 timeElapse = time.time()-timeStart # elapsed time for finding a
+
+            if timeElapse>timeOut:
+                amp = [-1,-1,-1,-1]
+
     except:
         pass
     
     return rpm
 
 ############################# MAIN LOOP ############################################    
-def motor_control(status):
+def motor_control():
 
     global onOff_horiz
     global onOff_vert
@@ -258,14 +243,16 @@ def motor_control(status):
     sp_max_arduino = 255.
     slope = sp_max_arduino/(sp_max-sp_min)
     interception = -slope*sp_min
-    time_zero = time.time()
     timeHorizLastDemand = time.time()
     timeVertLastDemand = time.time()
 
     #parameters to utilize watchdog
+    try:
+        voltage_min = rospy.get_param('min-motor-voltage')
+    except:
+        voltage_min = 19000 # [mV]
     timeStart_vol = time.time()
     timeLim_vol = 5 # [sec]
-    voltage_min = 19000 # [mV]
     timeElapse_rpm = [0.0,0.0,0.0,0.0]
     timeStart_rpm = [timeStart_vol,timeStart_vol,timeStart_vol,timeStart_vol]
     timeLim_rpm = timeLim_vol
@@ -278,7 +265,7 @@ def motor_control(status):
         
         timeRef = time.time()
         
-        pubStatus.publish(nodeID = 1, status = status)
+        pubStatus.publish(nodeID = 1, status = True)
         data_now = current_data #Get the data at the current time. This is in the range of [-2500,2500]
         
         ############################# ON/OFF MSG ######################################    
@@ -326,8 +313,7 @@ def motor_control(status):
             setpoint3= onOff_horiz*thrust_sp_arduino[3]
         else: # if there is no update on horiz thruster for longer than timeLastDemand_sat, turn off the horiz thruster
             setpoint2= 0
-            setpoint3= 0
-            
+            setpoint3= 0            
         
         setPoints = '%d,%d@%d,%d@%d,%d@%d,%d@' %(setpoint0,thrust_dr[0],setpoint1,thrust_dr[1],setpoint2,thrust_dr[2],setpoint3,thrust_dr[3])
         dataToSend = 'faP' + setPoints # add header to a data packet
@@ -342,26 +328,18 @@ def motor_control(status):
         amp = getAmp()    
         rpm = getRPM()
 
-        ############################# WATCHDOG ######################################    
-        if voltage < voltage_min:
-            timeElapse_vol = time.time() - timeStart_vol
-            if timeElapse_vol > timeLim_vol:
-                status = False
-                str = "voltage is too low: shutdown the ArduinoMaxon"
-                rospy.logerr(str)
-                shutdown()
-        else:
-            timeStart_vol = time.time()
-            for i in range(len(rpm)):
-                if rpm[i] == -1:
-                    timeElapse_rpm[i] = time.time()-timeStart_rpm[i]
-                    if timeElapse_rpm[i] > timeLim_rpm:
-                        status = False
-                        str = "motor is not functioning: shutdown the ArduinoMaxon"
-                        rospy.logerr(str)
-                        shutdown()
-                else:
-                    timeStart_rpm[i] = time.time()
+        ############################# WATCHDOG ######################################
+        for i in range(len(rpm)):
+            if rpm[i] == -1:
+                timeElapse_rpm[i] = time.time()-timeStart_rpm[i]
+                if timeElapse_rpm[i] > timeLim_rpm:                
+                    pubStatus.publish(nodeID = 1, status = False)
+                    str = "motor is not functioning: shutdown the ArduinoMaxon"
+                    rospy.logerr(str)
+                    pubMissionLog.publish(str)
+                    rospy.signal_shutdown(str)
+            else:
+                timeStart_rpm[i] = time.time()
 
         ############################# PUBLISH INFO. ######################################
             
@@ -402,7 +380,7 @@ def motor_control(status):
 def vert_callback(new_sp):
     global current_data
     global timeVertLastDemand
-    current_data['thruster0']= new_sp.thruster0
+    current_data['thruster0'] = new_sp.thruster0
     current_data['thruster1'] = new_sp.thruster1
     timeVertLastDemand = time.time()
 
@@ -460,15 +438,13 @@ if __name__ == '__main__':
     pubStatus = rospy.Publisher('status', status)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
     
-    board_status = init_board()
-    
-    if board_status and port_status == True:
-        status = True
-        pubStatus.publish(nodeID = 1, status = status)
+    if port_status == True:
+        pubStatus.publish(nodeID = 1, status = True)
         rospy.loginfo("ArduinoMaxon board now online")
     else:
-        status = False
-        pubStatus.publish(nodeID = 1, status = status)
+        pubStatus.publish(nodeID = 1, status = False)
     
     rospy.on_shutdown(shutdown) #Defining shutdown behaviour
-    motor_control(status) # entering the main loop
+    motor_shutdown() # Shut down motors just in case.
+
+    motor_control() # entering the main loop
