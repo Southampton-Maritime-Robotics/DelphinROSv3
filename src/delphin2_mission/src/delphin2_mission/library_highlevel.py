@@ -37,9 +37,9 @@ class library_highlevel:
         self.pub_sway_demand               = rospy.Publisher('sway_demand', Float32)
         self.pub_prop_demand               = rospy.Publisher('prop_demand',Int8)                #tail_section.py currently expecting uint8
         self.pub_heading_demand            = rospy.Publisher('heading_demand', Float32)
-        self.pub_depth_demand              = rospy.Publisher('depth_demand', Float32) 
+        self.pub_depth_demand              = rospy.Publisher('depth_demand', Float32)
         self.pub_speed                     = rospy.Publisher('speed_demand', Float32)
-        self.pub_pitch_demand              = rospy.Publisher('pitch_demand', Float32) 
+        self.pub_pitch_demand              = rospy.Publisher('pitch_demand', Float32)
         self.pub_tsl_onOff_horizontal      = rospy.Publisher('TSL_onOff_horizontal', Bool)      #turns thrusters on and off 
         self.pub_tsl_onOff_vertical        = rospy.Publisher('TSL_onOff_vertical', Bool)        #turns thrusters on and off
         self.pub_tail_setpoints_vertical   = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
@@ -63,7 +63,7 @@ class library_highlevel:
         rospy.Subscriber('TSL_feedback', tsl_feedback, self.callback_tsl_feedback)
         rospy.Subscriber('status', status, self.callback_status)
         rospy.Subscriber('tail_output', tail_feedback, self.callback_tail_feedback)
-        rospy.Subscriber('Heading_controller_values', heading_control, self.callback_heading_control)      
+        rospy.Subscriber('Heading_controller_values', heading_control, self.callback_heading_control)
         rospy.Subscriber('sonar_processed', sonar_data, self.callback_sonar_range)
         
         #gets parameters from server ####Don't Need to be Here ????????
@@ -262,31 +262,31 @@ class library_highlevel:
             str = "Switch Horizontal Thruster ON"
             rospy.logdebug(str)	
         else: 
-            self.pub_tsl_onOff_horizontal.publish(0) 
+            self.pub_tsl_onOff_horizontal.publish(0)
             str = "Switch Horizontal Thruster OFF"
             rospy.logdebug(str)	
             
     # switch vertical thrusters on or off {1,0}
     def switchVerticalThrusters(self, onOff):
         if onOff == 1:
-            self.pub_tsl_onOff_vertical.publish(1) 
+            self.pub_tsl_onOff_vertical.publish(1)
             str = "Switch Vertical Thruster ON"
-            rospy.logdebug(str)	        
+            rospy.logdebug(str)
         else:
-            self.pub_tsl_onOff_vertical.publish(0) 
+            self.pub_tsl_onOff_vertical.publish(0)
             str = "Switch Vertical Thruster OFF"
-            rospy.logdebug(str)	 
+            rospy.logdebug(str)
 
     # switch heading controller on or off {1,0}
     def switchHeadingOnOff(self,onOff):
         if onOff ==1:
             self.pub_heading_control_onOff.publish(1)
             str = "Switch Heading Control ON"
-            rospy.logdebug(str)	 
+            rospy.logdebug(str)
         else:
             self.pub_heading_control_onOff.publish(0)
             str = "Switch Heading Control OFF"
-            rospy.logdebug(str)	 
+            rospy.logdebug(str)
 
     # switch depth controller on or off {1,0}
     def switchDepthOnOff(self,onOff):
@@ -354,17 +354,17 @@ class library_highlevel:
     
     def getAz(self):
         return self.__compass.az
-
+    
     # get position values
     def getX(self):
         return self.__position.X
-
+    
     def getY(self):
         return self.__position.Y
     
     def getGPSValidFix(self):
-        return self.__position.ValidGPSfix    
-               
+        return self.__position.ValidGPSfix
+    
     def getAltitude(self):
         return self.__altitude
     
@@ -394,7 +394,7 @@ class library_highlevel:
     
     def getTailStatus(self):
         return self.__tail_status
-        
+    
     def getAltimeterStatus(self):
         return self.__altimeter_status
     
@@ -403,22 +403,22 @@ class library_highlevel:
     
     def getDepthTransducerStatus(self):
         return self.__depth_transducer_status
-
+    
     def getXsensStatus(self):
         return self.__xsens_status
-        
+    
     def getHeadingCtrlStatus(self):
         return self.__heading_ctrl_status
-        
+    
     def getDepthCtrlStatus(self):
         return self.__depth_ctrl_status
     
     def getDeadreckonerStatus(self):
         return self.__deadreckoner_status
-        
+    
     def getLoggerStatus(self):
         return self.__logger_status
-        
+    
     def getBackSeatDriverStatus(self):
         return self.__backSeatDriver_status
     
@@ -438,7 +438,7 @@ class library_highlevel:
         return self.__PropRPM
     
     def getHeadingError(self):
-        return self.__heading_error     
+        return self.__heading_error
 
     #################################################
     #Navigation commands
@@ -471,7 +471,7 @@ class library_highlevel:
 
             NosWaypoints=len(waypoints)
 
-            p = re.compile('[-]*\d+.\d+')    
+            p = re.compile('[-]*\d+.\d+')
             data=p.findall(waypoints)
             NosWaypoints=len(data)/2
 
@@ -487,8 +487,8 @@ class library_highlevel:
         except IOError as e:
             Load=0
             longitude=0
-            latitude=0      
-            rospy.logerr("Waypoint File Not Found") 
+            latitude=0
+            rospy.logerr("Waypoint File Not Found")
             
         return longitude, latitude, Load
 
