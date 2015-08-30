@@ -138,9 +138,9 @@ def setupSonar():
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    #print "Setup sonar: mtHeadCommand: "
-    #print serialPort.portstr
-    #print serialPort.isOpen()
+####    print "Setup sonar: mtHeadCommand: "
+####    print serialPort.portstr
+####    print serialPort.isOpen()
     
     # Below is an example of mtHeadCommand message with fixed parameters #
     # setupData = [64, 48, 48, 51, 67, 60, 0, 255, 2, 55, 19, 128, 255, 1, 1, 35, 11, 102, 102, 102, 5, 102, 102, 102, 5, 112, 61, 10, 9, 112, 61, 10, 9, 40, 0, 60, 0, 128, 12, 128, 12, 210, 0, 84, 84, 125, 0, 125, 0, 25, 64, 208, 0, 144, 1, 244, 1, 100, 0, 64, 6, 1, 0, 0, 0, 10]
@@ -271,12 +271,12 @@ def sonarLoop():
 
     setupSonar()
 
-    controlRate = 10. # Hz
+    controlRate = 5. # Hz
     controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
+    
     while not rospy.is_shutdown():                                              # Whilst ROS is running 
-        timeRef = time.time()
-        
+        timeRef = time.time()        
         sonarTalker()                                                           # Constructs and send mtSendData message to request a ping
         sonarListener()                                                         # Waits for response then processes response
         
