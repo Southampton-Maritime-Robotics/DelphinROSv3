@@ -135,7 +135,17 @@ def main(controller):
             pub.publish(BackSeatFlag)
             pubMissionLog.publish(str)
             return
+            
+        #Check Motor Control Board Status
+        if controller.getThrusterStatus:
+            BackSeatFlag=1
+            str = "Thruster control board goes offline"
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
 
+        # Verify and Maintain Control Rate
         timeElapse = time.time()-timeRef
         if timeElapse < controlPeriod:
             r.sleep()
