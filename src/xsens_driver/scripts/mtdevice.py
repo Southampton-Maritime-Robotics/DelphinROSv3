@@ -40,8 +40,15 @@ from custom_def import location, req
 ################################################################
 
 ## filter profile
-#available option {general:27, high_mag_dep:28, dynamic:29, low_mag_dep:2a, vru_general:2b}
-scenario_id = 0x29
+# available option {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
+# use dynamic for most cases
+# use vru_general when the magnetic reading can not be thrusted at all.
+
+try: 
+    scenario_id = rospy.get_param('xsens_filter_profile')
+except:
+    scenario_id = 41
+
 
 ## reference location (for a good heading measurement)
 # available options {Boldrewood_Campus, Common_Park, Eastleight_Lake}
