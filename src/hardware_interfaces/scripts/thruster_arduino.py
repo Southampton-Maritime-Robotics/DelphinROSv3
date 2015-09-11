@@ -219,7 +219,7 @@ def getRPM():
                 timeElapse = time.time()-timeStart # elapsed time for finding a
 
             if timeElapse>timeOut:
-                amp = [-1,-1,-1,-1]
+                pass
 
     except:
         pass
@@ -408,7 +408,6 @@ def shutdown():
     serialPort.flushInput()
     serialPort.flushOutput()
     pubStatus.publish(nodeID = 1, status = False)
-    rospy.loginfo("ArduinoMaxon goes offline")
     serialPort.close()
 
 def onOff_horiz_callback(new_onOff_horiz):
