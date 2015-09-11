@@ -38,7 +38,12 @@ def sonarTalker():
 
     mtSendData = AsciiBlock + hexLength + [SID, DID, count, msgNum, msgSeq, Node] + currentTime + [LF] # Construct mtSendData message
     mtSendData = ''.join([chr(char) for char in mtSendData[:]])  # Converts from string to hex
-    serialPort.write(mtSendData)                                 # Send mtSendData message to sonar
+    try:
+        serialPort.write(mtSendData)                                 # Send mtSendData message to sonar
+    except:
+        str = "Fail to write to a serial port: raise a shutdown signal for sonar_node"
+        rospy.logerr(str)
+        pubMissionLog.publish(str)
 
     #print "Sending ping trigger to sonar - mtSendData:"
     #print mtSendData
