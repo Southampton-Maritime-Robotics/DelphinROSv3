@@ -19,7 +19,7 @@ float32 Depth_Thrust
 
 float32 pitchBias
 float32 pitchBiasMax
-float32 pitchBiasGain
+float32 pitchBiasGain_P # derivative term is at the bottom
 
 ###################
 ## pitch parameters
@@ -57,8 +57,4 @@ float32 CS_Iterm
 float32 CS_Dterm
 int32 CS_demand
 
-###################
-## use for debuging
-float32 Ltf
-float32 Ltr
-float32 crNose
+float32 pitchBiasGain_D
