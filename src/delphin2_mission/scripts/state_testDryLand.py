@@ -6,6 +6,7 @@ A state to do a run all the actuators and verify if they are functioning properl
 ######################################
 #Modifications
 12/May/2015 use the feedback signal to identify if the actuators is functioning
+11/Sep/2015 use only last N samples when do average
 
 #TODO
 -include the test for camera
@@ -24,9 +25,10 @@ class testDryLand(smach.State):
     def __init__(self, lib):
             smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
             self.__controller = lib
+            self.N = 10 # number of samples used when averaging
+            self.timeActive = 3 # time that actuator will be active [sec]
             
     def execute(self, userdata):
-
             ####################################################################
             ### CAMERAS ########################################################
             ####################################################################
@@ -38,8 +40,7 @@ class testDryLand(smach.State):
             ### LIGHTS #########################################################
             ####################################################################
             str = "Flashing lights now"
-            rospy.loginfo(str)
-            
+            rospy.loginfo(str)            
             i = 0
             while i < 10:
                 self.__controller.lightOnOff(True)
@@ -51,35 +52,27 @@ class testDryLand(smach.State):
             ####################################################################
             ### THRUSTERS ######################################################
             ####################################################################
-            
+
             #### Thruster 0 and 1 ####
-            N = 0
-            rpmT0_avg = 0
-            rpmT1_avg = 0
-            time_ref = time.time()
-            while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterVertical(-150,-150)
-                rpmT0_avg += numpy.abs(self.__controller.getT0rpm())
-                rpmT1_avg += numpy.abs(self.__controller.getT1rpm())
-                N += 1
-            self.__controller.setArduinoThrusterVertical(0,0)
+            rpmT0 = [0]*self.N # create a list of zero with a length N
+            rpmT1 = [0]*self.N # create a list of zero with a length N
+            thrusterDemand = [-150,150]
+            limitRPM_thruster = 120 # a minimum thruster speed that will be accounted as the propeller is functioning
+            for a in thrusterDemand:
+                time_ref = time.time()
+                while time.time()-time_ref < self.timeActive:
+                    self.__controller.setArduinoThrusterVertical(a,a)
+                    rpmT0 = rpmT0[1:] + [self.__controller.getT0rpm()]
+                    rpmT1 = rpmT1[1:] + [self.__controller.getT1rpm()]
+                self.__controller.setArduinoThrusterVertical(0,0)
+            rpmT0_avg = sum(rpmT0)/float(self.N)
+            rpmT1_avg = sum(rpmT1)/float(self.N)
             
-            time_ref = time.time()
-            while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterVertical(150,150)
-                rpmT0_avg += numpy.abs(self.__controller.getT0rpm())
-                rpmT1_avg += numpy.abs(self.__controller.getT1rpm())
-                N += 1
-            self.__controller.setArduinoThrusterVertical(0,0)
-                
-            rpmT0_avg = rpmT0_avg/float(N)
-            rpmT1_avg = rpmT1_avg/float(N)
-            
-            if (rpmT0_avg < 50):
+            if (rpmT0_avg < limitRPM_thruster):
                 str = "Problem with thruster 0. Average speed = %s" %rpmT0_avg
                 rospy.logerr(str)
                 return 'aborted'
-            if (rpmT1_avg < 50):
+            if (rpmT1_avg < limitRPM_thruster):
                 str = "Problem with thruster 1. Average speed = %s" %rpmT1_avg
                 rospy.logerr(str)
                 return 'aborted'
@@ -89,33 +82,23 @@ class testDryLand(smach.State):
             rospy.loginfo(str)
             
             #### Thruster 2 and 3 ####
-            N = 0
-            rpmT2_avg = 0
-            rpmT3_avg = 0
-            time_ref = time.time()
-            while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterHorizontal(150,150)
-                rpmT2_avg += numpy.abs(self.__controller.getT2rpm())
-                rpmT3_avg += numpy.abs(self.__controller.getT3rpm())
-                N += 1
-            self.__controller.setArduinoThrusterHorizontal(0,0)
+            rpmT2 = [0]*self.N # create a list of zero with a length N
+            rpmT3 = [0]*self.N # create a list of zero with a length N
+            for a in thrusterDemand:
+                time_ref = time.time()
+                while time.time()-time_ref < self.timeActive:
+                    self.__controller.setArduinoThrusterHorizontal(a,a)
+                    rpmT2 = rpmT2[1:] + [self.__controller.getT2rpm()]
+                    rpmT3 = rpmT3[1:] + [self.__controller.getT3rpm()]
+                self.__controller.setArduinoThrusterHorizontal(0,0)
+            rpmT2_avg = sum(rpmT2)/float(self.N)
+            rpmT3_avg = sum(rpmT3)/float(self.N)
             
-            time_ref = time.time()
-            while time.time()-time_ref < 3:    
-                self.__controller.setArduinoThrusterHorizontal(-150,-150)
-                rpmT2_avg += numpy.abs(self.__controller.getT2rpm())
-                rpmT3_avg += numpy.abs(self.__controller.getT3rpm())
-                N += 1
-            self.__controller.setArduinoThrusterHorizontal(0,0)
-                
-            rpmT2_avg = rpmT2_avg/float(N)
-            rpmT3_avg = rpmT3_avg/float(N)
-            
-            if (rpmT2_avg < 50):
+            if (rpmT2_avg < limitRPM_thruster):
                 str = "Problem with thruster 2. Average speed = %s" %rpmT2_avg
                 rospy.logerr(str)
                 return 'aborted'
-            if (rpmT3_avg < 50):
+            if (rpmT3_avg < limitRPM_thruster):
                 str = "Problem with thruster 3. Average speed = %s" %rpmT3_avg
                 rospy.logerr(str)
                 return 'aborted'
@@ -125,14 +108,13 @@ class testDryLand(smach.State):
             rospy.loginfo(str)
             
             ####################################################################
-            ### TAIL SECTION ###################################################
+            ### FINS ###########################################################
             ####################################################################
 
             angles = [-30.0, 0.0, 30.0]
-
             for a in angles:
                 time_ref = time.time()
-                while time.time()-time_ref<3:
+                while time.time()-time_ref<self.timeActive:
                     self.__controller.setControlSurfaceAngle(a,a,a,a)
                 
                 if numpy.abs(self.__controller.getCS_b() - a) > 10.0:
@@ -156,30 +138,29 @@ class testDryLand(smach.State):
             str = "Control surfaces - working"
             rospy.loginfo(str)
             time.sleep(1) # allow the control surfaces to get back to the neutral position
+
+            ####################################################################
+            ### PROPELLER ######################################################
+            ####################################################################
             
-            N = 0
-            RPM_avg = 0
             time_ref = time.time()
-            while time.time()-time_ref<2:
+            prop_rps = [0]*self.N # create a list of zero with a length N
+            while time.time()-time_ref<self.timeActive:
                 self.__controller.setRearProp(10)
-                RPM_avg += self.__controller.getPropRPM()
-                N += 1
-            RPM_avg = RPM_avg/float(N)
+                prop_rps = prop_rps[1:] + [self.__controller.getPropRPM()]
+            prop_rps_avg = sum(prop_rps)/float(self.N)
             self.__controller.setRearProp(0)
 
-            if RPM_avg < 3: # just an arbitrary integer that is not zero
-                str = "Problem with rear prop - average rpm = %s" %RPM_avg
-                rospy.logerr(str)
-                self.__controller.setRearProp(0)
-                return 'aborted'
-            else:
+            if prop_rps_avg > 2:
                 str = "Rear prop - working"
                 rospy.loginfo(str)
-                self.__controller.setRearProp(0)
-
+            else:
+                str = "Problem with rear prop - average rps = %s" %rps_avg
+                rospy.logerr(str)
+                return 'aborted'
+                
             return 'succeeded'
                 
             #return 'preempted'
 
-            #return 'aborted'  
-            
+            #return 'aborted'
