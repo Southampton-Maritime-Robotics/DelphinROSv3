@@ -137,7 +137,7 @@ def main(controller):
             return
             
         #Check Motor Control Board Status
-        if controller.getThrusterStatus:
+        if not controller.getThrusterStatus:
             BackSeatFlag=1
             str = "Thruster control board goes offline"
             rospy.logerr(str)
