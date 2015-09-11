@@ -110,7 +110,7 @@ class Initialise(smach.State):
 
         time.sleep(0.1) #give motor control board time to return a voltage measurement
         voltage = self.__controller.getVoltage()
-        str = "Motor voltage: %smV" %(voltage)
+        str = "Battery voltage: %smV" %(voltage)
         rospy.loginfo(str)
         pub.publish(str)
         str='time elapsed = %s s' %(time.time()-time_zero)
