@@ -22,6 +22,7 @@ Note:
 import rospy
 import serial
 import time
+import math
 import numpy
 from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
@@ -58,9 +59,11 @@ def set_params():
     global int_error_depth_lim
     global int_error_pitch_th
     global int_error_pitch_cs
+    global speed
     
     ### General ###
     propDemand = 0
+    speed = 0
     timeLastDemandMax = 1 # [sec] if there is no onOff flag updated within this many seconds, controller will be turnned off
     timeLastCallback = time.time()
 
@@ -114,7 +117,7 @@ def set_params():
 ##### CONTROL SURFACE CONTROLLER ################################################
 #################################################################################
 
-def CS_controller(error_pitch, der_error_pitch, dt):
+def CS_controller(error_pitch, der_error_pitch, dt, w_cs):
     global DPC
     global int_error_pitch_cs
     
@@ -131,9 +134,8 @@ def CS_controller(error_pitch, der_error_pitch, dt):
     DPC.CS_Dterm      = der_error_pitch*DPC.CS_Dgain
 
     CS_demand = DPC.CS_Pterm + DPC.CS_Iterm + DPC.CS_Dterm
-    CS_demand_ref = CS_demand
+    CS_demand = w_cs * CS_demand # apply a weight for speed transition
     CS_demand = myUti.limits(CS_demand,-DPC.CS_Smax,DPC.CS_Smax)
-
     
     DPC.CS_demand = int(round(CS_demand))
 
@@ -143,7 +145,7 @@ def CS_controller(error_pitch, der_error_pitch, dt):
 ########## THRUST CONTROLLER ###################################################
 ################################################################################
 
-def thrust_controller(depth_current, error_depth, der_error_depth, error_pitch, der_error_pitch, dt):
+def thrust_controller(depth_current, error_depth, der_error_depth, error_pitch, der_error_pitch, dt, w_th):
     global DPC
     global L_th
     global cr_approx
@@ -151,7 +153,7 @@ def thrust_controller(depth_current, error_depth, der_error_depth, error_pitch, 
     global flag_pitch_clamping
     global int_error_depth
     global int_error_pitch_th
-
+    
     if numpy.abs(error_depth) > DPC.deadzone_Depth:    
         # conditional integrator for depth signal
         flag_depth_int_th = 0
@@ -167,6 +169,7 @@ def thrust_controller(depth_current, error_depth, der_error_depth, error_pitch, 
         DPC.Depth_Dterm = der_error_depth*DPC.Depth_Dgain
         
         DPC.Depth_Thrust = DPC.Depth_Pterm + DPC.Depth_Iterm + DPC.Depth_Dterm # determine a required generalised force to bring the AUV down to a desired depth
+        DPC.Depth_Thrust = w_th * DPC.Depth_Thrust # apply a weight for speed transition
         
         if numpy.abs(error_pitch) > DPC.deadzone_Pitch:
 
@@ -244,6 +247,7 @@ def main_control_loop():
     global controller_onOff
     global DPC
     global depth_der # depth derivative from PT-type filter in compass_oceanserver.py
+    global speed
     
     controller_onOff = Bool()
     set_params()
@@ -260,6 +264,11 @@ def main_control_loop():
     
         pubStatus.publish(nodeID = 8, status = True)        
 
+        # regulary update the AUV speed in according to the propeller demand
+
+        speed_current = speedObserver(propDemand, speed, controlPeriod)
+        speed = speed_current
+        
         timeRef = time.time()
         if controller_onOff == True:
             # get sampling
@@ -268,15 +277,25 @@ def main_control_loop():
             depth_demand = DPC.depth_demand
             pitch_current = DPC.pitch # pitch angle measured by xsens
             pitch_demand = DPC.pitch_demand
-            
+
             # get system state
             error_depth = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
             DPC.pitchBias = determinePitchBias(error_depth,der_error_depth)
             [error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
+            [w_th,w_cs] = determineActuatorWeight(speed_current,depth_current)
             
             # determine actuator demands
-            CS_demand = CS_controller(error_pitch, der_error_pitch, controlPeriod)
-            [thruster0, thruster1] = thrust_controller(depth_current, error_depth, der_error_depth, error_pitch, der_error_pitch, controlPeriod)
+            CS_demand = CS_controller(error_pitch, 
+                                      der_error_pitch, 
+                                      controlPeriod, 
+                                      w_cs)
+            [thruster0, thruster1] = thrust_controller(depth_current, 
+                                                       error_depth, 
+                                                       der_error_depth, 
+                                                       error_pitch, 
+                                                       der_error_pitch, 
+                                                       controlPeriod, 
+                                                       w_th)
             
             # update the depth_pitch_control.msg, and this will be subscribed by the logger.py
             pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
@@ -299,6 +318,21 @@ def main_control_loop():
 ################################################################################
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
 ################################################################################
+
+def determineActuatorWeight(_speed,_depth):
+    if _depth < 0.4: # have both types of actuator fully active when operating near the water surface
+        w_th = 1
+        w_cs = 1
+    else: # compute gain based on current speed
+        U_star_th = 0.85;
+        w_delta_th = 0.04;
+        w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
+
+        U_star_cs = 0.5;
+        w_delta_cs = 0.04;
+        w_cs = 0.5*(math.tanh((_speed-U_star_cs)/w_delta_cs)+1);
+        
+    return [w_th, w_cs]
 
 def determinePitchBias(error_depth,der_error_depth):
     
@@ -390,6 +424,53 @@ def depth_demand_callback(depthd):
 def prop_demand_callback(propd):
     global propDemand
     propDemand = propd.data
+    
+################################################################################
+######## SPEED OBSERVER ########################################################
+################################################################################
+
+def propeller_model(u_prop,_speed):
+    if numpy.abs(u_prop)<10:   # deadband
+        F_prop = 0
+    else:
+        # propeller model based on Turnock2010 e.q. 16.19
+        Kt0 = 0.1001
+        a = 0.6947
+        b = 1.6243
+        w_t = 0.36 # wake fraction
+        t = 0.50 # thrust deduction
+        D = 0.305 # peopeller diameter [m]
+        rho = 1000 # water density [kg/m^3]
+        
+        rps = 0.5451*u_prop - 2.384 # infer propeller rotation speed from the propeller demand [rps]
+                    
+        J = _speed *(1-w_t)/rps/D;
+        Kt = Kt0*(1 - (J/a)**b );
+        F_prop = rho*rps**2*D**4*Kt*(1-t);
+
+    return F_prop
+
+def rigidbodyDynamics(_speed,F_prop):
+    m = 79.2 # mass of the AUV [kg]
+    X_u_dot = -3.46873716858361 # added mass of the AUV [kg]
+    X_uu = -29.9811131464837 # quadratic damping coefficient [kg/m]
+    
+    acc = (X_uu*abs(_speed)*_speed+F_prop)/(m-X_u_dot)
+    
+    return acc
+    
+def speedObserver(u_prop,_speed,dt):
+    # compute force from a propeller demand
+    F_prop = propeller_model(u_prop,_speed)
+    # implement Runge-Kutta 4th order to update the AUV speed
+    k1 = rigidbodyDynamics(_speed,F_prop)
+    k2 = rigidbodyDynamics(_speed+dt/2.*k1,F_prop)
+    k3 = rigidbodyDynamics(_speed+dt/2.*k2,F_prop)
+    k4 = rigidbodyDynamics(_speed+dt*k3,F_prop)
+
+    speed_change = dt/6.*(k1+2*k2+2*k3+k4)
+    _speed = _speed + speed_change
+    return _speed
 
 ################################################################################
 ######## INITIALISATION ########################################################
