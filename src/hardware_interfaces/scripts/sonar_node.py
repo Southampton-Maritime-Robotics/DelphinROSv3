@@ -41,9 +41,10 @@ def sonarTalker():
     try:
         serialPort.write(mtSendData)                                 # Send mtSendData message to sonar
     except:
-        str = "Fail to write to a serial port: raise a shutdown signal for sonar_node"
-        rospy.logerr(str)
+        str = "The serial port of sonar_node has been closed: prefaring to shutdown"
+        rospy.logwarn(str)
         pubMissionLog.publish(str)
+        rospy.signal_shutdown(str)
 
     #print "Sending ping trigger to sonar - mtSendData:"
     #print mtSendData
@@ -57,80 +58,85 @@ def sonarListener():
     
     timeOut = 2                                                                 # Timeout for data to appear in buffer (time from ping until data recieved by node)
     
-    startTime = time.time()                                                     # Record start time
-
-    while serialPort.inWaiting() < 12:                                          # TEST WHETHER 12 SHOULD BE 13!!! ################# # Waiting until number of bytes is the length of the message header
-        time.sleep(0.001)
-        if startTime+timeOut < time.time():	                                    # If timeout then return 0
-            serialPort.flushInput()
-            return 0                                                                
+    try:
     
-    if serialPort.inWaiting() > 12:         
-        headerData = serialPort.read(13)                                        # Read 13 bytes of data (length of header)
+        startTime = time.time()                                                     # Record start time
+        while serialPort.inWaiting() < 12:                                          # TEST WHETHER 12 SHOULD BE 13!!! ################# # Waiting until number of bytes is the length of the message header
+            time.sleep(0.001)
+            if startTime+timeOut < time.time():	                                    # If timeout then return 0
+                serialPort.flushInput()
+                return 0                                                                
+        
+        if serialPort.inWaiting() > 12:         
+            headerData = serialPort.read(13)                                        # Read 13 bytes of data (length of header)
 
-        headerData = numpy.fromstring(headerData, dtype=numpy.uint8)            # Converts from string to UINT8 numpy array
+            headerData = numpy.fromstring(headerData, dtype=numpy.uint8)            # Converts from string to UINT8 numpy array
 
-        #print "Data from sonar: mtHeadData:"                                    
-        #print headerData
-        #print "--------"
+            #print "Data from sonar: mtHeadData:"                                    
+            #print headerData
+            #print "--------"
 
-        if headerData[0] == 64:                                                 # Every message should start with an '@' (ASCII code 64)
-            msgType = headerData[10]                                            # See manual
-            #print "Message type:  ",msgType
-           
-            # From sonarPing.m: get the length of the rest of the data (see catherine harris for sonarping.m!)
-            # calulate from mtAlive 22 bytes in total, header[5:7] = 16 bytes and we load in 13 bytes initially
-            # thus number to remove = 16 - (22-13) = 7
-            # headerData[5]+headerData[6]*256 = simulating Matlab typecast function - converting 2 uint8s to 1 uint16  
-            msgLength = (headerData[5]+(headerData[6]*256))-7
-            #print msgLength
-            #print serialPort.inWaiting()
+            if headerData[0] == 64:                                                 # Every message should start with an '@' (ASCII code 64)
+                msgType = headerData[10]                                            # See manual
+                #print "Message type:  ",msgType
+               
+                # From sonarPing.m: get the length of the rest of the data (see catherine harris for sonarping.m!)
+                # calulate from mtAlive 22 bytes in total, header[5:7] = 16 bytes and we load in 13 bytes initially
+                # thus number to remove = 16 - (22-13) = 7
+                # headerData[5]+headerData[6]*256 = simulating Matlab typecast function - converting 2 uint8s to 1 uint16  
+                msgLength = (headerData[5]+(headerData[6]*256))-7
+                #print msgLength
+                #print serialPort.inWaiting()
 
-            startTime = time.time()                                             # Reset time zero for next timeout
+                startTime = time.time()                                             # Reset time zero for next timeout
 
-            while serialPort.inWaiting()<msgLength:                             # Makes sure full message is in buffer within timeout
-                time.sleep(0.001)
-                if startTime+timeOut < time.time():
-                    #print "Timeout error"
+                while serialPort.inWaiting()<msgLength:                             # Makes sure full message is in buffer within timeout
+                    time.sleep(0.001)
+                    if startTime+timeOut < time.time():
+                        #print "Timeout error"
+                        serialPort.flushInput()
+                        return 0
+
+                msgData = serialPort.read(serialPort.inWaiting())                   # Read rest of message
+                msgData = numpy.fromstring(msgData, dtype=numpy.uint8)              # Convert to numpy array of UINT8
+                #print msgData
+               
+                if msgData[-1] != 10:                                               # If the message does not end in an '\LF' then return 0
+                    #print "Message error: missing LF character" 
                     serialPort.flushInput()
                     return 0
 
-            msgData = serialPort.read(serialPort.inWaiting())                   # Read rest of message
-            msgData = numpy.fromstring(msgData, dtype=numpy.uint8)              # Convert to numpy array of UINT8
-            #print msgData
-           
-            if msgData[-1] != 10:                                               # If the message does not end in an '\LF' then return 0
-                #print "Message error: missing LF character" 
-                serialPort.flushInput()
+                if msgType == 1:                                                    # Each if/elseif statement defines how to process each message type
+                    print "mtVersionData"
+                    # mtVersionData                                                 # mtVersionData == 1 -> not currently used
+                elif msgType == 2:
+                    #print "mtHeadData"
+                    
+                    # Used only for debugging -> visualising sonar data #
+                    transBearing = msgData[27]+(msgData[28]*256)                    # Converts 2 x UINT8 characters into 1 x UINT16
+                    transBearing = (transBearing / 6400.0) *360                     # Converts from 1/16 of a gradian to degrees 
+                    #print transBearing
+                        
+                    msgData = numpy.concatenate((headerData,msgData))               # Joins header and message data into one structure
+                        
+                    msgData = ''.join([chr(char) for char in msgData[:]])           # Converts from numpy array into string so it can be published
+                    pub.publish(str(msgData))
+
+                elif msgType == 4:                                                  # mtAlive == 4 -> not currently processed
+                    #print "mtAlive"
+                    return 4
+                else:
+                    print "Error: Unknown message type"
+
+            else:
+                print "Error: sonar message does not start with the required '@'" 
                 return 0
 
-            if msgType == 1:                                                    # Each if/elseif statement defines how to process each message type
-                print "mtVersionData"
-                # mtVersionData                                                 # mtVersionData == 1 -> not currently used
-            elif msgType == 2:
-                #print "mtHeadData"
-                
-                # Used only for debugging -> visualising sonar data #
-                transBearing = msgData[27]+(msgData[28]*256)                    # Converts 2 x UINT8 characters into 1 x UINT16
-                transBearing = (transBearing / 6400.0) *360                     # Converts from 1/16 of a gradian to degrees 
-                #print transBearing
-                    
-                msgData = numpy.concatenate((headerData,msgData))               # Joins header and message data into one structure
-                    
-                msgData = ''.join([chr(char) for char in msgData[:]])           # Converts from numpy array into string so it can be published
-                pub.publish(str(msgData))
-
-            elif msgType == 4:                                                  # mtAlive == 4 -> not currently processed
-                #print "mtAlive"
-                return 4
-            else:
-                print "Error: Unknown message type"
-
-
-        else:
-            print "Error: sonar message does not start with the required '@'" 
-            return 0
-            
+    except:
+        str = "The serial port of sonar_node has been closed: prefaring to shutdown"
+        rospy.logwarn(str)
+        pubMissionLog.publish(str)
+        rospy.signal_shutdown(str)
     
 ################################################################    
 def setupSonar():
