@@ -10,6 +10,7 @@ A heading controller for the AUV when moving on a horizontal plane based-on PI-D
 #Modifications
 2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
 5/4/2015: makesure CS and thruster demands are Integer32
+21/9/2015: added speed observer
 
 # TODO - make the "CS_controller" less agressive at high forward speeds
 # TODO - check if the sway force distribution have been done correctly
@@ -22,7 +23,6 @@ import time
 import numpy
 from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
-from hardware_interfaces.msg    import position
 from hardware_interfaces.msg    import compass
 from lowlevel_controllers.msg   import heading_control
 from std_msgs.msg               import Float32
@@ -144,7 +144,9 @@ def main_control_loop():
     global controller_onOff
     global speed
     global HC
+    global propDemand
 
+    propDemand       = 0
     speed            = 0
     controller_onOff = Bool()
     set_params()
@@ -158,8 +160,13 @@ def main_control_loop():
     while not rospy.is_shutdown():
     
         pubStatus.publish(nodeID = 7, status = True)
-        
         timeRef = time.time()                
+
+        speed_current = speedObserver(propDemand, speed, controlPeriod)
+        speed = speed_current
+        HC.speed = speed
+        print " current speed: ", speed
+
         if controller_onOff == True:
             # get sampling
             heading_current = HC.heading
@@ -247,11 +254,56 @@ def onOff_cb(onOff):
     controller_onOff=onOff.data
     timeLastCallback = time.time()
     
-def speed_callback(data):
-    global speed
-    global HC
-    speed = data.forward_vel
-    HC.speed = speed
+def prop_demand_callback(propd):
+    global propDemand
+    propDemand = propd.data
+    
+################################################################################
+######## SPEED OBSERVER ########################################################
+################################################################################
+
+def propeller_model(u_prop,_speed):
+    if numpy.abs(u_prop)<10:   # deadband
+        F_prop = 0
+    else:
+        # propeller model based on Turnock2010 e.q. 16.19
+        Kt0 = 0.1001
+        a = 0.6947
+        b = 1.6243
+        w_t = 0.36 # wake fraction
+        t = 0.50 # thrust deduction
+        D = 0.305 # peopeller diameter [m]
+        rho = 1000 # water density [kg/m^3]
+        
+        rps = 0.5451*u_prop - 2.384 # infer propeller rotation speed from the propeller demand [rps]
+                    
+        J = _speed *(1-w_t)/rps/D;
+        Kt = Kt0*(1 - (J/a)**b );
+        F_prop = rho*rps**2*D**4*Kt*(1-t);
+
+    return F_prop
+
+def rigidbodyDynamics(_speed,F_prop):
+    m = 79.2 # mass of the AUV [kg]
+    X_u_dot = -3.46873716858361 # added mass of the AUV [kg]
+    X_uu = -29.9811131464837 # quadratic damping coefficient [kg/m]
+    
+    acc = (X_uu*abs(_speed)*_speed+F_prop)/(m-X_u_dot)
+    
+    return acc
+    
+def speedObserver(u_prop,_speed,dt):
+    # compute force from a propeller demand
+    F_prop = propeller_model(u_prop,_speed)
+    # implement Runge-Kutta 4th order to update the AUV speed
+    k1 = rigidbodyDynamics(_speed,F_prop)
+    k2 = rigidbodyDynamics(_speed+dt/2.*k1,F_prop)
+    k3 = rigidbodyDynamics(_speed+dt/2.*k2,F_prop)
+    k4 = rigidbodyDynamics(_speed+dt*k3,F_prop)
+
+    speed_change = dt/6.*(k1+2*k2+2*k3+k4)
+    _speed = _speed + speed_change
+    return _speed
     
 ################################################################################
 ######## INITIALISATION ########################################################
@@ -266,8 +318,8 @@ if __name__ == '__main__':
     rospy.Subscriber('heading_demand', Float32, heading_demand_cb)
     rospy.Subscriber('sway_demand', Float32, sway_demand_cb)
     rospy.Subscriber('compass_out', compass, compass_cb)
-    rospy.Subscriber('position_dead', position, speed_callback)
     rospy.Subscriber('Heading_onOFF', Bool, onOff_cb)
+    rospy.Subscriber('prop_demand', Int8, prop_demand_callback)
     
     pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
     pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
