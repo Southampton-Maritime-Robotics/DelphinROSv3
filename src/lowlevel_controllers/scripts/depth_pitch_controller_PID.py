@@ -26,7 +26,6 @@ import math
 import numpy
 from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
-from hardware_interfaces.msg    import position
 from hardware_interfaces.msg    import compass
 from hardware_interfaces.msg    import depth
 from lowlevel_controllers.msg   import depth_pitch_control
@@ -264,12 +263,13 @@ def main_control_loop():
     
         pubStatus.publish(nodeID = 8, status = True)        
 
+        timeRef = time.time()
         # regulary update the AUV speed in according to the propeller demand
 
         speed_current = speedObserver(propDemand, speed, controlPeriod)
         speed = speed_current
+        DPC.speed = speed
         
-        timeRef = time.time()
         if controller_onOff == True:
             # get sampling
             depth_current = DPC.depth # depth filtered by PT_filter in compass_oceanserver.py
