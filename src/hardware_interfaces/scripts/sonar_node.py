@@ -156,16 +156,23 @@ def setupSonar():
     # Below is an example of mtHeadCommand message with fixed parameters #
     # setupData = [64, 48, 48, 51, 67, 60, 0, 255, 2, 55, 19, 128, 255, 1, 1, 35, 11, 102, 102, 102, 5, 102, 102, 102, 5, 112, 61, 10, 9, 112, 61, 10, 9, 40, 0, 60, 0, 128, 12, 128, 12, 210, 0, 84, 84, 125, 0, 125, 0, 25, 64, 208, 0, 144, 1, 244, 1, 100, 0, 64, 6, 1, 0, 0, 0, 10]
     
-    message_flag = 0
-    while(message_flag !=4) and not rospy.is_shutdown():                        # Continuously sends mtHeadCommand message until sonar responds
-        setupData = get_mtHeadCommand()
-        serialPort.write(setupData)
-        time.sleep(0.1)
-        #print 'still waiting for mtAlive....'
-        message_flag = sonarListener()
-        
-    serialPort.flushOutput()                                                    # Flush serial buffers to ensure a clean start of operation                    
-    serialPort.flushInput()
+    try:
+        message_flag = 0
+        while(message_flag !=4) and not rospy.is_shutdown():                        # Continuously sends mtHeadCommand message until sonar responds
+            setupData = get_mtHeadCommand()
+            serialPort.write(setupData)
+            time.sleep(0.1)
+            #print 'still waiting for mtAlive....'
+            message_flag = sonarListener()
+            
+        serialPort.flushOutput()                                                    # Flush serial buffers to ensure a clean start of operation                    
+        serialPort.flushInput()
+    except:
+        str = "The message from sonar cannot be received: check the connection."
+        rospy.logwarn(str)
+        pubMissionLog.publish(str)
+        rospy.signal_shutdown(str)
+    
 
     #setupData = get_mtHeadCommand()                                             # NEEDS TESTING ####### why are we writing the setup data twice...?
     #serialPort.write(setupData)
