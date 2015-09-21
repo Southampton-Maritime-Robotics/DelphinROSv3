@@ -87,8 +87,6 @@ def tail_section_loop(status):
         if time.time()-timeLastDemandCsVer>timeLastDemandMax:
             b_top = angleToSetpoint(0, 70)
             d_bottom = angleToSetpoint(0, 70)
-            c_starb = angleToSetpoint(0, 70)
-            e_port = angleToSetpoint(0, 70)
         
         message = 'b%03dc%03dd%03de%03df%03d' %(b_top, c_starb, d_bottom , e_port, prop)
         #print 'message: ',message
