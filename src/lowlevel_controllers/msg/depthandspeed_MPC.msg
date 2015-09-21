@@ -1,7 +1,11 @@
-bool    onOFF
+# this has been used by MPC depth control system in Tiedong's work
+
+int8    onOFF
 float32 depth
 float32 depth_demand
 float32 pitch
+float32 pitch_demand
+float32 pitch_speed
 float32 speed
 float32 speed_demand
 float32 prop
@@ -14,16 +18,10 @@ float32 T0
 float32 T1
 int32   thruster0
 int32   thruster1
-float32 prop_gain
-float32 delta_gain
-float32 thruster_gain
 float32 Np
 float32 Nc
 float32 delta_t
-float32 calc_time
-int32   km
 int32   propSP
-float32 sim_time
 float32 Xf1
 float32 Xf2
 float32 Xf3
