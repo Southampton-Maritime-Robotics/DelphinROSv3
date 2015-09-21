@@ -58,3 +58,4 @@ float32 CS_Dterm
 int32 CS_demand
 
 float32 pitchBiasGain_D
+float32 speed
