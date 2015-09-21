@@ -35,6 +35,7 @@ from hardware_interfaces.msg import sonar
 from hardware_interfaces.msg import dead_reckoner
 from lowlevel_controllers.msg import heading_control
 from lowlevel_controllers.msg import depth_pitch_control
+from lowlevel_controllers.msg import depthandspeed_MPC
 from hardware_interfaces.msg import camera_info
 from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import SMS
@@ -365,7 +366,7 @@ def headingPID_callback(data):
 def depth_pitch_PID_callback(data): 
     stringtime = time.time()-time_zero
         
-    depth_pitch_PIDList = [stringtime, 
+    depth_pitch_PID_List = [stringtime, 
                            data.depth,               # no need
                            data.depth_demand,
                            data.error_depth,         # no need
@@ -407,15 +408,57 @@ def depth_pitch_PID_callback(data):
                            data.CS_Iterm, 
                            data.CS_Dterm, 
                            data.CS_demand,
-                           data.pitchBiasGain_D]
+                           data.pitchBiasGain_D,
+                           data.speed]
     
     with open('%s/depthPitchPIDLog.csv' %(dirname), "a") as f:
         try:
             Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            Writer.writerow(depth_pitch_PIDList)
+            Writer.writerow(depth_pitch_PID_List)
         except ValueError:
             print 'writerow error'
             
+            
+def depth_pitch_MPC_callback(data): 
+    stringtime = time.time()-time_zero
+
+    depth_pitch_MPC_List = [stringtime, 
+                           data.onOFF,
+                           data.depth,
+                           data.depth_demand,
+                           data.pitch,
+                           data.pitch_demand,
+                           data.pitch_speed,
+                           data.speed,
+                           data.speed_demand,
+                           data.prop,
+                           data.dprop,
+                           data.ddelta,
+                           data.delta,
+                           data.dT0,
+                           data.dT1,
+                           data.T0,
+                           data.T1,
+                           data.thruster0,
+                           data.thruster1,
+                           data.Np,
+                           data.Nc,
+                           data.delta_t,
+                           data.propSP,
+                           data.Xf1,
+                           data.Xf2,
+                           data.Xf3,
+                           data.Xf4,
+                           data.Xf5,
+                           data.Xf6,
+                           data.Xf7,
+                           data.Xf8]
+    with open('%s/depthPitchMPCLog.csv' %(dirname), "a") as f:
+        try:
+            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            Writer.writerow(depth_pitch_MPC_List)
+        except ValueError:
+            print 'writerow error'
 ##############################################################
             
 def camera_callback(data): 
@@ -571,9 +614,11 @@ if __name__ == '__main__':
     rospy.Subscriber('altimeter_out',altitude, altimeter_callback)
     rospy.Subscriber('sonar_processed', sonar_data, sonar_callback)
     rospy.Subscriber('MissionStrings', String, mission_callback)
+    
 ##    rospy.Subscriber('dead_reckoner', dead_reckoner, reckoner_callback) 
     rospy.Subscriber('Heading_controller_values', heading_control, headingPID_callback)
     rospy.Subscriber('Depth_pitch_controller_values', depth_pitch_control, depth_pitch_PID_callback)
+    rospy.Subscriber('Depth_pitch_controller_values_MPC', depthandspeed_MPC, depth_pitch_MPC_callback)
     
     rospy.Subscriber('camera_info', camera_info, camera_callback)
     rospy.Subscriber('SMS_info', SMS, SMS_callback)
