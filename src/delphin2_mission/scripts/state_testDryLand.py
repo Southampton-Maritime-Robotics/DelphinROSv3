@@ -118,19 +118,19 @@ class testDryLand(smach.State):
                     self.__controller.setControlSurfaceAngle(a,a,a,a)
                 
                 if numpy.abs(self.__controller.getCS_b() - a) > 10.0:
-                    str = "Problem with top control surface. Feedback = %d",self.__controller.getCS_b()
+                    str = "Problem with top control surface. Feedback = %d" %self.__controller.getCS_b()
                     rospy.logerr(str)
                     return 'aborted' 
                 if numpy.abs(self.__controller.getCS_c() - a) > 10.0:
-                    str = "Problem with starboard control surface"
+                    str = "Problem with starboard control surface. Feedback = %d" %self.__controller.getCS_C()
                     rospy.logerr(str)
                     return 'aborted' 
                 if numpy.abs(self.__controller.getCS_d() - a) > 10.0:
-                    str = "Problem with bottom control surface"
+                    str = "Problem with bottom control surface. Feedback = %d" %self.__controller.getCS_d()
                     rospy.logerr(str)
                     return 'aborted' 
                 if numpy.abs(self.__controller.getCS_e() - a) > 10.0:
-                    str = "Problem with port control surface"
+                    str = "Problem with port control surface. Feedback = %d" %self.__controller.getCS_e()
                     rospy.logerr(str)
                     return 'aborted'
             
@@ -155,7 +155,7 @@ class testDryLand(smach.State):
                 str = "Rear prop - working"
                 rospy.loginfo(str)
             else:
-                str = "Problem with rear prop - average rps = %s" %rps_avg
+                str = "Problem with rear prop - average rps = %s" %prop_rps_avg
                 rospy.logerr(str)
                 return 'aborted'
                 
