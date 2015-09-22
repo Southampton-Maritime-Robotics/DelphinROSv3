@@ -26,6 +26,7 @@ from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import compass
 from lowlevel_controllers.msg   import heading_control
 from std_msgs.msg               import Float32
+from std_msgs.msg               import Int8
 from std_msgs.msg               import Bool
 from std_msgs.msg               import String
 from hardware_interfaces.msg import status
@@ -165,7 +166,6 @@ def main_control_loop():
         speed_current = speedObserver(propDemand, speed, controlPeriod)
         speed = speed_current
         HC.speed = speed
-        print " current speed: ", speed
 
         if controller_onOff == True:
             # get sampling
@@ -188,6 +188,11 @@ def main_control_loop():
             # watch to inactivate the controller when there is no demand specified
             if time.time()-timeLastCallback > timeLastDemandMax:
                 controller_onOff = False
+        else:
+            HC.CS_demand = 0
+            HC.thruster0 = 0
+            HC.thruster1 = 0
+            pub_HC.publish(HC)
             
         # verify and maintain the control rate
         timeElapse = time.time()-timeRef        
