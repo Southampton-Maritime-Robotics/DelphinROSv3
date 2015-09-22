@@ -1,0 +1,35 @@
+# this has been used in MPC depth control system in Leo's work
+
+bool    onOFF
+float32 depth
+float32 depth_demand
+float32 pitch
+float32 speed
+float32 speed_demand
+float32 prop
+float32 dprop
+float32 ddelta
+float32 delta
+float32 dT0
+float32 dT1
+float32 T0
+float32 T1
+int32   thruster0
+int32   thruster1
+float32 prop_gain
+float32 delta_gain
+float32 thruster_gain
+float32 Np
+float32 Nc
+float32 delta_t
+float32 calc_time
+int32   km
+int32   propSP
+float32 Xf1
+float32 Xf2
+float32 Xf3
+float32 Xf4
+float32 Xf5
+float32 Xf6
+float32 Xf7
+float32 Xf8
