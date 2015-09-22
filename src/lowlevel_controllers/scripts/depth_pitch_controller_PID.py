@@ -305,6 +305,11 @@ def main_control_loop():
             # watchdog to deactivate the controller when there is no demand specified
             if time.time()-timeLastCallback > timeLastDemandMax:
                 controller_onOff = False
+        else:
+            DPC.CS_demand = 0
+            DPC.thruster0 = 0
+            DPC.thruster1 = 0
+            pub_DPC.publish(DPC)
 
         # verify and maintain the control rate
         timeElapse = time.time()-timeRef
