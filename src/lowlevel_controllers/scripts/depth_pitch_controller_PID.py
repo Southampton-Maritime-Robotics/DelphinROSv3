@@ -58,21 +58,26 @@ def set_params():
     global int_error_depth_lim
     global int_error_pitch_th
     global int_error_pitch_cs
+    global int_error_pitchBias
     global speed
+    global timeLastDemandProp
+    global timeLastDemandProp_lim
     
     ### General ###
     propDemand = 0
     speed = 0
     timeLastDemandMax = 1 # [sec] if there is no onOff flag updated within this many seconds, controller will be turnned off
     timeLastCallback = time.time()
+    timeLastDemandProp = time.time()
+    timeLastDemandProp_lim = 1 # [sec] if there is no propeller demand update within this many seconds, the demand will be set to zero
 
     DPC.deadzone_Depth = 0   # deadzone of the depth error [metre]
     DPC.deadzone_Pitch = 0      # deadzone of the pitch error [degree]
     
     # control surfaces
-    DPC.CS_Pgain = 8. # P gain for control surface
+    DPC.CS_Pgain = 6. # P gain for control surface
     DPC.CS_Igain = 1.5 # 0.5 # I gain for control surface
-    DPC.CS_Dgain = -15 # D gain for control surface
+    DPC.CS_Dgain = -10. # D gain for control surface
     
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
@@ -89,7 +94,8 @@ def set_params():
 
     DPC.pitchBiasMax = 10. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
     DPC.pitchBiasGain_P = 30. # p gain to compute pitch bias
-    DPC.pitchBiasGain_D = -40. # d gain to compute pitch bias
+    DPC.pitchBiasGain_I = 5. # i gain to compute pitch bias
+    DPC.pitchBiasGain_D = -20. # d gain to compute pitch bias
     ### determine relative arm lengths for thrust allocation ###
     L_th = 1.06             # distance between two vertical thrusters [metre]: measured
     cr_approx = 0.85 # 1.05 # 0.98        # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
@@ -103,6 +109,7 @@ def set_params():
     int_error_depth_lim = 2.5e6/DPC.Depth_Igain # chosen
     int_error_pitch_th = 0. # initialise the integrator for pitch error signal used in thruster control allocation
     int_error_pitch_cs = 10./DPC.CS_Igain # initialise the integrator for pitch error signal used in control surface control law
+    int_error_pitchBias = 0. # initialise the integrator for pitchBias
     
 
     ### Parameter for Anti-Windup Scheme ###
@@ -247,6 +254,7 @@ def main_control_loop():
     global DPC
     global depth_der # depth derivative from PT-type filter in compass_oceanserver.py
     global speed
+    global propDemand
     
     controller_onOff = Bool()
     set_params()
@@ -261,11 +269,13 @@ def main_control_loop():
     
     while not rospy.is_shutdown():
     
-        pubStatus.publish(nodeID = 8, status = True)        
+        pubStatus.publish(nodeID = 8, status = True)
 
         timeRef = time.time()
         # regulary update the AUV speed in according to the propeller demand
 
+        if time.time()-timeLastDemandProp > timeLastDemandProp_lim:
+            propDemand = 0
         speed_current = speedObserver(propDemand, speed, controlPeriod)
         speed = speed_current
         DPC.speed = speed
@@ -280,7 +290,7 @@ def main_control_loop():
 
             # get system state
             error_depth = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
-            DPC.pitchBias = determinePitchBias(error_depth,der_error_depth)
+            DPC.pitchBias = determinePitchBias(error_depth,der_error_depth,controlPeriod)
             [error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
             [w_th,w_cs] = determineActuatorWeight(speed_current,depth_current)
             
@@ -325,27 +335,38 @@ def main_control_loop():
 ################################################################################
 
 def determineActuatorWeight(_speed,_depth):
-    if _depth < 0.4: # have both types of actuator fully active when operating near the water surface
-        w_th = 1
-        w_cs = 1
-    else: # compute gain based on current speed
-        U_star_th = 0.85;
-        w_delta_th = 0.04;
-        w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
+#    if _depth < 0.4: # have both types of actuator fully active when operating near the water surface
+#        w_th = 1
+#        w_cs = 1
+#    else: # compute gain based on current speed
+    U_star_th = 0.85;
+    w_delta_th = 0.04;
+    w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
 
-        U_star_cs = 0.5;
-        w_delta_cs = 0.04;
-        w_cs = 0.5*(math.tanh((_speed-U_star_cs)/w_delta_cs)+1);
+    U_star_cs = 0.5;
+    w_delta_cs = 0.04;
+    w_cs = 0.5*(math.tanh((_speed-U_star_cs)/w_delta_cs)+1);
         
     return [w_th, w_cs]
 
-def determinePitchBias(error_depth,der_error_depth):
+def determinePitchBias(error_depth,der_error_depth,dt):
+    global int_error_pitchBias
     
+    int_error_pitchBias_max = 6./DPC.pitchBiasGain_I
     if propDemand != 0:
-        pitchBias = DPC.pitchBiasGain_P*(error_depth) + DPC.pitchBiasGain_D*der_error_depth
+        # update integrator for pitchBias and apply saturation
+        int_error_pitchBias += dt*error_depth
+        if DPC.pitchBiasGain_I != 0:
+            myUti.limits(int_error_pitchBias,-int_error_pitchBias_max,int_error_pitchBias_max)
+        
+        pitchBias = DPC.pitchBiasGain_P*error_depth + DPC.pitchBiasGain_I*int_error_pitchBias + DPC.pitchBiasGain_D*der_error_depth
+        pitchBias_ref = pitchBias
         pitchBias = myUti.limits(pitchBias,-DPC.pitchBiasMax,DPC.pitchBiasMax)
     else:
+        int_error_pitchBias = 0
         pitchBias = 0
+    
+    DPC.pitchBias_Iterm = int_error_pitchBias
         
     return pitchBias
 
@@ -428,7 +449,9 @@ def depth_demand_callback(depthd):
     
 def prop_demand_callback(propd):
     global propDemand
+    global timeLastDemandProp
     propDemand = propd.data
+    timeLastDemandProp = time.time()
     
 ################################################################################
 ######## SPEED OBSERVER ########################################################
