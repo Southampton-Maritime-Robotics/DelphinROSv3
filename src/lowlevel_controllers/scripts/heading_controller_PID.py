@@ -44,9 +44,13 @@ def set_params():
     global myUti
     global timeLastDemandMax
     global timeLastCallback
+    global timeLastDemandProp
+    global timeLastDemandProp_lim
     
     timeLastDemandMax = 1 # [sec] if there is no onOff flag updated within this many seconds, controller will be turnned off
     timeLastCallback = time.time()
+    timeLastDemandProp = time.time()
+    timeLastDemandProp_lim = 1 # [sec] if there is no propeller demand update within this many seconds, the demand will be set to zero
 
     ### General ###
     HC.deadzone   = 0   # deadzone of the heading error [degree]
@@ -162,6 +166,9 @@ def main_control_loop():
     
         pubStatus.publish(nodeID = 7, status = True)
         timeRef = time.time()                
+        
+        if time.time()-timeLastDemandProp > timeLastDemandProp_lim:
+            propDemand = 0
 
         speed_current = speedObserver(propDemand, speed, controlPeriod)
         speed = speed_current
@@ -182,7 +189,7 @@ def main_control_loop():
             
             # update the heading_control.msg, and this will be subscribed by the logger.py
             pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
-            pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+            pub_tsl.publish(thruster0 = 0, thruster1 = thruster1)
             pub_HC.publish(HC)
             
             # watch to inactivate the controller when there is no demand specified
@@ -261,7 +268,9 @@ def onOff_cb(onOff):
     
 def prop_demand_callback(propd):
     global propDemand
+    global timeLastDemandProp
     propDemand = propd.data
+    timeLastDemandProp = time.time()
     
 ################################################################################
 ######## SPEED OBSERVER ########################################################
