@@ -75,9 +75,9 @@ def set_params():
     DPC.deadzone_Pitch = 0      # deadzone of the pitch error [degree]
     
     # control surfaces
-    DPC.CS_Pgain = 6. # P gain for control surface
+    DPC.CS_Pgain = 8. # P gain for control surface
     DPC.CS_Igain = 1.5 # 0.5 # I gain for control surface
-    DPC.CS_Dgain = -10. # D gain for control surface
+    DPC.CS_Dgain = -8 # D gain for control surface
     
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
@@ -93,9 +93,11 @@ def set_params():
     DPC.Thrust_Smax = 2500       # maximum thruster setpoint # FIXME: unleash me kantapon
 
     DPC.pitchBiasMax = 10. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
-    DPC.pitchBiasGain_P = 30. # p gain to compute pitch bias
+    DPC.pitchBiasGain_P = 25. # p gain to compute pitch bias
     DPC.pitchBiasGain_I = 5. # i gain to compute pitch bias
     DPC.pitchBiasGain_D = -20. # d gain to compute pitch bias
+    if DPC.pitchBiasGain_I != 0:
+        int_error_pitchBias_max = 6./DPC.pitchBiasGain_I
     ### determine relative arm lengths for thrust allocation ###
     L_th = 1.06             # distance between two vertical thrusters [metre]: measured
     cr_approx = 0.85 # 1.05 # 0.98        # center of rotation on vertical plane from the AUV nose [metre]: trial-and-error
@@ -109,7 +111,7 @@ def set_params():
     int_error_depth_lim = 2.5e6/DPC.Depth_Igain # chosen
     int_error_pitch_th = 0. # initialise the integrator for pitch error signal used in thruster control allocation
     int_error_pitch_cs = 10./DPC.CS_Igain # initialise the integrator for pitch error signal used in control surface control law
-    int_error_pitchBias = 0. # initialise the integrator for pitchBias
+    int_error_pitchBias = 4./DPC.pitchBiasGain_I # initialise the integrator for pitchBias
     
 
     ### Parameter for Anti-Windup Scheme ###
@@ -339,8 +341,8 @@ def determineActuatorWeight(_speed,_depth):
 #        w_th = 1
 #        w_cs = 1
 #    else: # compute gain based on current speed
-    U_star_th = 0.85;
-    w_delta_th = 0.04;
+    U_star_th = 0.9;
+    w_delta_th = 0.03;
     w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
 
     U_star_cs = 0.5;
@@ -352,18 +354,18 @@ def determineActuatorWeight(_speed,_depth):
 def determinePitchBias(error_depth,der_error_depth,dt):
     global int_error_pitchBias
     
-    int_error_pitchBias_max = 6./DPC.pitchBiasGain_I
     if propDemand != 0:
         # update integrator for pitchBias and apply saturation
         int_error_pitchBias += dt*error_depth
         if DPC.pitchBiasGain_I != 0:
-            myUti.limits(int_error_pitchBias,-int_error_pitchBias_max,int_error_pitchBias_max)
+            int_error_pitchBias_max = 6./DPC.pitchBiasGain_I
+            int_error_pitchBias = myUti.limits(int_error_pitchBias,0,int_error_pitchBias_max)
         
         pitchBias = DPC.pitchBiasGain_P*error_depth + DPC.pitchBiasGain_I*int_error_pitchBias + DPC.pitchBiasGain_D*der_error_depth
         pitchBias_ref = pitchBias
         pitchBias = myUti.limits(pitchBias,-DPC.pitchBiasMax,DPC.pitchBiasMax)
     else:
-        int_error_pitchBias = 0
+        int_error_pitchBias = 4./DPC.pitchBiasGain_I
         pitchBias = 0
     
     DPC.pitchBias_Iterm = int_error_pitchBias
