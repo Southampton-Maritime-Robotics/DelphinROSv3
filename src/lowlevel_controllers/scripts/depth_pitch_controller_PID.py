@@ -278,9 +278,14 @@ def main_control_loop():
 
         if time.time()-timeLastDemandProp > timeLastDemandProp_lim:
             propDemand = 0
-        speed_current = speedObserver(propDemand, speed, controlPeriod)
-        speed = speed_current
-        DPC.speed = speed
+        try:
+            speed_current = speedObserver(propDemand, speed, controlPeriod)
+            speed = speed_current
+            DPC.speed = speed
+        except:
+            speed_current = 0
+            speed = speed_current
+            DPC.speed = speed
         
         if controller_onOff == True:
             # get sampling
@@ -337,10 +342,7 @@ def main_control_loop():
 ################################################################################
 
 def determineActuatorWeight(_speed,_depth):
-#    if _depth < 0.4: # have both types of actuator fully active when operating near the water surface
-#        w_th = 1
-#        w_cs = 1
-#    else: # compute gain based on current speed
+
     U_star_th = 0.9;
     w_delta_th = 0.03;
     w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
@@ -348,7 +350,7 @@ def determineActuatorWeight(_speed,_depth):
     U_star_cs = 0.5;
     w_delta_cs = 0.04;
     w_cs = 0.5*(math.tanh((_speed-U_star_cs)/w_delta_cs)+1);
-        
+    
     return [w_th, w_cs]
 
 def determinePitchBias(error_depth,der_error_depth,dt):
