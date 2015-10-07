@@ -12,8 +12,6 @@ Developed based on "tsl_customer_mission.py" that was originally used to control
     3 hor_rear
 
 # usage
-  - get voltage: "faVcs"
-  - get current: "faIcs"
   - get RPM: "faRcs" (the fastest rate is 20Hz approximately)
   - set thrusterSetpoint: "faPspeed_1,direction_1@speed_2,direction_2@speed_3,direction_3@speed_4,direction_4@cs"
     
@@ -26,6 +24,7 @@ Developed based on "tsl_customer_mission.py" that was originally used to control
 5/4/15: maked this node work at 5Hz. Rate is control by rospy.Rate()
 10/5/15: compensated the voltage reading with a scale factor of 1.08
 4/6/15: remap a setpoint from [-2500,-145] U [145,2500] to [0,255] with direction of either 0 or 1.
+5/10/15: removed voltage and amp measurement to energy_monitoring node
 
 # NOTE: setpoint within (-145,145) will be set to 0, i.e. incorporate as a deadband
 
@@ -77,104 +76,6 @@ def init_serial():
     
     return serialPort.isOpen()
 
-############################# GET VOLTAGE ######################################    
-
-def getVoltage():
-    
-    # request a voltage measurement
-    try:
-        str = 'faVcs'
-        serialPort.write(str)
-        time.sleep(delaySerial) # should be enough for arduino to get a ReqVoltage
-    except:
-        pass
-        
-    #empty a temporary string and set voltage to zero by default
-    msg = ""
-    vol = 0
-    
-    try:
-        if serialPort.inWaiting(): # if arduino replied        
-            
-            timeStart = time.time()
-            timeElapse = time.time()-timeStart   
-            found = 0 
-            while(timeElapse<timeOut) and not rospy.is_shutdown() and not found:
-                if serialPort.inWaiting()>0: 
-                    _in = serialPort.read(1)
-                    if _in == '#': # searching for a header '#', and continue if found. otherwise, neglect this data packet
-                        timeStart = time.time()
-                        timeElapse = time.time()-timeStart    
-                        while(timeElapse<timeOut) and not rospy.is_shutdown() and not found: # get the rest of a data packet
-                            if serialPort.inWaiting()>0:
-                                _in = serialPort.read(1)
-                                if _in=='V': # break if found the end of a data packet
-                                    found = 1
-                                    break
-                                else: # keep the data in a msg string
-                                    msg+=_in
-                                timeElapse = time.time()-timeStart # elapsed time for getting the rest of data packet
-                        try :
-                            vol = int(float(msg)*1000)
-                        except :
-                            pass
-                        
-                timeElapse = time.time()-timeStart # elapsed time for finding a header
-                
-    except:
-        pass
-    
-    return vol # return in mili vol
-    
-############################# GET AMPARE ######################################    
-
-def getAmp():
-    
-    # request a current measurement
-    try:
-        str = 'faIcs'
-        serialPort.write(str)
-        time.sleep(delaySerial) # should be enough for arduino to get a ReqVoltage
-    except:
-        pass
-        
-    #empty a temporary string and set voltage to zero by default
-    msg = ""
-    amp = 0
-    
-    try:
-        if serialPort.inWaiting(): # if arduino replied
-            
-            timeStart = time.time()
-            timeElapse = time.time()-timeStart    
-            found = 0
-            while(timeElapse<timeOut) and not rospy.is_shutdown() and not found:
-                if serialPort.inWaiting()>0: 
-                    _in = serialPort.read(1)
-                    if _in == '#': # searching for a header '#', and continue if found. otherwise, neglect this data packet
-                        timeStart = time.time()
-                        timeElapse = time.time()-timeStart    
-                        while(timeElapse<timeOut) and not rospy.is_shutdown() and not found: # get the rest of a data packet
-                            if serialPort.inWaiting()>0:
-                                _in = serialPort.read(1)
-                                if _in=='A': # break if found the end of a data packet
-                                    found = 1
-                                else: # keep the data in a msg string
-                                    msg+=_in
-                                timeElapse = time.time()-timeStart # elapsed time for getting the rest of data packet
-                        try :
-                            amp = int(float(msg)*1000)
-                        except :
-                            pass
-                        
-                timeElapse = time.time()-timeStart # elapsed time for finding a header
-                
-                
-    except:
-        pass
-            
-    return amp
-    
 ############################# GET RPM ######################################    
 
 def getRPM():
@@ -247,15 +148,18 @@ def motor_control():
     timeVertLastDemand = time.time()
 
     #parameters to utilize watchdog
-    try:
-        voltage_min = rospy.get_param('min-motor-voltage')
-    except:
-        voltage_min = 19000 # [mV]
-    timeStart_vol = time.time()
-    timeLim_vol = 5 # [sec]
-    timeElapse_rpm = [0.0,0.0,0.0,0.0]
-    timeStart_rpm = [timeStart_vol,timeStart_vol,timeStart_vol,timeStart_vol]
-    timeLim_rpm = timeLim_vol
+#    try:
+#        voltage_min = rospy.get_param('min-motor-voltage')
+#    except:
+#        voltage_min = 19000 # [mV]
+#    timeStart_vol = time.time()
+
+#    timeLim_vol = 5 # [sec]
+
+    timeRef = time.time()
+    timeStart_rpm = [timeRef,timeRef,timeRef,timeRef]
+    timeLim_rpm = 5 # [sec]
+    timeElapse_rpm = [0.,0.,0.,0.]
     
     controlRate = 5. # [Hz] limited by the rate of tail section
     controlPeriod = 1./controlRate
@@ -324,8 +228,6 @@ def motor_control():
         time.sleep(delaySerial)
 
         ############################# GET INFO. ######################################    
-        voltage = getVoltage()
-        amp = getAmp()    
         rpm = getRPM()
 
         ############################# WATCHDOG ######################################
@@ -342,12 +244,7 @@ def motor_control():
                 timeStart_rpm[i] = time.time()
 
         ############################# PUBLISH INFO. ######################################
-            
-        current0 = amp
-        current1 = 0
-        current2 = 0
-        current3 = 0 
-
+        
         speed0 = rpm[0]
         speed1 = rpm[1]
         speed2 = rpm[2]
@@ -360,12 +257,7 @@ def motor_control():
                     speed0 = speed0, 
                     speed1 = speed1, 
                     speed2 = speed2, 
-                    speed3 = speed3, 
-                    current0 = current0, 
-                    current1 = current1, 
-                    current2 = current2, 
-                    current3 = current3, 
-                    voltage = voltage)
+                    speed3 = speed3)
         
         timeElapse = time.time()-timeRef
         if timeElapse < controlPeriod:
