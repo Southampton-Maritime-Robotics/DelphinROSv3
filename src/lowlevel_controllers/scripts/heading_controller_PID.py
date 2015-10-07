@@ -56,13 +56,13 @@ def set_params():
     HC.deadzone   = 0   # deadzone of the heading error [degree]
     
     ### CS Controller ###
-    HC.CS_Pgain       = 6 # FIXME: tune me kantapon
+    HC.CS_Pgain       = 8 # FIXME: tune me kantapon
     HC.CS_Igain       = 0
     HC.CS_Dgain       = -13 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     HC.CS_Smax         = 30
     
     ### Thrust Controller ###
-    HC.Thrust_Pgain = 30000.00
+    HC.Thrust_Pgain = 40000.00
     HC.Thrust_Igain = 0.00
     HC.Thrust_Dgain = -100000.0 # -30000.00 # D gain has to be negative (c.f. PI-D)
     HC.Thrust_Smax  = 2500 # 1000 # maximum thruster setpoint, FIXME: unleash me kantapon
@@ -169,10 +169,14 @@ def main_control_loop():
         
         if time.time()-timeLastDemandProp > timeLastDemandProp_lim:
             propDemand = 0
-
-        speed_current = speedObserver(propDemand, speed, controlPeriod)
-        speed = speed_current
-        HC.speed = speed
+        try:
+            speed_current = speedObserver(propDemand, speed, controlPeriod)
+            speed = speed_current
+            HC.speed = speed
+        except:
+            speed_current = 0
+            speed = speed_current
+            HC.speed = speed
 
         if controller_onOff == True:
             # get sampling
@@ -189,7 +193,7 @@ def main_control_loop():
             
             # update the heading_control.msg, and this will be subscribed by the logger.py
             pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
-            pub_tsl.publish(thruster0 = 0, thruster1 = thruster1)
+            pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
             pub_HC.publish(HC)
             
             # watch to inactivate the controller when there is no demand specified
