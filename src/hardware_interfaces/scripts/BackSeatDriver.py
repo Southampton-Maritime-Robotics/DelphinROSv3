@@ -28,14 +28,14 @@ def main(controller):
     pubStatus = rospy.Publisher('status', status)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
 
-    controlRate = 10. # [Hz]
+    controlRate = 5. # [Hz]
     controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
     # Store Initial Time
     time_zero = time.time()
     
-    time.sleep(15) #Allow critical systems to come online.
+    time.sleep(20) #Allow critical systems to come online.
     
     # Import Limit Parameters from laumch file
     overDepth = rospy.get_param('over-depth')
@@ -50,9 +50,9 @@ def main(controller):
     BackSeatFlag=0
     pubMissionLog.publish('Backseat Driver Node Is Active')
     
-    headingOld = 0. # [deg]
-    timeXsensLastPublish = time.time() # [sec]
-    timeXsensDead = 5 # [sec]
+####    headingOld = 0. # [deg]
+####    timeXsensLastPublish = time.time() # [sec]
+####    timeXsensDead = 5 # [sec]
     
     pubStatus.publish(nodeID = 11, status = True)
     
@@ -61,20 +61,6 @@ def main(controller):
         timeRef = time.time()
         
         #Poll System For Any Potential Errors or Status Warnings
-    
-        #Identify xsens status?
-        headingNow = controller.getHeading()
-        if headingNow!=headingOld:
-            timeXsensLastPublish = time.time()
-        if time.time()-timeXsensLastPublish > timeXsensDead:
-            BackSeatFlag=1
-            str = "xsens did not response for longer than %ss" %(timeXsensDead)
-            rospy.logerr(str)
-            pub.publish(BackSeatFlag)
-            pubMissionLog.publish(str)
-            return
-        else:
-            headingOld = headingNow
 
         #Identify OverDepth?
         current_depth=controller.getDepth()
@@ -135,17 +121,83 @@ def main(controller):
             pub.publish(BackSeatFlag)
             pubMissionLog.publish(str)
             return
+
+        #Identify xsens status?
+        if not controller.getXsensStatus():
+            BackSeatFlag=1
+            str = "xsens goes offline"
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+####        headingNow = controller.getHeading()
+####        if headingNow!=headingOld:
+####            timeXsensLastPublish = time.time()
+####        if time.time()-timeXsensLastPublish > timeXsensDead:
+####            BackSeatFlag=1
+####            str = "xsens did not response for longer than %ss" %(timeXsensDead)
+####            rospy.logerr(str)
+####            pub.publish(BackSeatFlag)
+####            pubMissionLog.publish(str)
+####            return
+####        else:
+####            headingOld = headingNow
             
         #Check Motor Control Board Status
-        if not controller.getThrusterStatus:
+        if not controller.getThrusterStatus():
             BackSeatFlag=1
             str = "Thruster control board goes offline"
             rospy.logerr(str)
             pub.publish(BackSeatFlag)
             pubMissionLog.publish(str)
             return
+        
+        # Check Tail Section Status            
+        if not controller.getTailStatus():
+            BackSeatFlag=1
+            str = "Tail section goes offline"
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
 
-        # Verify and Maintain Control Rate
+        # Check Heading Controller Status            
+        if not controller.getHeadingCtrlStatus:
+            BackSeatFlag=1
+            str = "Heading controller goes offline"
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+            
+        # Check Depth Controller Status            
+        if not controller.getDepthCtrlStatus():
+            BackSeatFlag=1
+            str = "Depth controller goes offline"
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+
+        # Check Deadreckoner Status            
+        if not controller.getDeadreckonerStatus():
+            BackSeatFlag=1
+            str = "Deadreckoner goes offline"
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+            
+        # Check Logger Status            
+        if not controller.getLoggerStatus():
+            BackSeatFlag=1
+            str = "Logger goes offline"
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+            
+        # Verify and maintain loop timing
         timeElapse = time.time()-timeRef
         if timeElapse < controlPeriod:
             r.sleep()
