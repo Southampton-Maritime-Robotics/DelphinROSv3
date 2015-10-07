@@ -6,8 +6,3 @@ int32 speed0
 int32 speed1
 int32 speed2
 int32 speed3
-int32 current0
-int32 current1
-int32 current2
-int32 current3
-int32 voltage
