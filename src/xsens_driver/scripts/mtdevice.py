@@ -169,12 +169,14 @@ class MTDevice(object):
 			def waitfor(size=1):
 				while self.device.inWaiting() < size:
 					if time.time()-new_start >= __timeout:
+						pubStatus.publish(nodeID = 6, status = False)
 						raise MTException("timeout waiting for message.")
 
 			c = self.device.read()
 			while (not c) and ((time.time()-new_start)<__timeout):
 				c = self.device.read()
 			if not c:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("timeout waiting for message.")
 			if ord(c)<>0xFA: # search for a begining of package
 				continue # go back to "while (time.time()-start)<__timeout:"
@@ -208,6 +210,7 @@ class MTDevice(object):
 				continue
 			return (mid, buf[:-1])
 		else:
+			pubStatus.publish(nodeID = 6, status = False)
 			raise MTException("could not find message.")
 
 	## Send a message and read confirmation
@@ -220,6 +223,7 @@ class MTDevice(object):
 			if mid_ack==(mid+1):
 				break
 		else:
+			pubStatus.publish(nodeID = 6, status = False)
 			raise MTException("Ack (0x%X) expected, MID 0x%X received instead"\
 					" (after 100 tries)."%(mid+1, mid_ack))
 			pass
@@ -303,6 +307,7 @@ class MTDevice(object):
 			## available XKF scenarios
 			self.scenarios = scenarios
 		except struct.error:
+			pubStatus.publish(nodeID = 6, status = False)
 			raise MTException("could not parse the available XKF scenarios.")
 		return scenarios
 		
@@ -336,6 +341,7 @@ class MTDevice(object):
 			if (data_id&0x00F0) == 0x10:	# Temperature
 				o['Temp'], = struct.unpack('!'+ffmt, content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_timestamp(data_id, content, ffmt):
@@ -359,6 +365,7 @@ class MTDevice(object):
 			elif (data_id&0x00F0) == 0x80:	# Frame Range
 				o['startFrame'], o['endFrame'] = struct.unpack('!HH', content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_orientation_data(data_id, content, ffmt):
@@ -373,6 +380,7 @@ class MTDevice(object):
 				o['Roll'], o['Pitch'], o['Yaw'] = struct.unpack('!'+3*ffmt,
 						content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_pressure(data_id, content, ffmt):
@@ -381,6 +389,7 @@ class MTDevice(object):
 				# FIXME is it really U4 as in the doc and not a float/double?
 				o['Pressure'], = struct.unpack('!L', content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_acceleration(data_id, content, ffmt):
@@ -395,6 +404,7 @@ class MTDevice(object):
 				o['freeAccX'], o['freeAccY'], o['freeAccZ'] = \
 						struct.unpack('!'+3*ffmt, content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_position(data_id, content, ffmt):
@@ -409,6 +419,7 @@ class MTDevice(object):
 			elif (data_id&0x00F0) == 0x40:	# LatLon
 				o['lat'], o['lon'] = struct.unpack('!'+2*ffmt, content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_angular_velocity(data_id, content, ffmt):
@@ -421,6 +432,7 @@ class MTDevice(object):
 				o['Delta q0'], o['Delta q1'], o['Delta q2'], o['Delta q3'] = \
 						struct.unpack('!'+4*ffmt, content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_GPS(data_id, content, ffmt):
@@ -449,6 +461,7 @@ class MTDevice(object):
 					channels.append(ch)
 				o['channels'] = channels
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_SCR(data_id, content, ffmt):
@@ -461,6 +474,7 @@ class MTDevice(object):
 				o['tempGyrX'], o['tempGyrY'], o['tempGyrZ'] = \
 						struct.unpack("!hhh", content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_analog_in(data_id, content, ffmt):
@@ -470,6 +484,7 @@ class MTDevice(object):
 			elif (data_id&0x00F0) == 0x20:	# Analog In 2
 				o['analogIn2'], = struct.unpack("!H", content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_magnetic(data_id, content, ffmt):
@@ -478,6 +493,7 @@ class MTDevice(object):
 				o['magX'], o['magY'], o['magZ'] = \
 						struct.unpack("!3"+ffmt, content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_velocity(data_id, content, ffmt):
@@ -486,6 +502,7 @@ class MTDevice(object):
 				o['velX'], o['velY'], o['velZ'] = \
 						struct.unpack("!3"+ffmt, content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_status(data_id, content, ffmt):
@@ -497,6 +514,7 @@ class MTDevice(object):
 			elif (data_id&0x00F0) == 0x40:	# RSSI
 				o['RSSI'], = struct.unpack("!b", content)
 			else:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 
@@ -510,6 +528,7 @@ class MTDevice(object):
 				elif (data_id&0x0003) == 0x0:
 					ffmt = 'f'
 				else:
+					pubStatus.publish(nodeID = 6, status = False)
 					raise MTException("fixed point precision not supported.")
 				content = data[3:3+size]
 				data = data[3+size:]
@@ -541,8 +560,10 @@ class MTDevice(object):
 				elif group == XDIGroup.Status:
 					output['Status'] = parse_status(data_id, content, ffmt)
 				else:
+					pubStatus.publish(nodeID = 6, status = False)
 					raise MTException("unknown XDI group: 0x%04X."%group)
 			except struct.error, e:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("couldn't parse MTData2 message.")
 
 		return output
@@ -561,6 +582,7 @@ class XSensDriver(object):
 		try:
 			self.mt = MTDevice(device, 115200)
 		except serial.SerialException:
+			pubStatus.publish(nodeID = 6, status = False)
 			raise MTException("unable to open %s"%device)
 		self.mt.RestoreFactoryDefaults() # restore all the setting to factory defaults. 
 		# By this point, sensor baudrate is definitely 115200.
@@ -572,6 +594,7 @@ class XSensDriver(object):
 				self.mt.device.close()
 				self.mt = MTDevice(device, self.__baudrate)
 			except serial.SerialException:
+				pubStatus.publish(nodeID = 6, status = False)
 				raise MTException("unable to open %s"%device)
 
 		# create messages and default values
@@ -624,10 +647,10 @@ class XSensDriver(object):
 			# Ctrl-C signal interferes with select with the ROS signal handler
 			# should be OSError in python 3.?
 			except select.error:
-				pass
+				pubStatus.publish(nodeID = 6, status = False)
 
 		except KeyboardInterrupt:
-			pass
+			pubStatus.publish(nodeID = 6, status = False)
 
 	def spin_once(self):
 		
@@ -693,8 +716,8 @@ class XSensDriver(object):
 			pubCompassOut.publish(self.com)
 			
 if __name__=='__main__':
+    time.sleep(5) #Allow System to come Online
 	rospy.init_node('xsens_driver')
-	
 	# initialize topics COMPASS_pub
 	pubCompassOut = rospy.Publisher('compass_out',compass)
 	pubStatus = rospy.Publisher('status', status)
