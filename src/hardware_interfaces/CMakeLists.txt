@@ -66,6 +66,7 @@ catkin_python_setup()
    gyro.msg
    ForcesAndMoments.msg
    depth.msg
+   energy_consumed.msg
  )
 
 ## Generate services in the 'srv' folder
