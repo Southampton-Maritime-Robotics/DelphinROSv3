@@ -23,8 +23,10 @@ from hardware_interfaces.msg    import tsl_feedback
 from hardware_interfaces.msg    import altitude
 from hardware_interfaces.msg    import status
 from hardware_interfaces.msg    import camera
-from lowlevel_controllers.msg   import heading_control
 from hardware_interfaces.msg    import sonar_data
+from hardware_interfaces.msg    import energy_consumed
+
+from lowlevel_controllers.msg   import heading_control
 
 class library_highlevel:
 # library class for high-level controller.  Defines the inputs, output and basic functionality that
@@ -65,6 +67,8 @@ class library_highlevel:
         rospy.Subscriber('tail_output', tail_feedback, self.callback_tail_feedback)
         rospy.Subscriber('Heading_controller_values', heading_control, self.callback_heading_control)
         rospy.Subscriber('sonar_processed', sonar_data, self.callback_sonar_range)
+        rospy.Subscriber('EnergyConsumed', energy_consumed, self.EnergyConsumed_callback)
+        
         
         #gets parameters from server ####Don't Need to be Here ????????
         self.__maxDepthDemand = rospy.get_param('max-depth-demand')
@@ -79,7 +83,6 @@ class library_highlevel:
         self.__altitude = altitude()
         self.__sonar_range = 0
         self.__back_seat_flag = 0 #back_seat_flag is 0 when no errors are present
-        self.__motor_voltage = 0
         
         self.__TSL_status = 0 #initisliased to indicate presence of errors - this will be set to 1 once node has been tested during vehicle initialisation
         self.__tail_status = 0
@@ -92,6 +95,7 @@ class library_highlevel:
         self.__deadreckoner_status = 0
         self.__logger_status = 0
         self.__backSeatDriver_status = 0
+        self.__energyMonitor_status = 0
         
         self.__heading_error=0.0
         self.__altitude=0.0
@@ -105,7 +109,7 @@ class library_highlevel:
         self.__CS_c = 0.0
         self.__CS_d = 0.0
         self.__CS_e = 0.0
-        self.__PropRPM = 0.0
+        self.__PropRPS = 0.0
    
     # stops vehicle and shuts down ROS
     # may be better as an action....
@@ -421,6 +425,9 @@ class library_highlevel:
     
     def getBackSeatDriverStatus(self):
         return self.__backSeatDriver_status
+        
+    def getEnergyMonitorStatus(self):
+        return self.__energyMonitor_status
     
     def getCS_b(self):
         return self.__CS_b
@@ -434,8 +441,8 @@ class library_highlevel:
     def getCS_e(self):
         return self.__CS_e
     
-    def getPropRPM(self):
-        return self.__PropRPM
+    def getPropRPS(self):
+        return self.__PropRPS
     
     def getHeadingError(self):
         return self.__heading_error
@@ -548,23 +555,25 @@ class library_highlevel:
            
     def callback_sonar_range(self, sonar):
         self.__sonar_range = sonar.TargetRange
+        
+    def EnergyConsumed_callback(self, energy):
+        self.__motor_voltage = energy.batteryVol
            
     def callback_back_seat_flag(self, back_seat_flag):
         self.__back_seat_flag = back_seat_flag.data
            
     def callback_tsl_feedback(self, tsl):
-        self.__motor_voltage = tsl.voltage
         self.__T0rpm = tsl.speed0
         self.__T1rpm = tsl.speed1
         self.__T2rpm = tsl.speed2
         self.__T3rpm = tsl.speed3
            
     def callback_tail_feedback(self, tail_feedback):
-        self.__CS_b = tail_feedback.b
-        self.__CS_c = tail_feedback.c
-        self.__CS_d = tail_feedback.d
-        self.__CS_e = tail_feedback.e
-        self.__PropRPM = tail_feedback.rpm
+        self.__CS_b = tail_feedback.b_fb
+        self.__CS_c = tail_feedback.c_fb
+        self.__CS_d = tail_feedback.d_fb
+        self.__CS_e = tail_feedback.e_fb
+        self.__PropRPS = tail_feedback.prop_rps
            
     def callback_heading_control(self, heading_control):
         self.__heading_error = heading_control.error
@@ -603,3 +612,5 @@ class library_highlevel:
         elif status.nodeID == 11:
             self.__backSeatDriver_status = status.status
             return
+        elif status.nodeID == 12:
+            self.__energyMonitor_status = status.status
