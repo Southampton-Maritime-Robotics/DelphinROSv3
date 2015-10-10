@@ -156,6 +156,7 @@ def main_loop():
         voltage_min = rospy.get_param('min-motor-voltage')
     except:
         voltage_min = 19000 # [mV]
+        
     timeStart_vol = time.time()
     timeLim_vol = 5 # [sec]
     timeLim_com = timeLim_vol
@@ -191,12 +192,6 @@ def main_loop():
             
         ############################# PUBLISH INFO. ######################################
         
-        # TODO: remove this section
-        print ""
-        print voltage
-        print amp
-        print ""
-        print ""
         
         pubOutput.publish(batteryVol = voltage, 
                           thruster_0 = amp[0], 
@@ -224,18 +219,27 @@ def shutdown():
 ############################# SETUP ######################################
 
 if __name__ == '__main__':
-    time.sleep(4) #Allow System to come Online
+    time.sleep(3) #Allow System to come Online
     rospy.init_node('Energy_Monitor')
     
-    port_status = init_serial()
-    
+    _ready = 0
+    for _nTry in range(10): # try to connect to arduino this many time
+        port_status = init_serial()
+        voltage = getVoltage()
+        if port_status == True and voltage != -1:
+            ready = 1
+            break
+        else:
+            serialPort.close()
+        time.sleep(0.05)
+
     pubStatus = rospy.Publisher('status', status)
     pubOutput = rospy.Publisher('EnergyConsumed', energy_consumed)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
     
     rospy.on_shutdown(shutdown) # Defining shutdown behaviour
     
-    if port_status == True:
+    if _ready: # if the connection to arduino is established
         pubStatus.publish(nodeID = 12, status = True)
         rospy.loginfo("energy monitor now online")
     else:
