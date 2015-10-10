@@ -87,7 +87,7 @@ def listenForData(status):
                 try:
                      
 ##                    depth       = (data[4]*42.045)- 0.84 + 0.53  -0.21  -0.05   #Convert ADC value to depth value
-                    depth       = (data[4]*42.045) - 0.1   #Convert ADC value to depth value: the last term is for a calibration
+                    depth       = (data[4]*42.045) - 0.55   #Convert ADC value to depth value: the last term is for calibration
                     
                     depth_calib = depth - L_shift*math.sin(pitch_callback*math.pi/180.)# depth that takes into account the pitch angle of the AUV
 
