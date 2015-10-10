@@ -148,10 +148,6 @@ def tail_section_loop(status):
 ################################################################################
 ################################################################################
 
-####    # TODO: remove me
-####    timeRef_loop = time.time()
-####    timeout_loop = 20 # [secs]
-        
     while not rospy.is_shutdown():
 
         timeRef = time.time()
@@ -165,12 +161,6 @@ def tail_section_loop(status):
         if time.time()-timeLastDemandProp>timeLastDemandMax:
             prop_demand = 0
             
-####        # TODO: this must be removed. Setpoints are received from topics.
-####        prop_demand = 22
-####        [b_demand, c_demand, d_demand, e_demand] = [-30, -30, -30, -30]
-####        b_demand = - b_demand
-####        e_demand = - e_demand
-        
         # apply limit to the fin angle demands
         b_demand = limits(b_demand,-finsDemand_lim,finsDemand_lim)
         c_demand = limits(c_demand,-finsDemand_lim,finsDemand_lim)
@@ -185,18 +175,16 @@ def tail_section_loop(status):
         prop_setpoint = speedToSetpoint(prop_demand, prop_zero)
         
         message = '$S%d@%d@%d@%d@%d@#' %(b_setpoint, c_setpoint, d_setpoint , e_setpoint, prop_setpoint)
-        print 'message: ',message # TODO: remove this line
-#        try:
-        serialPort.write(message)   #POSSIBLE ISSUE STILL FAILS EVEN THOUGH IN TRY!
-        timeLastWrite = time.time()
-#        except:
-#            print 'Write error'
+        try:
+            serialPort.write(message)   #POSSIBLE ISSUE STILL FAILS EVEN THOUGH IN TRY!
+            timeLastWrite = time.time()
+        except:
+            print 'Write error'
 
         [b_feedback, c_feedback, d_feedback, e_feedback, prop_rps] = [0, 0, 0, 0, 0]
         try:
             [b_feedback, c_feedback, d_feedback, e_feedback, prop_rps] = getTailFeedback()
             timeLastRead = time.time()
-            print b_feedback, c_feedback, d_feedback, e_feedback, prop_rps # TODO: remove this line
         except:
             print 'read error'
                 
@@ -236,13 +224,6 @@ def tail_section_loop(status):
             str = "tail_section rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
             rospy.logwarn(str)
             pubMissionLog.publish(str)
-        
-####        # TODO: remove me
-####        print time.time()-timeRef_loop
-####        if time.time()-timeRef_loop > timeout_loop:
-####            str = "loop timeout: raise a shutdown signal"
-####            rospy.logwarn(str)
-####            rospy.signal_shutdown(str)
             
 ################################################################################
 ################################################################################
