@@ -715,8 +715,8 @@ class XSensDriver(object):
 		if pub_IMU:
 			pubCompassOut.publish(self.com)
 			
-if __name__=='__main__':
-    time.sleep(5) #Allow System to come Online
+if __name__=='__main__': 
+	time.sleep(5) #Allow System to come Online
 	rospy.init_node('xsens_driver')
 	# initialize topics COMPASS_pub
 	pubCompassOut = rospy.Publisher('compass_out',compass)
