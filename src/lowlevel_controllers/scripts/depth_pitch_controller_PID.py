@@ -13,9 +13,10 @@ Note:
 5/4/2015: force CS and thruster demands to become Integer32
 8/7/2015: removed pitch_demand_callback: Maked it zero always
 18/8/2015: added anti-windup scheme to when computing the depth integral term
+21/9/2015: added speed observer
 
 # TODO
-- use pitch bias to indirectly control the depth of the AUV via control surfaces when undergoing surge motions.
+- moved speed observer to dead_reckoner
 
 """
 
@@ -82,13 +83,13 @@ def set_params():
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
     # thruster
-    DPC.Depth_Pgain = 5000000.00 # 700000.00 # FIXME: tune me kantapon
+    DPC.Depth_Pgain = 3500000.00 # 5,000,000 700000.00 # FIXME: tune me kantapon
     DPC.Depth_Igain = 250000.00 # 50000.00 # FIXME: tune me kantapon
-    DPC.Depth_Dgain = -8000000.00 # -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Depth_Dgain = -8000000.00 # 8,000,000 -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
     DPC.Pitch_Pgain = 0.01 # 0.01 # 0.02 # FIXME: tune me kantapon
     DPC.Pitch_Igain = 0.001 # 0.0005 # 0.001 # FIXME: tune me kantapon
-    DPC.Pitch_Dgain = -0.015 # -0.005 # -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Pitch_Dgain = -0.015 # 0.015 -0.005 # -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
     DPC.Thrust_Smax = 2500       # maximum thruster setpoint # FIXME: unleash me kantapon
 
@@ -258,7 +259,7 @@ def main_control_loop():
     global speed
     global propDemand
     
-    controller_onOff = Bool()
+    controller_onOff = False
     set_params()
     
     controlRate = 5. # [Hz]
@@ -437,44 +438,42 @@ def depth_callback(data):
     DPC.depth = data.depth_filt # depth filtered by PT_filter in compass_oceanserver.py
     depth_der = data.depth_der # derivative depth filtered by PT_filter in compass_oceanserver.py
 
-def depth_onOff_callback(onOff):
-    global controller_onOff
-    global timeLastCallback
-    controller_onOff=onOff.data
-    timeLastCallback = time.time()
-
 def depth_demand_callback(depthd):
     global DPC
+    global controller_onOff
+    global timeLastCallback
     DPC.depth_demand = depthd.data
+    controller_onOff = True
+    timeLastCallback = time.time()
     
 ####def pitch_demand_callback(pitchd):
 ####    global DPC
 ####    DPC.pitch_demand = pitchd.data
-    
+        
+################################################################################
+######## SPEED OBSERVER ########################################################
+################################################################################
+
 def prop_demand_callback(propd):
     global propDemand
     global timeLastDemandProp
     propDemand = propd.data
     timeLastDemandProp = time.time()
-    
-################################################################################
-######## SPEED OBSERVER ########################################################
-################################################################################
 
 def propeller_model(u_prop,_speed):
     if numpy.abs(u_prop)<10:   # deadband
         F_prop = 0
     else:
         # propeller model based on Turnock2010 e.q. 16.19
-        Kt0 = 0.1001
-        a = 0.6947
-        b = 1.6243
+        Kt0 = 0.1003
+        a = 0.6952
+        b = 1.6143
         w_t = 0.36 # wake fraction
-        t = 0.50 # thrust deduction
+        t = 0.11 # thrust deduction
         D = 0.305 # peopeller diameter [m]
         rho = 1000 # water density [kg/m^3]
-        
-        rps = 0.5451*u_prop - 2.384 # infer propeller rotation speed from the propeller demand [rps]
+                
+        rps = 0.2748*u_prop - 0.1657 # infer propeller rotation speed from the propeller demand [rps]
                     
         J = _speed *(1-w_t)/rps/D;
         Kt = Kt0*(1 - (J/a)**b );
@@ -485,9 +484,10 @@ def propeller_model(u_prop,_speed):
 def rigidbodyDynamics(_speed,F_prop):
     m = 79.2 # mass of the AUV [kg]
     X_u_dot = -3.46873716858361 # added mass of the AUV [kg]
-    X_uu = -29.9811131464837 # quadratic damping coefficient [kg/m]
+    X_u = -16.2208 # linear damping coefficient [kg/s]
+    X_uu = -1.2088 # quadratic damping coefficient [kg/m]
     
-    acc = (X_uu*abs(_speed)*_speed+F_prop)/(m-X_u_dot)
+    acc = (X_u*_speed + X_uu*abs(_speed)*_speed + F_prop)/(m-X_u_dot)
     
     return acc
     
@@ -518,7 +518,6 @@ if __name__ == '__main__':
     DPC.pitch_demand = 0 # rospy.Subscriber('pitch_demand', Float32, pitch_demand_callback)
     rospy.Subscriber('compass_out', compass, compass_callback)
     rospy.Subscriber('depth_out', depth, depth_callback)
-    rospy.Subscriber('Depth_onOFF', Bool, depth_onOff_callback)
     rospy.Subscriber('prop_demand', Int8, prop_demand_callback)
     
     pub_tail = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
