@@ -59,36 +59,52 @@ def listenForData():
     global swayDemand_cb
     global thruster_cb
     global csAngle_cb
-    global depthTimeLastDemand
     headingDemand_cb = 0
     depthDemand_cb = 0
     rearPropDemand_cb = 0
     swayDemand_cb = 0
     thruster_cb = tsl_setpoints()
     csAngle_cb = 0
-    depthTimeLastDemand = time.time()
+
+    # watchdog to turn demand off
+    global timeLastDemand_heading
+    global timeLastDemand_depth
+    global timeLastDemand_prop
+    global timeLastDemand_th_hori
+    global timeLastDemand_cs_vert
+    global timeLastDemand_max
+    timeLastDemand_heading = time.time()
+    timeLastDemand_depth = time.time()
+    timeLastDemand_prop = time.time()
+    timeLastDemand_th_hori = time.time()
+    timeLastDemand_cs_vert = time.time()
+    timeLastDemand_max = 1 # [sec]
+
+    # demand onOff flag    
+    global haveDemand_heading
+    global hasDemand_depth
+    global haveDemand_prop
+    global haveDemand_th
+    global haveDemand_cs
+    haveDemand_heading = False
+    haveDemand_depth = False
+    haveDemand_prop = False
+    haveDemand_th = False
+    haveDemand_cs = False
     
-    global hasHeadingDemand
-    global hasDepthDemand
-    global hasPropDemand
-    global hasThDemand
-    hasHeadingDemand = False
-    hasDepthDemand = False
-    hasPropDemand = False
-    hasThDemand = False
-    
-    controlRate = 50. # [Hz]
+    # loop timing
+    controlRate = 100. # [Hz]
     controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
     # increment
-    incHeading = 1.5 # [(deg)/s] how quick the heading can change FIXME: tune the value
-    incDepth = 0.05 # [(m)/s] how quick the depth can change FIXME: tune the value
+    incHeading = 5 # [(deg)/s] how quick the heading can change FIXME: tune the value
+    incDepth = 0.1 # [(m)/s] how quick the depth can change FIXME: tune the value
     # saturation
     speedMax = 1. # [m/s] maximum surge speed
-    swayMax = 1. # [m/s] maximum sway speed
+    swayMax = 0.5 # [m/s] maximum sway speed
     depthMax = rospy.get_param('over-depth') # [m] maximum depth
-    dt = controlPeriod*20 # [sec] time step size
+    dt = 0.02 # [sec] fake time step size
     
     # nu: velocity vector
     u = 0 # [m/s] initial surge velocity
@@ -102,22 +118,51 @@ def listenForData():
     com = compass()
     dep = depth()
     pos = position()
+
+    demandRearProp = 0
+    th_hori_frt = 0
+    th_hori_aft = 0
+    csAngle = 0
+
     
     while not rospy.is_shutdown():
         
         timeRef = time.time()
         
         # get demand
-        demandRearProp = rearPropDemand_cb # [m/s]
-        demandDepth = depthDemand_cb # [m]
-        demandHeading = headingDemand_cb # [deg] North CW
-#        demandSway = swayDemand_cb # [m/s] stb
-        th_hori_frt = thruster_cb.thruster0
-        th_hori_aft = thruster_cb.thruster1
-        csAngle = csAngle_cb
-        
+        if time.time()-timeLastDemand_heading<timeLastDemand_max:
+            demandHeading = headingDemand_cb # [deg] North CW
+            haveDemand_heading = True
+        else:
+            haveDemand_heading = False
+
+        if time.time()-timeLastDemand_depth<timeLastDemand_max:
+            demandDepth = depthDemand_cb # [m]
+            haveDemand_depth = True
+        else:
+            haveDemand_depth = False
+
+        if time.time()-timeLastDemand_prop<timeLastDemand_max:
+            demandRearProp = rearPropDemand_cb # [-]
+            haveDemand_prop = True
+        else:
+            haveDemand_prop = False
+
+        if time.time()-timeLastDemand_th_hori<timeLastDemand_max:
+            th_hori_frt = thruster_cb.thruster0
+            th_hori_aft = thruster_cb.thruster1
+            haveDemand_th = True
+        else:
+            haveDemand_th = False
+
+        if time.time()-timeLastDemand_cs_vert<timeLastDemand_max:
+            csAngle = csAngle_cb
+            haveDemand_cs = True
+        else:
+            haveDemand_cs = False
+            
         # update kinematic parameters and state vector
-        if hasPropDemand:
+        if haveDemand_prop:
             if demandRearProp < 10:
                 u = 0 # propeller deadband
             else:
@@ -125,39 +170,35 @@ def listenForData():
             u = myUti.limits(u,0,speedMax)
             X = X+u*dt*sin(heading*pi/180)
             Y = Y+u*dt*cos(heading*pi/180)
-            hasPropDemand = False
-            
+
         # a priority of actuator demand heading>thrusterSway>thrusterRudderYaw (note: this is not real!)
         # yaw due to heading demand
         v = 0
-        if hasHeadingDemand:
+        if haveDemand_heading:
             errHeading = myUti.computeHeadingError(demandHeading,heading)
             heading = mod( heading+sign(errHeading)*incHeading*dt, 360 )
-            hasHeadingDemand = False
         # sway and yaw due to thruster demand
-        elif hasThDemand:
+        elif haveDemand_th or haveDemand_cs:
             #sway due to thruster
             if th_hori_frt*th_hori_aft>0: # if thrusters are spining in a same direction, do sway
-                v = myUti.limits(float(th_hori_frt)/2200.*swayMax,-swayMax,swayMax)
+                v = myUti.limits(float(th_hori_frt)/2550.*swayMax,-swayMax,swayMax)
                 X = X+v*dt*cos(heading*pi/180)
                 Y = Y-v*dt*sin(heading*pi/180)
             #yaw due to thruster and rudder
             elif th_hori_frt*th_hori_aft<=0: # if thrusters are spining in a different direction, do yaw
                 incHeadingTH = float(th_hori_frt)/2200.*incHeading*dt
-                incHeadingCS = float(csAngle)/30.*incHeading*dt
-                heading = mod( heading+incHeadingTH+incHeadingCS, 360 )                
-            hasThDemand = False
-            
-        if hasDepthDemand:
+                if haveDemand_prop:
+                    incHeadingCS = float(csAngle)/30.*incHeading*dt
+                else:
+                    incHeadincCS = 0
+                heading = mod( heading+incHeadingTH+incHeadingCS, 360 )
+             
+        if haveDemand_depth:
             errDepth = demandDepth-Z
             Z = Z + sign(errDepth)*incDepth*dt
             Z = myUti.limits(Z,0,depthMax)
-            hasDepthDemand = False
-            depthTimeLastDemand = time.time()
         else:
-            # reset depth if there is no depth demand for longer than 1 sec
-            if time.time()-depthTimeLastDemand > 1:
-                Z = 0
+            Z = 0
                 
         com.heading = heading
         dep.depth_filt = Z
@@ -186,32 +227,35 @@ def listenForData():
    
 def rearProp_demand_cb(propd):
     global rearPropDemand_cb
-    global hasPropDemand
+    global timeLastDemand_prop
     rearPropDemand_cb = propd.data
-    hasPropDemand = True
+    timeLastDemand_prop = time.time()
     
 def depth_demand_cb(depthd):
     global depthDemand_cb
-    global hasDepthDemand
+    global timeLastDemand_depth
     depthDemand_cb = depthd.data
-    hasDepthDemand = True
+    timeLastDemand_depth = time.time()
 
 def heading_demand_cb(headingd):
     global headingDemand_cb
-    global hasHeadingDemand
+    global timeLastDemand_heading
     headingDemand_cb = headingd.data
-    hasHeadingDemand = True
+    timeLastDemand_heading = time.time()
     
 def th_horiz_cb(new_sp):
     global thruster_cb
-    global hasThDemand
+    global timeLastDemand_th_hori
     thruster_cb = new_sp
-    hasThDemand = True
+    timeLastDemand_th_hori = time.time()
     
 def cs_vert_cb(new_angles):
     global csAngle_cb
+    global timeLastDemand_cs_vert
     csAngle_cb = new_angles.cs0 # assume the command on top and bottom surface are identical
-    # There is no need to have "hasCsDemand" to check if the demand is available since the thruste and control surface demand are specified at the same place
+    timeLastDemand_cs_vert = time.time()
+    
+    # There is no need to have "hasCsDemand" to check if the demand is available since the thruster and control surface demand are specified at the same place
     
 ################################################################################
 ######## INITIALISATION ########################################################
