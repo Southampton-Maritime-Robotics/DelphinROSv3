@@ -46,7 +46,7 @@ class testHeadingControl(smach.State):
         
 ################################################################################
         # let the vehicle do heading tracking
-        listDemandHeading = [150]
+        listDemandHeading = [180, 90, 360, 270]
         controlRate = 20 # Hz
         r = rospy.Rate(controlRate)
         
