@@ -44,7 +44,10 @@ def init_serial():
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    serialPort.flush()
+    serialPort.flushInput()
+    serialPort.flushOutput()
+    time.sleep(0.1)
+    
     return serialPort.isOpen()
 
 ############################# GET VOLTAGE ######################################    
@@ -192,7 +195,6 @@ def main_loop():
             
         ############################# PUBLISH INFO. ######################################
         
-        
         pubOutput.publish(batteryVol = voltage, 
                           thruster_0 = amp[0], 
                           thruster_1 = amp[1], 
@@ -212,36 +214,36 @@ def main_loop():
 ############################# CALLBACKS ######################################
 
 def shutdown():
+    serialPort.flushInput()
+    serialPort.flushOutput()
     serialPort.close()
     pubStatus.publish(nodeID = 12, status = False)
-    rospy.loginfo("energy_monitor goes offline")
 
 ############################# SETUP ######################################
 
 if __name__ == '__main__':
-    time.sleep(3) #Allow System to come Online
+    time.sleep(1) #Allow System to come Online
     rospy.init_node('Energy_Monitor')
     
-    _ready = 0
-    for _nTry in range(10): # try to connect to arduino this many time
-        port_status = init_serial()
-        voltage = getVoltage()
-        if port_status == True and voltage != -1:
-            ready = 1
-            break
-        else:
-            serialPort.close()
-        time.sleep(0.05)
-
     pubStatus = rospy.Publisher('status', status)
     pubOutput = rospy.Publisher('EnergyConsumed', energy_consumed)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
-    
+
     rospy.on_shutdown(shutdown) # Defining shutdown behaviour
-    
-    if _ready: # if the connection to arduino is established
-        pubStatus.publish(nodeID = 12, status = True)
-        rospy.loginfo("energy monitor now online")
-    else:
-        pubStatus.publish(nodeID = 12, status = False)
-    main_loop() # entering the main loop
+    _r = rospy.Rate(5) # Hz
+    for _nTry in range(20): # try to connect to arduino this many time
+        if not rospy.is_shutdown():
+            port_status = init_serial()
+            voltage = getVoltage()
+            if port_status == True and voltage != -1:
+                pubStatus.publish(nodeID = 12, status = True)
+                rospy.loginfo("energy monitor now online")
+                main_loop() # entering the main loop
+                break
+            else:
+                serialPort.close()
+        _r.sleep()
+
+    pubStatus.publish(nodeID = 12, status = False)
+    str = "fail to connect to energyMonitor" 
+    rospy.logwarn(str)
