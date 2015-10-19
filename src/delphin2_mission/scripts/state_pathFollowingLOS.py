@@ -9,12 +9,13 @@ Given a point, it will get the AUV to the point starts from the current location
 execute:
 @return: preemped: if the backSeatErrorFlag has been raised
 @return: succeeded: when the AUV has arrived to the destination
+@return: aborted: not in use
 
 #TODO
 -should also consider the side-slip angle when determine heading error
 
 # Note:
-- locationWaitTimeout is used to double check if the current location is obtained
+- locationWaitTimeout is used to double check if the current location is available
 
 '''
 
@@ -23,42 +24,43 @@ import numpy
 import smach
 import smach_ros
 import time
-from pylab import *
-from math import *
-from std_msgs.msg import String
+from   pylab        import *
+from   math         import *
+from   std_msgs.msg import String
 
 class pathFollowingLOS(smach.State):
-    def __init__(self, lib, myUti, path, L_los, uMax, wp_R, controlRate, locationWaitTimeout):
+    def __init__(self, lib, myUti, path):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
-        self.__controller = lib
-        self.__uti = myUti
-        self.__path = path
-        self.__L_los = L_los
-        self.__uMax = uMax
-        self.__wp_R = wp_R
-        self.__controlRate = controlRate
-        self.__locationWaitTimeout = locationWaitTimeout
+        self.__controller           = lib
+        self.__uti                  = myUti
+        self.__path                 = path      # a list of waypoints
+        self.__controlRate          = 5         # [Hz]
+        self.__locationWaitTimeout  = 30        # [sec] timeout to check if the GPS comes online
+        
+        try:
+            self.__L_los    = rospy.get_param('LOS_distance')
+            self.__uMax     = rospy.get_param('max-speed')
+            self.__wp_R     = rospy.get_param('radius_of_acceptance')
+        except:
+            self.__L_los    = L_los     # line of sight distance
+            self.__uMax     = uMax      # maximum speed
+            self.__wp_R     = wp_R      # circle of acceptance
         
     def execute(self, userdata):
         
         #Set Up Publisher for Mission Control Log
         pubMissionLog = rospy.Publisher('MissionStrings', String)
 
-        if self.__controlRate>0:
-            r = rospy.Rate(self.__controlRate)
+        # Set Up Loop Timing Control
+        r = rospy.Rate(self.__controlRate)
 
         ####################################################################
         ### Perform actions ################################################
         ####################################################################
         
-        # wait for the current location from gps
+        ##### Wait until GPS signal is available #####
         timeStartWait = time.time()
         while True:
-            if time.time()-timeStartWait > self.__locationWaitTimeout:
-                str = 'GPS signal will not available: mission aborted'
-                rospy.loginfo(str)
-                pubMissionLog.publish(str)
-                return 'aborted'
             X = self.__controller.getX()
             Y = self.__controller.getY()
             if X!=0 or Y!=0:
@@ -67,16 +69,17 @@ class pathFollowingLOS(smach.State):
                 pubMissionLog.publish(str)
                 eta_0 = array([X,Y]) # used when creating the path. Bare in mind that the eta_0 is an array while eta is a list
                 break # succeeded in getting the current location from gps: move on
-            if self.__controlRate>0:
-                r.sleep()
+            if time.time()-timeStartWait > self.__locationWaitTimeout:
+                str = 'GPS signal will not available: mission aborted'
+                rospy.loginfo(str)
+                pubMissionLog.publish(str)
+                return 'aborted'
+            r.sleep()
                         
         wpTarget = 1
         self.__path = numpy.vstack((eta_0,self.__path.T)).T # include the current location of the AUV as the first waypoint
         _,pathLen = self.__path.shape
         
-        if self.__controlRate>0:
-            r = rospy.Rate(self.__controlRate)
-
         str = 'Execute path following algorithm with a following path'
         rospy.loginfo(str)
         pubMissionLog.publish(str)
@@ -89,10 +92,8 @@ class pathFollowingLOS(smach.State):
         
         flag = 1
         
+        ##### Main loop #####
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
-            
-            # reference time to control rate
-            timeRef = time.time()
             
             X = self.__controller.getX()
             Y = self.__controller.getY()
@@ -157,14 +158,18 @@ class pathFollowingLOS(smach.State):
  
             # publish heading demand
             self.__controller.setHeading(los_a)
-            # turn speedDemand into propeller demand and send
+            # turn speedDemand into propeller demand and publish
             self.__controller.setRearProp(round(u*22.))
+
+            r.sleep()
             
-            if self.__controlRate>0:
-                r.sleep()
-                
         if self.__controller.getBackSeatErrorFlag() == 1:
             str= 'pathFollowingLOS preempted at time = %s' %(time.time())    
             rospy.loginfo(str)
             pubMissionLog.publish(str)
             return 'preempted'
+        else: # not in use
+            str= 'pathFollowingLOS timed-out at time = %s' %(time.time())
+            pub.publish(str)
+            rospy.loginfo(str)
+            return 'aborted'
