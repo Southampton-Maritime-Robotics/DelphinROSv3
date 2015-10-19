@@ -44,39 +44,6 @@ def main():
 
     # Allow the topic to come online
     time.sleep(10)
-    
-    #Read back seat driver Settings
-    overDepth = rospy.get_param('over-depth')
-    str = 'Backseat Driver Parameter: over depth set to %s m' %(overDepth)
-    pub.publish(str)
-    rospy.loginfo(str)
-    time.sleep(0.1)
-    overPitch = rospy.get_param('over-pitch')    
-    str = 'Backseat Driver Parameter: over pitch set to %s deg' %(overPitch)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    time.sleep(0.1)    
-    overRoll = rospy.get_param('over-roll')
-    str = 'Backseat Driver Parameter: over roll set to %s deg' %(overRoll)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    time.sleep(0.1)         
-    maxInternalTemp = rospy.get_param('max-internal-temp')  
-    str = 'Backseat Driver Parameter: max internal temperature %s deg' %(maxInternalTemp)
-    pub.publish(str)
-    rospy.loginfo(str)
-    time.sleep(0.1)
-    minMotorVoltage = rospy.get_param('min-motor-voltage')
-    str = 'Backseat Driver Parameter: min motor voltage %s V' %(minMotorVoltage)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    time.sleep(0.1) 
-    missionTimeout = rospy.get_param('mission-timeout') 
-    str = 'Backseat Driver Parameter: mission-timeout %s min' %(missionTimeout)
-    pub.publish(str) 
-    rospy.loginfo(str)
-
-    controlRate = 20. # Hz
 
     O = array([0.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
     A = array([-28.,-20.]) # reference point A
@@ -92,14 +59,9 @@ def main():
     pathOtoM = numpy.vstack((O,M)).T
     pathTest = numpy.vstack((M,A,B,M)).T
 
-    homeLocation = array([-2,2])
-    
-    # guidance
-    L_los = 10. # [m] line-of-sight distance
-    wp_R = 3. # [m] radius of acceptance
-    
-    # speed control
-    uMax = 1.2 # [m/s] maximum surge speed
+################################################################################
+########### STATE MACHINE ######################################################
+################################################################################
 
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
@@ -109,34 +71,26 @@ def main():
         # Add states to the container
         # generic state
 
-################################################################################
-########### MAIN CODE ##########################################################
-################################################################################
+        # creating the sequence state machine
+        se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
+                            connector_outcome = 'succeeded')
 
-################################################################################
-        # [1/3] Initialise State (Must Be Run First!) # TODO uncomment me
-        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-            transitions={'succeeded':'ACTIONS', 'aborted':'STOP','preempted':'STOP'})
+        with se:
+        # [1/3] Initialise State (Must Be Run First!)
+# TODO unleash me            smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
 
-################################################################################
         # [2/3] Added States
-        smach.StateMachine.add('ACTIONS', actions(lib, controlRate),
-            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-        
-####        smach.StateMachine.add('GoFORWARD', GoForwards(lib, myUti, 30, 10, controlRate), # (lib, myUti, timeout [sec], propDemand, controlRate [Hz])
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+            # prop, th_ver[front, rear], th_hor[front, rear], cs_ver, cs_hor, actionHold
+            smach.Sequence.add('ACTIONS_1',actions(lib, 10, [0, 0], [-1000, 1000], 0, 0, 10, ))
+#            smach.Sequence.add('ACTIONS_2',actions(lib, 20, [0, 0], [0, 0], 0, 0, 10, ))
+#            smach.Sequence.add('ACTIONS_3',actions(lib, 0, [0, 0], [0, 0], 0, 0, 30, ))
 
-####        smach.StateMachine.add('GoSIDEWAY', GoSideway(lib, myUti, 30, 1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+#            smach.Sequence.add('GoHOME', pathFollowingLOS(lib, myUti, O))
 
-####        smach.StateMachine.add('GoYAW', GoYaw(lib, myUti, 30, 1000, controlRate), # (lib, myUti, timeout [sec], thrusterDemand, controlRate [Hz])
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-            
-####        smach.StateMachine.add('GoToHEADING', GoToHeading(lib, myUti, 90, 5, 10, 30, controlRate), # (lib, myUti, demandHeading [deg], tolerance [deg], stable_time [sec], timeout [sec], controlRate [Hz])
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
-####        smach.StateMachine.add('GoHOME', pathFollowingLOS(lib,myUti, O, L_los, uMax, wp_R, controlRate, 30), # (..., locationWaitTimeout [sec])
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('SEQUENCE', se, transitions={'succeeded':'STOP',
+                                                            'aborted':'STOP',
+                                                            'preempted':'STOP'})
 
 ################################################################################
 
