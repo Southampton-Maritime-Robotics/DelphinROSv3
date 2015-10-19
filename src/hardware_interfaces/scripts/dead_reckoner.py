@@ -6,6 +6,7 @@ A node that gives an estimated AUV's state based on a dead-reckoning algorithm.
 This node relies more on GPS when it is available, otherwise an equation of motion will be used to keep tracking the AUV state.
 
 #TODO
+-the model is not so thrustable, need double-checked
 -include sway_demand in the model
 -thruster has too strong implication to the sway dynamic: this must be corrected!!
 -rudder has no effect at all to the sway dynamic: this must be corrected!!
