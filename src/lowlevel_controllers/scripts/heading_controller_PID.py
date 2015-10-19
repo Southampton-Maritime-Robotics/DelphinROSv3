@@ -12,8 +12,10 @@ A heading controller for the AUV when moving on a horizontal plane based-on PI-D
 5/4/2015: makesure CS and thruster demands are Integer32
 21/9/2015: added speed observer
 
-# TODO - make the "CS_controller" less agressive at high forward speeds
-# TODO - check if the sway force distribution have been done correctly
+# TODO 
+- check if the sway force distribution have been done correctly
+- include actuator transition in according to surge speed
+- moved speed observer to dead_reckoner
 
 """
 
@@ -153,7 +155,7 @@ def main_control_loop():
 
     propDemand       = 0
     speed            = 0
-    controller_onOff = Bool()
+    controller_onOff = False
     set_params()
 
     controlRate = 5. # [Hz]
@@ -254,7 +256,11 @@ def system_state(dt,heading_current,heading_demand):
 
 def heading_demand_cb(headingd):
     global HC
+    global controller_onOff
+    global timeLastCallback
     HC.heading_demand = headingd.data
+    controller_onOff = True
+    timeLastCallback = time.time()
     
 def sway_demand_cb(swaydemand):
     global HC
@@ -263,37 +269,31 @@ def sway_demand_cb(swaydemand):
 def compass_cb(compass):
     global HC
     HC.heading = compass.heading
-
-def onOff_cb(onOff):
-    global controller_onOff
-    global timeLastCallback
-    controller_onOff=onOff.data
-    timeLastCallback = time.time()
     
+################################################################################
+######## SPEED OBSERVER ########################################################
+################################################################################
+
 def prop_demand_callback(propd):
     global propDemand
     global timeLastDemandProp
     propDemand = propd.data
     timeLastDemandProp = time.time()
-    
-################################################################################
-######## SPEED OBSERVER ########################################################
-################################################################################
 
 def propeller_model(u_prop,_speed):
     if numpy.abs(u_prop)<10:   # deadband
         F_prop = 0
     else:
         # propeller model based on Turnock2010 e.q. 16.19
-        Kt0 = 0.1001
-        a = 0.6947
-        b = 1.6243
+        Kt0 = 0.1003
+        a = 0.6952
+        b = 1.6143
         w_t = 0.36 # wake fraction
-        t = 0.50 # thrust deduction
+        t = 0.11 # thrust deduction
         D = 0.305 # peopeller diameter [m]
         rho = 1000 # water density [kg/m^3]
-        
-        rps = 0.5451*u_prop - 2.384 # infer propeller rotation speed from the propeller demand [rps]
+                
+        rps = 0.2748*u_prop - 0.1657 # infer propeller rotation speed from the propeller demand [rps]
                     
         J = _speed *(1-w_t)/rps/D;
         Kt = Kt0*(1 - (J/a)**b );
@@ -304,9 +304,10 @@ def propeller_model(u_prop,_speed):
 def rigidbodyDynamics(_speed,F_prop):
     m = 79.2 # mass of the AUV [kg]
     X_u_dot = -3.46873716858361 # added mass of the AUV [kg]
-    X_uu = -29.9811131464837 # quadratic damping coefficient [kg/m]
+    X_u = -16.2208 # linear damping coefficient [kg/s]
+    X_uu = -1.2088 # quadratic damping coefficient [kg/m]
     
-    acc = (X_uu*abs(_speed)*_speed+F_prop)/(m-X_u_dot)
+    acc = (X_u*_speed + X_uu*abs(_speed)*_speed + F_prop)/(m-X_u_dot)
     
     return acc
     
@@ -336,7 +337,6 @@ if __name__ == '__main__':
     rospy.Subscriber('heading_demand', Float32, heading_demand_cb)
     rospy.Subscriber('sway_demand', Float32, sway_demand_cb)
     rospy.Subscriber('compass_out', compass, compass_cb)
-    rospy.Subscriber('Heading_onOFF', Bool, onOff_cb)
     rospy.Subscriber('prop_demand', Int8, prop_demand_callback)
     
     pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
