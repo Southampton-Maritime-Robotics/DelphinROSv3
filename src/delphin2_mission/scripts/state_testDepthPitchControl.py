@@ -32,8 +32,8 @@ class testDepthPitchControl(smach.State):
     def __init__(self, lib):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
-        self.delay_action = 120 # let the vehicle doing those actions for a period of time (value is specified in second)
-            
+        self.delay_action = 300 # let the vehicle doing those actions for a period of time (value is specified in second)
+        
     def execute(self, userdata):
 
         #Set Up Publisher for Mission Control Log
@@ -53,8 +53,8 @@ class testDepthPitchControl(smach.State):
 ################################################################################
         # let the vehicle do depth-pitch tracking
 
-        listDemandDepth = [2]
-        demandHeading = 280.
+        listDemandDepth = [1, 2, 1]
+        demandHeading = 270.
         demandPitch = 0.
 
         controlRate = 20 # Hz
@@ -90,5 +90,4 @@ class testDepthPitchControl(smach.State):
         self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
         self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
         self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
-        time.sleep(30)
         return 'succeeded' # exit with a flag of 'succeeded'
