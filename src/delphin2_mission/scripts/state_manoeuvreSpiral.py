@@ -42,15 +42,12 @@ from math import *
 from std_msgs.msg import String
 
 class manoeuvreSpiral(smach.State):
-    def __init__(self, lib, myUti, wp, uMax, errHeadingTol, wp_R, timeDemandHold, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle, controlRate):
+    def __init__(self, lib, myUti, wp, errHeadingTol, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__uti = myUti
         self.__wp = wp
-        self.__uMax = uMax
         self.__errHeadingTol = errHeadingTol
-        self.__wp_R = wp_R
-        self.__timeDemandHold = timeDemandHold # demand will be hold for this many second
         self.__timeDelay = timeDelay
         self.__depthDemand = depthDemand # [m].
         self.__depthTol = depthTol # [m]. It is account as the AUV get to the depth if the depth error is less than this.
@@ -62,7 +59,16 @@ class manoeuvreSpiral(smach.State):
         self.__direction = -1 # 1:cw, -1:ccw 
         self.__headingBias = -self.__direction*30 # TODO [deg, +ve CW] point away from the target just so the vehicle has enough space for turning
         
-        self.__controlRate = controlRate
+        self.__controlRate = 5 # [Hz]
+        
+        try:
+            self.__L_los    = rospy.get_param('LOS_distance')
+            self.__uMax     = rospy.get_param('max-speed')
+            self.__wp_R     = rospy.get_param('radius_of_acceptance')
+        except:
+            self.__L_los    = L_los     # line of sight distance
+            self.__uMax     = uMax      # maximum speed
+            self.__wp_R     = wp_R      # circle of acceptance
 
     def execute(self, userdata):
         
@@ -186,11 +192,11 @@ class manoeuvreSpiral(smach.State):
                     if rang <= rangeAcc:
                         self.__controller.setRearProp(demandProp)
                         self.__controller.setHeading(headingDemand) # hold at the previous demand
-                        self.__controller.setDepth(self.__depthDemand)
+                        if self.__depthDemand>=self.__depthDemandMin:
+                            self.__controller.setDepth(self.__depthDemand)
                     else:
                         break
-                    if self.__controlRate>0:
-                        r.sleep()
+                    r.sleep()
                 # activate the actuator when AUV is far enough from the start location
                 for demandRudder in self.__listRudder:
                     if rospy.is_shutdown() or self.__controller.getBackSeatErrorFlag() == 1:
@@ -225,8 +231,8 @@ class manoeuvreSpiral(smach.State):
                                 if self.__depthDemand>=self.__depthDemandMin:
                                     self.__controller.setDepth(0) # by defult, the depth controller will turn off on its own after 1sec of not reciving new demand
                                 break
-                            if self.__controlRate>0:
-                                r.sleep()
+
+                            r.sleep()
                             
                 # vehicle will stop for this many second as to let the AUV ascend to the surface
                 if self.__depthDemand>=self.__depthDemandMin:
