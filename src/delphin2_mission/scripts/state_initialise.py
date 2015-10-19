@@ -22,7 +22,7 @@ import rospy
 import smach
 import smach_ros
 import time
-from std_msgs.msg               import String
+from std_msgs.msg import String
 
 class Initialise(smach.State):
     def __init__(self, lib, timeout):
@@ -31,6 +31,12 @@ class Initialise(smach.State):
         self.__timeout = timeout
   		
     def execute(self,userdata):
+
+        #parameters to utilize watchdog
+        try: 
+            voltage_min = rospy.get_param('min-motor-voltage')
+        except:
+            voltage_min = 19000 # [mV]
         	
         #Set Up Publisher for Mission Control Log
         pub = rospy.Publisher('MissionStrings', String)
@@ -40,6 +46,7 @@ class Initialise(smach.State):
         str= 'Entered State Initialise'
         pub.publish(str)
         
+        r = rospy.Rate(2) # [Hz] for controlling the loop timing
         while (time.time()-time_zero < self.__timeout) and not(all_online) and not rospy.is_shutdown():
            all_online = (self.__controller.getThrusterStatus() 
                 and self.__controller.getTailStatus()   
@@ -51,8 +58,9 @@ class Initialise(smach.State):
                 and self.__controller.getDepthCtrlStatus()
                 and self.__controller.getDeadreckonerStatus()
                 and self.__controller.getLoggerStatus()
-                and self.__controller.getBackSeatDriverStatus())
-           time.sleep(0.5) # for controlling the rate
+                and self.__controller.getBackSeatDriverStatus()
+                and self.__controller.getEnergyMonitorStatus())
+           r.sleep()
 
         rospy.loginfo('##############################################')
         rospy.loginfo('############ CRITICAL NODE STATUS ############')
@@ -96,6 +104,9 @@ class Initialise(smach.State):
         str='backSeatDriver status = %r' %self.__controller.getBackSeatDriverStatus()
         pub.publish(str)
         rospy.loginfo(str)
+        str='energyMonitor status = %r' %self.__controller.getEnergyMonitorStatus()
+        pub.publish(str)
+        rospy.loginfo(str)
         rospy.loginfo('##############################################')
         pub.publish('##############################################')
         
@@ -121,7 +132,7 @@ class Initialise(smach.State):
         pub.publish('##############################################')
         pub.publish('##############################################')
         
-        if voltage < 20*1000:
+        if voltage < voltage_min:
             "Initial battery voltage, %smV < 20,000mV" %voltage
             rospy.logerr(str)  
             pub.publish(str)       
