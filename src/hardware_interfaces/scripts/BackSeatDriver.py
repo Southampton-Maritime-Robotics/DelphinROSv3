@@ -37,22 +37,47 @@ def main(controller):
     
     time.sleep(20) #Allow critical systems to come online.
     
-    # Import Limit Parameters from laumch file
+    # Read back seat driver Settings from parameter server
     overDepth = rospy.get_param('over-depth')
-    overPitch = rospy.get_param('over-pitch')
+    str = 'Backseat Driver Parameter: over depth set to %s m' %(overDepth)
+    pubMissionLog.publish(str)
+    rospy.loginfo(str)
+    time.sleep(0.1)
+    
+    overPitch = rospy.get_param('over-pitch')    
+    str = 'Backseat Driver Parameter: over pitch set to %s deg' %(overPitch)
+    pubMissionLog.publish(str) 
+    rospy.loginfo(str)
+    time.sleep(0.1)    
+    
     overRoll = rospy.get_param('over-roll')
-    maxInternalTemp = rospy.get_param('max-internal-temp')
+    str = 'Backseat Driver Parameter: over roll set to %s deg' %(overRoll)
+    pubMissionLog.publish(str) 
+    rospy.loginfo(str)
+    time.sleep(0.1)         
+    
+    maxInternalTemp = rospy.get_param('max-internal-temp')  
+    str = 'Backseat Driver Parameter: max internal temperature %s deg' %(maxInternalTemp)
+    pubMissionLog.publish(str)
+    rospy.loginfo(str)
+    time.sleep(0.1)
+    
     minMotorVoltage = rospy.get_param('min-motor-voltage')
-    missionTimeout = rospy.get_param('mission-timeout')
+    str = 'Backseat Driver Parameter: min motor voltage %s V' %(minMotorVoltage)
+    pubMissionLog.publish(str) 
+    rospy.loginfo(str)
+    time.sleep(0.1) 
+    
+    missionTimeout = rospy.get_param('mission-timeout') 
+    str = 'Backseat Driver Parameter: mission-timeout %s min' %(missionTimeout)
+    pubMissionLog.publish(str) 
+    rospy.loginfo(str)
     missionTimeout = missionTimeout*60 #Mission timeout in minutes therfore convert to seconds
+
     
     #Initialise BackSeatFlag to zero
     BackSeatFlag=0
     pubMissionLog.publish('Backseat Driver Node Is Active')
-    
-####    headingOld = 0. # [deg]
-####    timeXsensLastPublish = time.time() # [sec]
-####    timeXsensDead = 5 # [sec]
     
     pubStatus.publish(nodeID = 11, status = True)
     
@@ -130,18 +155,6 @@ def main(controller):
             pub.publish(BackSeatFlag)
             pubMissionLog.publish(str)
             return
-####        headingNow = controller.getHeading()
-####        if headingNow!=headingOld:
-####            timeXsensLastPublish = time.time()
-####        if time.time()-timeXsensLastPublish > timeXsensDead:
-####            BackSeatFlag=1
-####            str = "xsens did not response for longer than %ss" %(timeXsensDead)
-####            rospy.logerr(str)
-####            pub.publish(BackSeatFlag)
-####            pubMissionLog.publish(str)
-####            return
-####        else:
-####            headingOld = headingNow
             
         #Check Motor Control Board Status
         if not controller.getThrusterStatus():
