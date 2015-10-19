@@ -28,6 +28,10 @@ Developed based on "tsl_customer_mission.py" that was originally used to control
 
 # NOTE: setpoint within (-145,145) will be set to 0, i.e. incorporate as a deadband
 
+TODO:
+- shrink down the preamble and checksum: fa->$, cs->#
+- do not need to subscribe to on-off flag
+
 """
 
 import rospy
@@ -46,7 +50,6 @@ from std_msgs.msg import String
 global new_data
 global current_data
 global serialPort
-global onOff
 
 global delaySerial
 global timeOut
@@ -65,14 +68,13 @@ def init_serial():
     global serialPort
     global current_data
     current_data = {'thruster0':0,'thruster1':0,'thruster2':0,'thruster3':0}
-    
     serialPort = serial.Serial(port='/dev/usbArduino', baudrate='38400', timeout=0.1)
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    
     serialPort.flushInput()
     serialPort.flushOutput()
+    time.sleep(0.01)
     
     return serialPort.isOpen()
 
@@ -137,8 +139,8 @@ def motor_control():
     global ThrusterSetpoint_max
     global timeHorizLastDemand
     global timeVertLastDemand
-    onOff_horiz = 1
-    onOff_vert = 1
+    onOff_horiz = 0
+    onOff_vert = 0
     sp_max = 2500.
     sp_min = 145.
     sp_max_arduino = 255.
@@ -146,15 +148,6 @@ def motor_control():
     interception = -slope*sp_min
     timeHorizLastDemand = time.time()
     timeVertLastDemand = time.time()
-
-    #parameters to utilize watchdog
-#    try:
-#        voltage_min = rospy.get_param('min-motor-voltage')
-#    except:
-#        voltage_min = 19000 # [mV]
-#    timeStart_vol = time.time()
-
-#    timeLim_vol = 5 # [sec]
 
     timeRef = time.time()
     timeStart_rpm = [timeRef,timeRef,timeRef,timeRef]
@@ -205,19 +198,17 @@ def motor_control():
                 
         ############################# SETPOINT MSG ####################################    
 
-        # Note: onOff flag will be pulled off by the stop function when terminate the mission
-        if time.time()-timeVertLastDemand < timeLastDemand_sat:
-            setpoint0= onOff_vert*thrust_sp_arduino[0]
-            setpoint1= onOff_vert*thrust_sp_arduino[1]
-        else: # if there is no update on vert thruster for longer than timeLastDemand_sat, turn off the vert thruster
-            setpoint0= 0
-            setpoint1= 0
-        if time.time()-timeHorizLastDemand < timeLastDemand_sat:
-            setpoint2= onOff_horiz*thrust_sp_arduino[2]
-            setpoint3= onOff_horiz*thrust_sp_arduino[3]
-        else: # if there is no update on horiz thruster for longer than timeLastDemand_sat, turn off the horiz thruster
-            setpoint2= 0
-            setpoint3= 0            
+        # if there is no update on vert thruster for longer than timeLastDemand_sat, turn off the vert thruster
+        if time.time()-timeVertLastDemand > timeLastDemand_sat:
+            onOff_vert = 0
+        setpoint0= onOff_vert*thrust_sp_arduino[0]
+        setpoint1= onOff_vert*thrust_sp_arduino[1]
+        
+        # if there is no update on horiz thruster for longer than timeLastDemand_sat, turn off the horiz thruster
+        if time.time()-timeHorizLastDemand > timeLastDemand_sat:
+            onOff_horiz = 0
+        setpoint2= onOff_horiz*thrust_sp_arduino[2]
+        setpoint3= onOff_horiz*thrust_sp_arduino[3]
         
         setPoints = '%d,%d@%d,%d@%d,%d@%d,%d@' %(setpoint0,thrust_dr[0],setpoint1,thrust_dr[1],setpoint2,thrust_dr[2],setpoint3,thrust_dr[3])
         dataToSend = 'faP' + setPoints # add header to a data packet
@@ -272,6 +263,8 @@ def motor_control():
 def vert_callback(new_sp):
     global current_data
     global timeVertLastDemand
+    global onOff_vert
+    onOff_vert = 1
     current_data['thruster0'] = new_sp.thruster0
     current_data['thruster1'] = new_sp.thruster1
     timeVertLastDemand = time.time()
@@ -279,6 +272,8 @@ def vert_callback(new_sp):
 def horiz_callback(new_sp):
     global current_data
     global timeHorizLastDemand
+    global onOff_horiz
+    onOff_horiz = 1
     current_data['thruster2'] = new_sp.thruster0
     current_data['thruster3'] = new_sp.thruster1
     timeHorizLastDemand = time.time()
@@ -291,7 +286,6 @@ def motor_shutdown():
     dataToSend = 'faP' + setPoints # add header to a data packet
     dataToSend = dataToSend + 'cs' # add footer to a data packet
     # send a shutdown command
-    serialPort.flushOutput()
     serialPort.write(dataToSend)
     time.sleep(delaySerial)
 
@@ -301,14 +295,6 @@ def shutdown():
     serialPort.flushOutput()
     pubStatus.publish(nodeID = 1, status = False)
     serialPort.close()
-
-def onOff_horiz_callback(new_onOff_horiz):
-    global onOff_horiz
-    onOff_horiz = new_onOff_horiz.data
-    
-def onOff_vert_callback(new_onOff_vert):
-    global onOff_vert
-    onOff_vert = new_onOff_vert.data
 
 ############################# SETUP ######################################    
 
@@ -320,8 +306,6 @@ if __name__ == '__main__':
     
     port_status = init_serial()
     
-    rospy.Subscriber('TSL_onOff_horizontal', Bool, onOff_horiz_callback)
-    rospy.Subscriber('TSL_onOff_vertical', Bool, onOff_vert_callback)
     rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, horiz_callback)
     rospy.Subscriber('TSL_setpoints_vertical', tsl_setpoints, vert_callback)
     
