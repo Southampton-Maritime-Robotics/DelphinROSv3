@@ -46,7 +46,7 @@ timeLastDemandProp = time.time()
 timeLastDemandCsHor = time.time()
 timeLastDemandCsVer = time.time()
 timeLastDemandMax = 1 # if there is no new demand for this many seconds, the corresponding actuators will be turned off of set to neutral position
-timeLastCommunicationMax = 2
+timeLastCommunicationMax = 1
 
 # neutral position of fins and propeller demand
 b_zero = 95 # [pwm]
@@ -62,7 +62,9 @@ def setupSerial():
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    time.sleep(3)
+    serialPort.flushInput()
+    serialPort.flushOutput()
+    time.sleep(0.1)
     return serialPort.isOpen()
 
 ################################################################################
@@ -187,7 +189,7 @@ def tail_section_loop(status):
             timeLastRead = time.time()
         except:
             print 'read error'
-                
+               
         ############################# PUBLISH THE INFORMATION ######################################
         pub.publish(b_sp = b_demand,
                     b_fb = b_feedback,
@@ -306,7 +308,10 @@ def limits(value, value_min, value_max):       #Function to contrain within defi
 def shutdown():
     pubStatus.publish(nodeID = 2, status = False)
     message = '$S%d@%d@%d@%d@%d@#' %(b_zero, c_zero, d_zero, e_zero, prop_zero)
+    time.sleep(0.2) # give enough time for arduino to receive the data packet
+    serialPort.flushInput()
     serialPort.flushOutput()
+    serialPort.close()
     serialPort.write(message)
 
 ################################################################################
