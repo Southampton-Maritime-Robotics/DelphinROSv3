@@ -100,7 +100,7 @@ class library_highlevel:
         self.__heading_error=0.0
         self.__altitude=0.0
    
-        self.__motor_voltage = 0.0
+        self.__motor_voltage = 10.0
         self.__T0rpm = 0.0
         self.__T1rpm = 0.0
         self.__T2rpm = 0.0
@@ -118,9 +118,7 @@ class library_highlevel:
         rospy.logfatal(str)
         self.Mission_pub.publish(str)
         self.setArduinoThrusterHorizontal(0, 0)
-        self.switchHorizontalThrusters(0)
         self.setArduinoThrusterVertical(0, 0)
-        self.switchVerticalThrusters(0)
         self.setRearProp(0)
         self.setControlSurfaceAngle(0, 0, 0, 0)
         time.sleep(5)
@@ -136,117 +134,86 @@ class library_highlevel:
     
     # sets sway 'demand' (tsl_setpoints ~500-1000)
     def sway(self, demand):
-#        str = "Swaying %s (positive to starboard)" %demand
-#        rospy.loginfo(str)
         # keep current heading (not current heading demand!)
         self.changeHeadingBy(0)
         self.pub_sway_demand.publish(demand)
-        self.switchHorizontalThrusters(1)
-        self.switchHeadingOnOff(1)
     
     # sets a 'demand' for the rear prop (between 0 and 22ish)
     def setRearProp(self, demand):
-        #publish rear prop_demand
-#        print 'Rear prop to', demand
-#        str = "Setting rear prop demand %s" %demand
-#        rospy.loginfo(str)
-        self.pub_prop_demand.publish(demand)
+        self.pub_prop_demand.publish(round(demand))
         
     # set a 'demand' (in degrees) for the rudder angle
     def setRudderAngle(self, demand):
         vertical=tail_setpoints()
+        demand = round(demand)
         vertical.cs0 = demand
         vertical.cs1 = demand
-        str = "Ruddder demand %.3f deg" %demand
-        rospy.loginfo(str)
-        #publish rear rudder_demand
         self.pub_tail_setpoints_vertical.publish(vertical)
+
+    # set a 'demand' (in degrees) for the stenplane angle
+    def setSternPlaneAngle(self, demand):
+        horizontal=tail_setpoints()
+        demand = round(demand)
+        horizontal.cs0 = demand
+        horizontal.cs1 = demand
+        self.pub_tail_setpoints_horizontal.publish(horizontal)
 
     # set a 'demand' (in degrees) for the rudder angle
     def setControlSurfaceAngle(self, b,c,d,e): # (VerUp,HorRight,VerDown,HorLeft)
         vertical   = tail_setpoints()
         horizontal = tail_setpoints()
-        vertical.cs0 = b
-        vertical.cs1 = d
-        horizontal.cs0 = c
-        horizontal.cs1 = e
-#        str = "Control surface demands - top: %s, sb: %s, bottom: %s, p: %s deg" %(b,c,d,e)
-#        rospy.loginfo(str)
+        vertical.cs0 = round(b)
+        vertical.cs1 = round(d)
+        horizontal.cs0 = round(c)
+        horizontal.cs1 = round(e)
         self.pub_tail_setpoints_vertical.publish(vertical)
         self.pub_tail_setpoints_horizontal.publish(horizontal)
 
     # manually send tsl setpoint values for horizontal thrusters
     def setArduinoThrusterHorizontal(self, thruster2, thruster3):
         output=tsl_setpoints()
-        output.thruster0=thruster2
-        output.thruster1=thruster3
-#        str = "Horizontal Thruster Setpoints %s %s" %(thruster2,thruster3)
-#        rospy.loginfo(str)
-        self.switchHorizontalThrusters(1)
-        self.switchHeadingOnOff(0)
+        output.thruster0 = round(thruster2)
+        output.thruster1 = round(thruster3)
         self.pub_tsl_heading.publish(output)
 
     # manually send tsl setpoint values for vertical thrusters
     def setArduinoThrusterVertical(self, thruster0, thruster1):
         output=tsl_setpoints()
-        output.thruster0=thruster0
-        output.thruster1=thruster1
-        #print statement might not work! hasn't been tested!
-#        str = "Vertical Thruster Setpoints %s %s" %(thruster0,thruster1)
-#        rospy.loginfo(str)
-        self.switchVerticalThrusters(1)
-        self.switchDepthOnOff(0)
+        output.thruster0 = round(thruster0)
+        output.thruster1 = round(thruster1)
+        #publish demand
         self.pub_tsl_depth.publish(output)
 
     # move to depth 'demand' (metres)
     def setDepth(self, demand):
-        #publish depthDemand
-        #print 'Setting depth demand: ', demand, 'm'
-        self.switchDepthOnOff(1)
-        self.switchVerticalThrusters(1)
-        if (demand <= self.__maxDepthDemand and demand > 0):
-            self.pub_depth_demand.publish(demand)
-#            str = "Setting depth demand %sm" %demand
-#            rospy.loginfo(str)
-        elif demand > self.__maxDepthDemand:
-            self.pub_depth_demand.publish(self.__maxDepthDemand)
-            str = "Requested depth %sm > maxDepthDemand (%sm)" %(demand, self.__maxDepthDemand)
-            rospy.logwarn(str)
-            str = "Setting depth demand %sm" %self.__maxDepthDemand
+        if (demand < 0):
+            # if demand is zero or less than zero
+            str = "Improper depth demand (%sm), turn off depth controller" %(demand)
             rospy.logwarn(str)
         else:
-            # if demand is zero TODO
-            pass
+            if demand > self.__maxDepthDemand: # apply a saturation to the demand
+                str = "Requested depth %sm > maxDepthDemand (%sm)" %(demand, self.__maxDepthDemand)
+                rospy.logwarn(str)
+                str = "Setting depth demand %sm" %self.__maxDepthDemand
+                rospy.logwarn(str)
+                self.pub_depth_demand.publish(self.__maxDepthDemand)
+            else:
+                self.pub_depth_demand.publish(demand)
             
     def setSpeed(self, demand):
         self.pub_speed.publish(demand)
-#        str = "Setting speed demand %s m/s" %demand
-#        rospy.loginfo(str)
     
     def setPitch(self, demand):
-        self.switchPitchOnOff(1)
-        self.switchVerticalThrusters(1)
-        
         if (abs(demand) < self.overpitch):
             self.pub_pitch_demand.publish(demand)
-#            str = "Setting pitch demand %sdeg" %demand
-#            rospy.loginfo(str)
-        else:
+        else: # apply a saturation to the demand
             demand_mod = numpy.sign(demand)*self.overpitch
             self.pub_pitch_demand.publish(demand_mod)
-#            str = "Magnitude of requested pitch %sdeg > maxPitchDemand (%sdeg)" %(demand, self.overpitch)
-#            rospy.logwarn(str)
-#            str = "Setting pitch demand %sdeg" %demand_mod
-#            rospy.logwarn(str)
 
     # move to heading 'demand' (degrees)
     def setHeading(self, demand):
         #publish headingDemand
         cur_heading=self.getHeading()
-#        str = "Setting heading demand %.3f deg, current heading %.3f deg" %(demand, cur_heading)
-#        rospy.loginfo(str)
-        self.switchHorizontalThrusters(1)
-        self.switchHeadingOnOff(1)
         self.pub_heading_demand.publish(demand)
 
     # change heading by 'headingChange' (degrees)
@@ -259,59 +226,6 @@ class library_highlevel:
         #change depth by an amount (depthChange)
         self.setDepth(self.__compass.depth + depthChange)
     
-    # switch horizontal thrusters on or off {1,0}
-    def switchHorizontalThrusters(self, onOff):
-        if onOff == 1:
-            self.pub_tsl_onOff_horizontal.publish(1)
-            str = "Switch Horizontal Thruster ON"
-            rospy.logdebug(str)	
-        else: 
-            self.pub_tsl_onOff_horizontal.publish(0)
-            str = "Switch Horizontal Thruster OFF"
-            rospy.logdebug(str)	
-            
-    # switch vertical thrusters on or off {1,0}
-    def switchVerticalThrusters(self, onOff):
-        if onOff == 1:
-            self.pub_tsl_onOff_vertical.publish(1)
-            str = "Switch Vertical Thruster ON"
-            rospy.logdebug(str)
-        else:
-            self.pub_tsl_onOff_vertical.publish(0)
-            str = "Switch Vertical Thruster OFF"
-            rospy.logdebug(str)
-
-    # switch heading controller on or off {1,0}
-    def switchHeadingOnOff(self,onOff):
-        if onOff ==1:
-            self.pub_heading_control_onOff.publish(1)
-            str = "Switch Heading Control ON"
-            rospy.logdebug(str)
-        else:
-            self.pub_heading_control_onOff.publish(0)
-            str = "Switch Heading Control OFF"
-            rospy.logdebug(str)
-
-    # switch depth controller on or off {1,0}
-    def switchDepthOnOff(self,onOff):
-        if onOff ==1:
-            self.pub_depth_control_onOff.publish(1)
-            str = "Switch Depth Control ON"
-            rospy.logdebug(str)
-        else:
-            self.pub_depth_control_onOff.publish(0)
-            str = "Switch Depth Control OFF"
-            rospy.logdebug(str)
-            
-    def switchPitchOnOff(self,onOff):
-        if onOff ==1:
-            self.pub_pitch_control_onOff.publish(1)
-            str = "Switch Pitch Control ON"
-            rospy.logdebug(str)
-        else:
-            self.pub_pitch_control_onOff.publish(0)
-            str = "Switch Pitch Control OFF"
-            rospy.logdebug(str)
     #################################################
     # Getter methods    
     ############# these might change depending on which compass is being used...
@@ -542,10 +456,6 @@ class library_highlevel:
 
     def callback_depth(self, depth_data):
         self.__depth = depth_data
-####        if self.__depth.depth_filt > 15:
-####            str = "Depth exceeded 15m - aborting mission"
-####            rospy.logfatal(str)
-####            self.stop()
     
     def callback_position(self, position):
         self.__position = position
