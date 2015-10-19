@@ -112,24 +112,25 @@ class testDryLand(smach.State):
             ####################################################################
 
             angles = [-30.0, 0.0, 30.0]
+            fin_error_tol = 3.0
             for a in angles:
                 time_ref = time.time()
                 while time.time()-time_ref<self.timeActive:
                     self.__controller.setControlSurfaceAngle(a,a,a,a)
                 
-                if numpy.abs(self.__controller.getCS_b() - a) > 10.0:
+                if numpy.abs(self.__controller.getCS_b() - a) > fin_error_tol:
                     str = "Problem with top control surface. Feedback = %d" %self.__controller.getCS_b()
                     rospy.logerr(str)
                     return 'aborted' 
-                if numpy.abs(self.__controller.getCS_c() - a) > 10.0:
+                if numpy.abs(self.__controller.getCS_c() - a) > fin_error_tol:
                     str = "Problem with starboard control surface. Feedback = %d" %self.__controller.getCS_C()
                     rospy.logerr(str)
                     return 'aborted' 
-                if numpy.abs(self.__controller.getCS_d() - a) > 10.0:
+                if numpy.abs(self.__controller.getCS_d() - a) > fin_error_tol:
                     str = "Problem with bottom control surface. Feedback = %d" %self.__controller.getCS_d()
                     rospy.logerr(str)
                     return 'aborted' 
-                if numpy.abs(self.__controller.getCS_e() - a) > 10.0:
+                if numpy.abs(self.__controller.getCS_e() - a) > fin_error_tol:
                     str = "Problem with port control surface. Feedback = %d" %self.__controller.getCS_e()
                     rospy.logerr(str)
                     return 'aborted'
@@ -137,7 +138,7 @@ class testDryLand(smach.State):
             self.__controller.setControlSurfaceAngle(0,0,0,0)
             str = "Control surfaces - working"
             rospy.loginfo(str)
-            time.sleep(1) # allow the control surfaces to get back to the neutral position
+            time.sleep(2) # allow the control surfaces to get back to the neutral position
 
             ####################################################################
             ### PROPELLER ######################################################
@@ -147,7 +148,7 @@ class testDryLand(smach.State):
             prop_rps = [0]*self.N # create a list of zero with a length N
             while time.time()-time_ref<self.timeActive:
                 self.__controller.setRearProp(10)
-                prop_rps = prop_rps[1:] + [self.__controller.getPropRPM()]
+                prop_rps = prop_rps[1:] + [self.__controller.getPropRPS()]
             prop_rps_avg = sum(prop_rps)/float(self.N)
             self.__controller.setRearProp(0)
 
