@@ -4,6 +4,10 @@
 Possibly, a state to get the AUV to the certain altitude.
 
 May not functioning!
+TODO:
+- check sensor reading
+- check loop structure
+- add loop timing control
 
 '''
 
@@ -108,4 +112,3 @@ class GoToAltitude(smach.State):
                 return True
             else:
                 return False
-                
