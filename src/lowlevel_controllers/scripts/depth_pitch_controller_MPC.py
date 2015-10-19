@@ -50,14 +50,16 @@ def main_control_loop():
     DPC.delta_t = delta_t = controlPeriod = 1/controlRate # [sec]
 
     solvers.options['show_progress'] = False
-#    solvers.options['maxiters']
+    solvers.options['maxiters'] =100
 
 
-    DPC.Np = Np = 60
-    DPC.Nc = Nc = 8
+    DPC.Np = Np = 60#60
+    DPC.Nc = Nc = 10#8
     Thrust_Smin = 0
     Thrust_Smax = 2500
+    start_flag = 1 ######new################
     switch_flag = 0.6
+    speed_flag = 0
 
     old_set_velocity = set_velocity = speed_demand
 
@@ -67,19 +69,19 @@ def main_control_loop():
     inputs_combine  = 4
     
     gain_matrix_combine = np.zeros([inputs_combine*Nc,inputs_combine*Nc],dtype = np.float)
-    gain_matrix_combine[0,0] = 5.0
-    gain_matrix_combine[1,1] = 0.01
-    gain_matrix_combine[2,2] = 0.2
-    gain_matrix_combine[3,3] = 0.2
+    gain_matrix_combine[0,0] = 0.002
+    gain_matrix_combine[1,1] = 0.002
+    gain_matrix_combine[2,2] =0.002
+    gain_matrix_combine[3,3] = 0.002
         
     gain_matrix_high = np.zeros([inputs_high*Nc,inputs_high*Nc],dtype = np.float)
-    gain_matrix_high[0,0] = 5.0
-    gain_matrix_high[1,1] = 0.005
+    gain_matrix_high[0,0] = 0.002
+    gain_matrix_high[1,1] =0.002
 
     gain_matrix_low = np.zeros([inputs_low*Nc,inputs_low*Nc],dtype = np.float)
-    gain_matrix_low[0,0] = 1.0
-    gain_matrix_low[1,1] = 0.2
-    gain_matrix_low[2,2] = 0.2
+    gain_matrix_low[0,0] = 0.002
+    gain_matrix_low[1,1] = 0.002
+    gain_matrix_low[2,2] = 0.002
 
     for i in xrange(Nc):
         gain_matrix_low[i*inputs_low:i*inputs_low+inputs_low,
@@ -150,26 +152,43 @@ def main_control_loop():
         speed = speed_current
         DPC.speed = speed
         
-        if controller_onOff == True:
+        if controller_onOff == True:    
             
-            depth = 1 # FIXME DPC.depth # depth filtered by PT_filter in compass_oceanserver.py
-            depth_demand = DPC.depth_demand
-            print "depth demand: ", depth_demand, "depth current: ", depth            
-            velX = DPC.speed 
+            depth = DPC.depth # depth filtered by PT_filter in compass_oceanserver.py
+            depth_demand = round(DPC.depth_demand,2)
+                      
+            velX = DPC.speed
+            oldvelX = velX
+            
             #test
-            if speed_demand != DPC.speed_demand:
+
+            if start_flag == 1:  ####new#################              
+                old_set_velocity = set_velocity = speed_demand = round(DPC.speed_demand,2)
+                start_flag = 0
+            
+            if speed_demand != round(DPC.speed_demand,2):
                 old_set_velocity = set_velocity
-                set_velocity = speed_demand = DPC.speed_demand
+                set_velocity = speed_demand = round(DPC.speed_demand,2)
                 
             
             pitch = DPC.pitch # pitch angle measured by xsens
-            velP = DPC.pitch_speed
+            velP = DPC.pitch_speed  ####
+            
 
             if speed_demand < switch_flag:
                 demands = np.matrix([[speed_demand],[depth_demand],[0.0]])
+                if speed_demand > 0:
+                    gain_matrix_low[1,1] = 8.0#8.0#20.0
+                    gain_matrix_low[2,2] = 8.0#8.0#20.0
             else:
                 demands = np.matrix([[speed_demand],[depth_demand],[0.01*depth_demand/(speed_demand)**0.5]])
+                
+#if  speed_demand > 0.3:
+#     speed_flag = 1
+      
                 #demands = np.matrix([[speed_demand],[depth_demand],[0.0]])
+            #if round(speed_demand,2) == 0.0:
+            #    velX = 0.5
 
             if old_set_velocity != set_velocity:
                 if set_velocity >= switch_flag:
@@ -188,10 +207,15 @@ def main_control_loop():
                         DPC.dT0 = Delta_u[2,0] = dT0 = 0.0
                         DPC.dT1 = Delta_u[3,0] = dT1 = 0.0
 
-                        DPC.prop = prop = u[0] = float(u[0] + dprop)
-                        DPC.delta = delta = u[1] = float(u[1] + ddelta)
-                        DPC.T0 = T0 = u[2] = float(u[2] + dT0)
-                        DPC.T1 = T1 = u[3] = float(u[3] + dT1)
+                        u[0] = float(u[0] + dprop)
+                        u[1] = float(u[1] + ddelta)
+                        u[2] = float(u[2] + dT0)
+                        u[3] = float(u[3] + dT1)
+
+                        DPC.prop = prop = round(u[0],1) 
+                        DPC.delta = delta = round(u[1],1) 
+                        DPC.T0 = T0 = round(u[2],1)
+                        DPC.T1 = T1 = round(u[3],1)
                         flag_cp = 1
                     else:
                     
@@ -204,10 +228,16 @@ def main_control_loop():
                         DPC.dT0 = dT0 = float(Delta_u[2,0])
                         DPC.dT1 = dT1 = float(Delta_u[3,0])
 
-                        DPC.prop =  prop = u[0] = float(u[0] + dprop)
-                        DPC.delta = delta = u[1] = float(u[1] + ddelta)
-                        DPC.T0 = T0 = u[2] = float(u[2] + dT0)
-                        DPC.T1 = T1 = u[3] = float(u[3] + dT1)
+                        u[0] = float(u[0] + dprop)
+                        u[1] = float(u[1] + ddelta)
+                        u[2] = float(u[2] + dT0)
+                        u[3] = float(u[3] + dT1)
+
+                        DPC.prop = prop = round(u[0],1) 
+                        DPC.delta = delta = round(u[1],1) 
+                        DPC.T0 = T0 = round(u[2],1)
+                        DPC.T1 = T1 = round(u[3],1)
+                        
                         flag_cp = -1
                 else:
                     if old_set_velocity < switch_flag:
@@ -227,10 +257,15 @@ def main_control_loop():
                         DPC.dT0 = Delta_u[2,0] = dT0 = float(Delta_u_low[1,0])
                         DPC.dT1 = Delta_u[3,0] = dT1 = float(Delta_u_low[2,0])
 
-                        DPC.prop = prop = u[0] = float(u[0] + dprop)
-                        DPC.delta = delta = u[1] = float(u[1] + ddelta)
-                        DPC.T0 = T0 = u[2] = float(u[2] + dT0)
-                        DPC.T1 = T1 = u[3] = float(u[3] + dT1)
+                        u[0] = float(u[0] + dprop)
+                        u[1] = float(u[1] + ddelta)
+                        u[2] = float(u[2] + dT0)
+                        u[3] = float(u[3] + dT1)
+
+                        DPC.prop = prop = round(u[0],1) 
+                        DPC.delta = delta = round(u[1],1) 
+                        DPC.T0 = T0 = round(u[2],1)
+                        DPC.T1 = T1 = round(u[3],1)
                         flag_cp = 0
                     else:
                         [Phi_Phi,Phi_F,Phi_R,n_combine,E,A_o, B_o, C_o, K_ob]=CombineJ(delta,velX,P,Nc,Np,gain_matrix_combine,prop,T0,T1)#
@@ -242,10 +277,16 @@ def main_control_loop():
                         DPC.dT0 = Delta_u[2,0] = dT0 = float(Delta_u[2,0])
                         DPC.dT1 = Delta_u[3,0] = dT1 = float(Delta_u[3,0])
 
-                        DPC.prop = prop = u[0] = float(u[0] + dprop)
-                        DPC.delta = delta = u[1] = float(u[1] + ddelta)
-                        DPC.T0 = T0 = u[2] = float(u[2] + dT0)
-                        DPC.T1 = T1 = u[3] = float(u[3] + dT1)
+                        u[0] = float(u[0] + dprop)
+                        u[1] = float(u[1] + ddelta)
+                        u[2] = float(u[2] + dT0)
+                        u[3] = float(u[3] + dT1)
+
+                        DPC.prop = prop = round(u[0],1) 
+                        DPC.delta = delta = round(u[1],1) 
+                        DPC.T0 = T0 = round(u[2],1)
+                        DPC.T1 = T1 = round(u[3],1)
+                        
                         flag_cp = -2
             else:
                 if set_velocity >= switch_flag:                    
@@ -264,10 +305,16 @@ def main_control_loop():
                     DPC.dT0 = Delta_u[2,0] = dT0 = 0.0
                     DPC.dT1 = Delta_u[3,0] = dT1 = 0.0
 
-                    DPC.prop = prop = u[0] = float(u[0] + dprop)
-                    DPC.delta = delta = u[1] = float(u[1] + ddelta)
-                    DPC.T0 = T0 = u[2] = float(u[2] + dT0)
-                    DPC.T1 = T1 = u[3] = float(u[3] + dT1)
+                    u[0] = float(u[0] + dprop)
+                    u[1] = float(u[1] + ddelta)
+                    u[2] = float(u[2] + dT0)
+                    u[3] = float(u[3] + dT1)
+
+                    DPC.prop = prop = round(u[0],1) 
+                    DPC.delta = delta = round(u[1],1) 
+                    DPC.T0 = T0 = round(u[2],1)
+                    DPC.T1 = T1 = round(u[3],1)
+                    
                     flag_cp = 1
                 
                 else:   #
@@ -278,6 +325,7 @@ def main_control_loop():
                      C_o_low, K_ob_low]=LowSpeed(delta,velX,P,Nc,Np,gain_matrix_low,prop,T0,T1)
                     
                     [M_low,gamma_low]=conMatricesnew1(Nc,u_low,velX,0)
+                    
                
                     [Delta_u_low]= GetU( Phi_R_low,Phi_F_low,Xf_low,E_low,M_low,gamma_low,demands,Delta_u_low)                    
             
@@ -286,10 +334,16 @@ def main_control_loop():
                     DPC.dT0 = Delta_u[2,0] = dT0 = float(Delta_u_low[1,0])
                     DPC.dT1 = Delta_u[3,0] = dT1 = float(Delta_u_low[2,0])
 
-                    DPC.prop = prop = u[0] = float(u[0] + dprop)
-                    DPC.delta = delta = u[1] = float(u[1] + ddelta)
-                    DPC.T0 = T0 = u[2] = float(u[2] + dT0)
-                    DPC.T1 = T1 = u[3] = float(u[3] + dT1)
+                    u[0] = float(u[0] + dprop)
+                    u[1] = float(u[1] + ddelta)
+                    u[2] = float(u[2] + dT0)
+                    u[3] = float(u[3] + dT1)
+
+                    DPC.prop = prop = round(u[0],3) 
+                    DPC.delta = delta = round(u[1],3) 
+                    DPC.T0 = T0 = round(u[2],3)
+                    DPC.T1 = T1 = round(u[3],3)
+                    
                     flag_cp = 0
         
             if flag_cp == 1:
@@ -336,18 +390,19 @@ def main_control_loop():
             #    DPC.thruster1 = thruster1= 0
             #else:
             #    DPC.thruster1 = thruster1 = int(limits((1.13*np.sign(T0)*(60.0*(np.abs(T0)/(1000*0.46*0.07**4))**0.5)),Thrust_Smin,Thrust_Smax))
-
-            if T0 >= 0.7:
+            #print T0, round(T0,2)
+            #print T1
+            if round(T0,2) >= 0.7:#0.7
                 DPC.thruster0 = thruster0 = int(limits((1.13*np.sign(T0)*(60.0*(np.abs(T0)/(1000*0.46*0.07**4))**0.5)),Thrust_Smin,Thrust_Smax))
             else:
                 DPC.thruster0 = thruster0 = 0
-            if T1 >= 0.7:
+            if round(T1,2) >= 0.7:#0.7
                 DPC.thruster1 = thruster1 = int(limits((1.13*np.sign(T1)*(60.0*(np.abs(T1)/(1000*0.46*0.07**4))**0.5)),Thrust_Smin,Thrust_Smax))
             else:
                 DPC.thruster1 = thruster1 = 0               
 
-            if prop >2.0 and speed_demand > 0.1:
-                DPC.propSP = propSP = int(round((prop+13.9434)/1.5116))
+            if (round(prop,2) >2.0): ##and speed_demand > 0.1:###new
+                DPC.propSP = propSP = int(round((abs(prop)+13.9434)/1.5116,2))#######
             else:
                 DPC.propSP = propSP = 0
                 
@@ -355,26 +410,31 @@ def main_control_loop():
                 DPC.propSP = propSP = 22
             if propSP < -22:
                 DPC.propSP = propSP = -22
-
-            print "thruster demand: ", [thruster0, thruster1]
-            print "rudder demand: ", -u[1]
-            #publish values
-####            pub_tsl.publish(thruster0 = thruster0,thruster1 = thruster1)
-####            pub_tail.publish(cs0 = -u[1],cs1 = -u[1])
-####            pub_prop.publish(propSP)
             
+
+            #publish values
+            pub_tsl.publish(thruster0 = thruster0,thruster1 = thruster1)
+            if round(speed_demand,2) == 0.0:
+               u[1] =  0.0
+            
+            pub_tail.publish(cs0 = -u[1],cs1 = -u[1])
+            
+            
+            pub_prop.publish(propSP)
+
             DPC.onOFF = controller_onOff            
             
-            DPC.Xf1 = Xfo[0]
-            DPC.Xf2 = Xfo[1]
-            DPC.Xf3 = Xfo[2]
-            DPC.Xf4 = Xfo[3]
-            DPC.Xf5 = Xfo[4]
-            DPC.Xf6 = Xfo[5]
-            DPC.Xf7 = Xfo[6]
-            DPC.Xf8 = Xfo[7]                
+            DPC.Xf1 = Xfo[0,0]
+            DPC.Xf2 = Xfo[1,0]
+            DPC.Xf3 = Xfo[2,0]
+            DPC.Xf4 = Xfo[3,0]
+            DPC.Xf5 = Xfo[4,0]
+            DPC.Xf6 = Xfo[5,0]
+            DPC.Xf7 = Xfo[6,0]
+            DPC.Xf8 = Xfo[7,0]
+            
             pub_DPC.publish(DPC)
-                
+            
         if time.time()-timeLastCallback > timeLastDemandMax:
             controller_onOff = False
             
@@ -409,7 +469,7 @@ def CombineJ(delta,velX,P,Nc,Np,gain,prop,T0,T1):
 
     #####veriable model values
     ##foils
-    fCl = 0.0 #0.0001574
+    fCl = 0.0001574#0.0 #0.0001574
     fCd = 3.351e-5*abs(delta)**2
     fCm = 7.563e-5
 
@@ -436,8 +496,8 @@ def CombineJ(delta,velX,P,Nc,Np,gain,prop,T0,T1):
     HM = 0.5*rho*(L**3.0)*(hCm)*velX*abs(velX)*180.0/np.pi
 #    HDp = (hCdp * 0.5*rho*L**2) + (hCdp * 0.5*rho*rho*L**2)*abs(velX)*0.0####
 #    HDz = (hCdz * 0.5*rho*volume**(2.0/3.0)) + (hCdp * 0.5*rho*volume**(2.0/3.0))*abs(velX)*0.0##
-    HDp = (hCdp * 0.5*rho*volume**(2.0/3.0)) + (hCdp * 0.5*rho*volume**(2.0/3.0))*abs(velX)*40
-    HDz = (hCdz * 0.5*rho*volume**(2.0/3.0)) + (hCdz * 0.5*rho*volume**(2.0/3.0))*abs(velX)*40##
+    HDp = (hCdp * 0.5*rho*volume**(2.0/3.0)) + (hCdp * 0.5*rho*volume**(2.0/3.0))*abs(velX)*20
+    HDz = (hCdz * 0.5*rho*volume**(2.0/3.0)) + (hCdz * 0.5*rho*volume**(2.0/3.0))*abs(velX)*20##
 
     #state space model
   #state space model
@@ -495,8 +555,8 @@ def HighSpeed(delta,velX,P,Nc,Np,gain,prop):
     HDx = -0.5*rho*(volume**(2.0/3.0))*(hCd)* abs(velX)
     HM = 0.5*rho*(L**3.0)*(hCm)*velX* abs(velX)*180.0/np.pi
    # HDp = (hCdp * 0.5*rho*L**2) + (hCdp * 0.5*rho*rho*L**2)*abs(velX)*0.0####
-    HDp = (hCdp * 0.5*rho*volume**(2.0/3.0)) + (hCdp * 0.5*rho*volume**(2.0/3.0))* abs(velX)*40
-    HDz = (hCdz * 0.5*rho*volume**(2.0/3.0)) + (hCdz * 0.5*rho*volume**(2.0/3.0))* abs(velX)*40##
+    HDp = (hCdp * 0.5*rho*volume**(2.0/3.0)) + (hCdp * 0.5*rho*volume**(2.0/3.0))* abs(velX)*0
+    HDz = (hCdz * 0.5*rho*volume**(2.0/3.0)) + (hCdz * 0.5*rho*volume**(2.0/3.0))* abs(velX)*0##
 
     [Phi_Phi,Phi_F,Phi_R,n,E,Ad, Bd, Co] = auv_model_high.mpc_model_high(HDx,FDx,massX,HDz,massZ,
                                                                          prop,HL,HM,G,I,HDp,FL,FM,Np,Nc,gain)
@@ -547,12 +607,14 @@ def LowSpeed(delta,velX,P,Nc,Np,gain,prop,T0,T1):
     HL = -0.5*rho*(L**2.0)*(hCl)*velX*temp_x*180.0/np.pi
     HDx = -0.5*rho*(volume**(2.0/3.0))*(hCd)*temp_x
     HM = 0.5*rho*(L**3.0)*(hCm)*velX*temp_x*180.0/np.pi
-    HDp = (hCdp * 0.5*rho*L**2) + (hCdp * 0.5*rho*rho*L**2)*temp_x*0.0####
-    HDz = (hCdz * 0.5*rho*volume**(2.0/3.0)) + (hCdp * 0.5*rho*volume**(2.0/3.0))*temp_x*0.0##
+    #HDp = (hCdp * 0.5*rho*L**2) + (hCdp * 0.5*rho*rho*L**2)*temp_x*0.0####
+    HDp = (hCdp * 0.5*rho*volume**(2.0/3.0))+ (hCdp * 0.5*rho*volume**(2.0/3.0))*temp_x*0##
+    HDz = (hCdz * 0.5*rho*volume**(2.0/3.0)) + (hCdz * 0.5*rho*volume**(2.0/3.0))*temp_x*0##
 
  
     [Phi_Phi,Phi_F,Phi_R,n,E,Ad, Bd, Co] = auv_model_low.mpc_model_low(HDx,massX,Told,HDz,
                                                                                        massZ,prop,HL,HM,G,I,HDp ,T_coeff,Ltf,Ltr,Np,Nc,gain)
+    
     [A_o,B_o,C_o,K_ob] = obsv_matrices(Ad,Bd,Co)
    
  
@@ -566,6 +628,15 @@ def GetU( Phi_R,Phi_F,Xf,E,M,gamma,demands,Delta_u):
     #F = matrix(-(np.dot(Phi_R,demands) - np.dot(Phi_F,Xf)))
    # M = matrix(M)
     #b = matrix(gamma)
+    ##F = -(np.dot(Phi_R,demands) - np.dot(Phi_F,Xf))
+
+    #E = matrix(E)#
+    #F = matrix(F)
+    #M = matrix(M)
+    #b = matrix(gamma)
+
+    #[Delta_u]= QPhild(E,F,M,b,0,0)
+   
     try:
         sol = solvers.qp(matrix(E),matrix(-(np.dot(Phi_R,demands) - np.dot(Phi_F,Xf))),matrix(M),matrix(gamma))
         Delta_u = sol['x']
@@ -586,7 +657,7 @@ def conMatricesnew1(Nc,u,velX,flag):
 #        Propmax = 0
 #        Propmin = 0
 
-    Propmin = 2.0
+    Propmin = 2.0#2.0
     Propmax = 17.8
     dPropmax = 1.0
     dPropmin = -1.0
@@ -606,14 +677,17 @@ def conMatricesnew1(Nc,u,velX,flag):
 
 
 
-    if speed_demand == 0:
+    if round(speed_demand,2) == 0.0:  #new
         Propmax = 0.0
         Propmin =-17.8
         CSmax = CSmin = 0.0
 
-        if velX <= 0.1: 
-            Propmax = 0.0
-            Propmin =0.0
+        #if round(velX,1) <= 0.1: 
+        #    Propmax = 0.0
+        #    Propmin =0.0
+    if round(depth_demand,2) == 0.0:  #new
+        CSmax = CSmin = 0.0
+        Tmax = Tmin = 0.0
     #constraints = np.matrix([[0.0],[0.0],[0.0],[0.0]])
     #print flag
     if flag == 1:
@@ -689,32 +763,32 @@ def mpc_gain(Np,Nc,Ad,Bd,Cd,Dd):
     return [Phi_Phi,Phi_F,Phi_R,A_e,B_e,C_e]
 
 #####################################################################
-####def cont2discrete(sys,dt,method="zoh",alpha=None):
+def cont2discrete(sys,dt,method="zoh",alpha=None):
 
-####    if len(sys) == 4:
-####        a,b,c,d = sys
-####        
-####    else:
-####        raise ValueError("First argument must either be a tuple of 4(ss) arrays.")
+    if len(sys) == 4:
+        a,b,c,d = sys
+        
+    else:
+        raise ValueError("First argument must either be a tuple of 4(ss) arrays.")
 
-####    if method == 'zoh':
-####        em_upper = np.hstack((a,b))
-####        em_lower = np.hstack((np.zeros((b.shape[1],a.shape[0])),
+    if method == 'zoh':
+        em_upper = np.hstack((a,b))
+        em_lower = np.hstack((np.zeros((b.shape[1],a.shape[0])),
 
-####        np.zeros((b.shape[1],b.shape[1]))))#####
-####        em = np.vstack((em_upper,em_lower))
-####        ms = linalg.expm(dt * em)
+        np.zeros((b.shape[1],b.shape[1]))))#####
+        em = np.vstack((em_upper,em_lower))
+        ms = linalg.expm(dt * em)
 
-####        ms = ms[: a.shape[0],:]
-####        ad = ms[:,0:a.shape[1]]
-####        bd = ms[:,a.shape[1]:]
-####        cd = c
-####        dd = d
-####       
-####    else:
-####        raise ValueError("Unknown transformation method '%s'" %method)
+        ms = ms[: a.shape[0],:]
+        ad = ms[:,0:a.shape[1]]
+        bd = ms[:,a.shape[1]:]
+        cd = c
+        dd = d
+       
+    else:
+        raise ValueError("Unknown transformation method '%s'" %method)
 
-####    return [ad, bd, cd ,dd]
+    return [ad, bd, cd ,dd]
 #######################################################################
 def obsv_matrices(Ad,Bd,Cd):
     [m1,n1] = np.shape(Cd)
@@ -741,9 +815,10 @@ def obsv_matrices(Ad,Bd,Cd):
     Q = np.eye(c,c,dtype = 'float')
 
     if r == 3:
-        R = np.diag([1.0,200.0,1.0])
+        R = np.diag([1.0,1.0,1.0])
     if r == 4:
-        R = np.diag([1.0,200.0,1.0,1.0])       
+        #R = np.diag([500.0,200.0,200.0,200.0]) 
+        R = np.diag([1.0,1.0,1.0,21.0])         
     #R = np.diag([1.0,500.0,20.0])
 
     [K] = dlqr(np.transpose(A_o),np.transpose(C_o),Q,R)
@@ -776,9 +851,9 @@ def QPhild(E,F,M,gamma,delta_t,time_zero):
     al = 10
 
     ################################
-    t = time.time()
-    #while (km<iter) and (al > 10e-8) and ((time.time() - time_zero) < (delta_t - 0.005)):
-    while (km<iter) and (al > 10e-8) :
+    time_zero = time.time()
+    while (km<iter) and (al > 10e-8) and ((time.time() - time_zero) < (0.2 - 0.005)):
+    #while (km<iter) and (al > 10e-8) :
         Lambda_p[:,0] = Lambda[:,0]
         i = 0
 
@@ -793,6 +868,7 @@ def QPhild(E,F,M,gamma,delta_t,time_zero):
         al = np.dot(np.transpose(Lambda - Lambda_p),(Lambda - Lambda_p))
 
         km = km + 1
+        
             #############################
     eta = -np.dot(np.linalg.inv(E),F) -np.dot(np.linalg.inv(E),(np.dot(np.transpose(M),Lambda)))
     return [eta]
