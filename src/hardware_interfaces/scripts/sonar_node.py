@@ -58,15 +58,7 @@ def sonarListener():
     
     timeOut = 2                                                                 # Timeout for data to appear in buffer (time from ping until data recieved by node)
     
-    try:
-    
-        startTime = time.time()                                                     # Record start time
-        while serialPort.inWaiting() < 12:                                          # TEST WHETHER 12 SHOULD BE 13!!! ################# # Waiting until number of bytes is the length of the message header
-            time.sleep(0.001)
-            if startTime+timeOut < time.time():	                                    # If timeout then return 0
-                serialPort.flushInput()
-                return 0                                                                
-        
+    try
         if serialPort.inWaiting() > 12:         
             headerData = serialPort.read(13)                                        # Read 13 bytes of data (length of header)
 
@@ -93,44 +85,35 @@ def sonarListener():
                 while serialPort.inWaiting()<msgLength:                             # Makes sure full message is in buffer within timeout
                     time.sleep(0.001)
                     if startTime+timeOut < time.time():
-                        #print "Timeout error"
+                        print "Timeout error"
                         serialPort.flushInput()
                         return 0
 
-                msgData = serialPort.read(serialPort.inWaiting())                   # Read rest of message
-                msgData = numpy.fromstring(msgData, dtype=numpy.uint8)              # Convert to numpy array of UINT8
-                #print msgData
-               
-                if msgData[-1] != 10:                                               # If the message does not end in an '\LF' then return 0
-                    #print "Message error: missing LF character" 
-                    serialPort.flushInput()
-                    return 0
-
-                if msgType == 1:                                                    # Each if/elseif statement defines how to process each message type
-                    print "mtVersionData"
-                    # mtVersionData                                                 # mtVersionData == 1 -> not currently used
-                elif msgType == 2:
-                    #print "mtHeadData"
-                    
-                    # Used only for debugging -> visualising sonar data #
-                    transBearing = msgData[27]+(msgData[28]*256)                    # Converts 2 x UINT8 characters into 1 x UINT16
-                    transBearing = (transBearing / 6400.0) *360                     # Converts from 1/16 of a gradian to degrees 
-                    #print transBearing
+                    if msgType == 1:                                                    # Each if/elseif statement defines how to process each message type
+                        print "mtVersionData"
+                        # mtVersionData                                                 # mtVersionData == 1 -> not currently used
+                    elif msgType == 2:
+                        #print "mtHeadData"
                         
-                    msgData = numpy.concatenate((headerData,msgData))               # Joins header and message data into one structure
-                        
-                    msgData = ''.join([chr(char) for char in msgData[:]])           # Converts from numpy array into string so it can be published
-                    pub.publish(str(msgData))
+                        # Used only for debugging -> visualising sonar data #
+                        transBearing = msgData[27]+(msgData[28]*256)                    # Converts 2 x UINT8 characters into 1 x UINT16
+                        transBearing = (transBearing / 6400.0) *360                     # Converts from 1/16 of a gradian to degrees 
+                        #print transBearing
+                            
+                        msgData = numpy.concatenate((headerData,msgData))               # Joins header and message data into one structure
+                            
+                        msgData = ''.join([chr(char) for char in msgData[:]])           # Converts from numpy array into string so it can be published
+                        pub.publish(str(msgData))
 
-                elif msgType == 4:                                                  # mtAlive == 4 -> not currently processed
-                    #print "mtAlive"
-                    return 4
+                    elif msgType == 4:                                                  # mtAlive == 4 -> not currently processed
+                        #print "mtAlive"
+                        return 4
+                    else:
+                        print "Error: Unknown message type"
+
                 else:
-                    print "Error: Unknown message type"
-
-            else:
-                print "Error: sonar message does not start with the required '@'" 
-                return 0
+                    print "Error: sonar message does not start with the required '@'" 
+                    return 0
 
     except:
         str = "The serial port of sonar_node has been closed: prefaring to shutdown"
@@ -149,6 +132,7 @@ def setupSonar():
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
+
 ####    print "Setup sonar: mtHeadCommand: "
 ####    print serialPort.portstr
 ####    print serialPort.isOpen()
@@ -173,7 +157,6 @@ def setupSonar():
         pubMissionLog.publish(str)
         rospy.signal_shutdown(str)
     
-
     #setupData = get_mtHeadCommand()                                             # NEEDS TESTING ####### why are we writing the setup data twice...?
     #serialPort.write(setupData)
 
@@ -251,7 +234,7 @@ def get_mtHeadCommand():
     # Constructs mtHeadCommand to send to sonar #
     mtHeadCommand = AsciiBlock + hexLength + [SID, DID, count, msgNum, msgSeq, Node, headType, HdCtrl1, HdCtrl2, DstHead] + TXNChan + TXNChan + RXNChan + RXNChan + txPulseLength + rangeScale + LLim + RLim +[ADSpan, ADLow, IGainB1, IGainB2] + Slope + [moTime, step] + ADInterval+ NBins + MaxADBuf + Lockout + MinorAxis + [MajorAxis, Ctl2] + ScanZ + [LF]
 
-    #print mtHeadCommand
+    print mtHeadCommand
     try:
         mtHeadCommand = ''.join([chr(char) for char in mtHeadCommand[:]])
     except ValueError:

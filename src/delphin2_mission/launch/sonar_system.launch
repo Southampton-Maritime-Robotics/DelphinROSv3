@@ -1,6 +1,6 @@
 <launch>
     <param name="RLim" value="180.0" />		<!-- Right limit for Heading in 1/16th of gradian -->
-    <param name="LLim" value="95.0" />		<!-- Left limit for Heading in 1/16th of gradian -->
+    <param name="LLim" value="90.0" />		<!-- Left limit for Heading in 1/16th of gradian -->
     <param name="heading" value="3200" />	<!-- NOT CURRENTLY IN USE - Heading in 1/16th of gradian -->
     <param name="NBins" value="200" />	      	<!-- Number of bins -->
     <param name="Range" value="5" />           <!-- in metres -->
