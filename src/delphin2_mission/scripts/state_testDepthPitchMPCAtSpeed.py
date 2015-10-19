@@ -55,13 +55,13 @@ class testDepthPitchMPCAtSpeed(smach.State):
 ################################################################################
         # let the vehicle do depth-pitch tracking
 
-        demandDepth = 0.45 # [m]
+        demandDepth = 1.0 # [m]
         depthTol = 0.2 # [m] tolerant that counts as approach the demandDepth
-        demandHeading = 275. # [deg] 
+        demandHeading = 280. # [deg]
         demandPitch = 0. # [deg]
-        demandSpeed = 1 # [m/s]
+        demandSpeed = 0.8# [m/s]
         timeDepthSteady = 50. # [sec] the depth is steady for this many second then propeller will start spining
-        timePropHold = 20. # [sec] time that propeller will keep spining
+        timePropHold = 80. # [sec] time that propeller will keep spining
 
         controlRate = 20 # Hz
         r = rospy.Rate(controlRate)
@@ -99,11 +99,6 @@ class testDepthPitchMPCAtSpeed(smach.State):
         pubMissionLog.publish(str)
         timeStart = time.time()
         
-        # parameter to control wave form
-        period = 30 # [sec]
-        amplitude = 0.5 # [m]
-        timeStart_Wave = time.time()
-        
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
             
             self.__controller.setSpeed(demandSpeed)
@@ -113,35 +108,35 @@ class testDepthPitchMPCAtSpeed(smach.State):
             if time.time()-timeStart>timePropHold:
                 break
             r.sleep()
-            
-        # let the AUV maintains the depth after the propeller stop spining
-        str = 'maintain at depth of %sm' % demandDepth
-        rospy.loginfo(str)
-        pubMissionLog.publish(str)
-        timeStart = time.time()
-        flag = 1
-        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
-        
-            if abs(self.__controller.getDepth()-demandDepth)>depthTol:
-                timeStart = time.time() # reset the reference time
-            if time.time()-timeStart <= timeDepthSteady*1:
-                self.__controller.setDepth(demandDepth)
-                self.__controller.setPitch(demandPitch) # specified pitch demand in [degree] 
-                self.__controller.setHeading(demandHeading)
-                self.__controller.setRearProp(0)
-                self.__controller.setSpeed(0)
-                if flag:
-                    str = 'let the depth becomes stady for timeDelay = %s sec' %timeDepthSteady
-                    rospy.loginfo(str)
-                    pubMissionLog.publish(str)
-                    flag = 0
-            else:
-                # if the AUV get to the depth and stay there long enough, move onto the next step
-                str = 'steady at desired depth'
-                rospy.loginfo(str)
-                pubMissionLog.publish(str)
-                break
-            r.sleep()
+                        
+####        # let the AUV maintains the depth after the propeller stop spining
+####        str = 'maintain at depth of %sm' % demandDepth
+####        rospy.loginfo(str)
+####        pubMissionLog.publish(str)
+####        timeStart = time.time()
+####        flag = 1
+####        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
+####        
+####            if abs(self.__controller.getDepth()-demandDepth)>depthTol:
+####                timeStart = time.time() # reset the reference time
+####            if time.time()-timeStart <= timeDepthSteady*1:
+####                self.__controller.setDepth(demandDepth)
+####                self.__controller.setPitch(demandPitch) # specified pitch demand in [degree] 
+####                self.__controller.setHeading(demandHeading)
+####                self.__controller.setRearProp(0)
+####                self.__controller.setSpeed(0)
+####                if flag:
+####                    str = 'let the depth becomes stady for timeDelay = %s sec' %timeDepthSteady
+####                    rospy.loginfo(str)
+####                    pubMissionLog.publish(str)
+####                    flag = 0
+####            else:
+####                # if the AUV get to the depth and stay there long enough, move onto the next step
+####                str = 'steady at desired depth'
+####                rospy.loginfo(str)
+####                pubMissionLog.publish(str)
+####                break
+####            r.sleep()
             
 ################################################################################
         # stop all the actuators before leave the state
