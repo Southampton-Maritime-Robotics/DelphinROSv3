@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt;
 
 from state_testDepthPitchControl             import testDepthPitchControl
 from state_testDepthPitchControlAtSpeed      import testDepthPitchControlAtSpeed
+from state_manoeuvreYaw_in_tank              import manoeuvreYaw
 
 ################################################################################
            
@@ -97,15 +98,18 @@ def main():
 ################################################################################
         # [1/3] Initialise State (Must Be Run First!)
         smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-            transitions={'succeeded':'depthPitchControl', 'aborted':'STOP','preempted':'STOP'})  
+            transitions={'succeeded':'depthPitchControlAtSpeed', 'aborted':'STOP','preempted':'STOP'})
             
 ################################################################################
         # [2/3] Added States
 ####        smach.StateMachine.add('depthPitchControl', testDepthPitchControl(lib), 
 ####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
             
-        smach.StateMachine.add('depthPitchControl', testDepthPitchControlAtSpeed(lib), 
+        smach.StateMachine.add('depthPitchControlAtSpeed', testDepthPitchControlAtSpeed(lib), 
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+            
+####        smach.StateMachine.add('Yaw', manoeuvreYaw(lib), 
+####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
 
 ################################################################################
 
