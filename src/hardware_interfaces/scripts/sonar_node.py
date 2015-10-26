@@ -58,7 +58,7 @@ def sonarListener():
     
     timeOut = 2                                                                 # Timeout for data to appear in buffer (time from ping until data recieved by node)
     
-    try
+    try:
         if serialPort.inWaiting() > 12:         
             headerData = serialPort.read(13)                                        # Read 13 bytes of data (length of header)
 
@@ -234,7 +234,7 @@ def get_mtHeadCommand():
     # Constructs mtHeadCommand to send to sonar #
     mtHeadCommand = AsciiBlock + hexLength + [SID, DID, count, msgNum, msgSeq, Node, headType, HdCtrl1, HdCtrl2, DstHead] + TXNChan + TXNChan + RXNChan + RXNChan + txPulseLength + rangeScale + LLim + RLim +[ADSpan, ADLow, IGainB1, IGainB2] + Slope + [moTime, step] + ADInterval+ NBins + MaxADBuf + Lockout + MinorAxis + [MajorAxis, Ctl2] + ScanZ + [LF]
 
-    print mtHeadCommand
+####    print mtHeadCommand
     try:
         mtHeadCommand = ''.join([chr(char) for char in mtHeadCommand[:]])
     except ValueError:
