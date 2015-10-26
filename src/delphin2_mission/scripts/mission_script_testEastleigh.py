@@ -97,14 +97,14 @@ def main():
 
         with se:
             # [1/3] Initialise State (Must Be Run First!)
-####            smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
+            smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
 
             # [2/3] Added States
             #=================================================
-####            ## VERBOSE LOCATION 
-####            # This state will keep publishing the range and bearing to the specified location
-####            smach.Sequence.add('VERBOSE_LOCATION', verboseLocation(lib,myUti,B,controlRate))
-####            #-------------------------------------------------
+            ## VERBOSE LOCATION 
+            # This state will keep publishing the range and bearing to the specified location
+            smach.Sequence.add('VERBOSE_LOCATION', verboseLocation(lib,myUti,B,controlRate))
+            #-------------------------------------------------
 
             #=================================================
 ####            ## PATH FOLLOWING 
@@ -123,9 +123,9 @@ def main():
             #=================================================
             ## SPIRAL MANOEUVRE 
             # This state will get the AUV transit to point A
-            smach.Sequence.add('toWork', pathFollowingLOS(lib, myUti, pathMtoA))
-            # This state will get the AUV perform a spiral manoeuvre
-            smach.Sequence.add('SPIRAL', manoeuvreSpiral(lib, myUti, pathAtoB, errHeadingTol, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle))
+####            smach.Sequence.add('toWork', pathFollowingLOS(lib, myUti, pathMtoA))
+####            # This state will get the AUV perform a spiral manoeuvre
+####            smach.Sequence.add('SPIRAL', manoeuvreSpiral(lib, myUti, pathAtoB, errHeadingTol, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle))
             #-------------------------------------------------
 
             #=================================================

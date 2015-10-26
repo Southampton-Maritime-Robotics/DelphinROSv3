@@ -77,14 +77,11 @@ def main():
 
         with se:
         # [1/3] Initialise State (Must Be Run First!)
-# TODO unleash me            smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
+            smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
 
         # [2/3] Added States
             # prop, th_ver[front, rear], th_hor[front, rear], cs_ver, cs_hor, actionHold
-            smach.Sequence.add('ACTIONS_1',actions(lib, 10, [0, 0], [-1000, 1000], 0, 0, 10, ))
-#            smach.Sequence.add('ACTIONS_2',actions(lib, 20, [0, 0], [0, 0], 0, 0, 10, ))
-#            smach.Sequence.add('ACTIONS_3',actions(lib, 0, [0, 0], [0, 0], 0, 0, 30, ))
-
+            smach.Sequence.add('ACTIONS_1',actions(lib, 0, [0, 0], [0, 0], 0, 0, 10, ))
 #            smach.Sequence.add('GoHOME', pathFollowingLOS(lib, myUti, O))
 
 

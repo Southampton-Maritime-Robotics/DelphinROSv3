@@ -344,13 +344,16 @@ def main_control_loop():
 
 def determineActuatorWeight(_speed,_depth):
 
-    U_star_th = 0.9;
-    w_delta_th = 0.03;
-    w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
+####    U_star_th = 0.9;
+####    w_delta_th = 0.03;
+####    w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
 
-    U_star_cs = 0.5;
-    w_delta_cs = 0.04;
-    w_cs = 0.5*(math.tanh((_speed-U_star_cs)/w_delta_cs)+1);
+####    U_star_cs = 0.5;
+####    w_delta_cs = 0.04;
+####    w_cs = 0.5*(math.tanh((_speed-U_star_cs)/w_delta_cs)+1);
+    
+    w_th = 1
+    w_cs = 0
     
     return [w_th, w_cs]
 

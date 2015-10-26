@@ -1,20 +1,18 @@
 <launch>
     
     <!-- Simulator -->
-    <node name="auv_sim" pkg="delphin2_mission" type="auv_sim.py" required="true" output="screen"/>
+    <!-- <node name="auv_sim" pkg="delphin2_mission" type="auv_sim.py" required="true" output="screen"/> -->
 
     <!-- Actual AUV system -->
-    <!-- 
-        <node name="back_seat_driver" pkg="hardware_interfaces" type="BackSeatDriver.py" required="true" />
-        <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py" />
-        <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py" />
-        <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner.py"  />
-        <include file="$(find delphin2_mission)/launch/thruster_system.launch" />
-        <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py"/>
-        <include file="$(find xsens_driver)/launch/xsens_driver.launch" />
-        <include file="$(find delphin2_mission)/launch/sonar_system.launch" />
-        <node name="energy_monitor" pkg="hardware_interfaces" type="energy_monitor.py" output="screen"/>
-    -->
+    <node name="back_seat_driver" pkg="hardware_interfaces" type="BackSeatDriver.py" required="true" />
+    <node name="compass_oceanserver" pkg="hardware_interfaces" type="compass_oceanserver.py" />
+    <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py" />
+    <node name="dead_reckoner" pkg="hardware_interfaces" type="dead_reckoner.py"  />
+    <include file="$(find delphin2_mission)/launch/thruster_system.launch" />
+    <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py"/>
+    <include file="$(find xsens_driver)/launch/xsens_driver.launch" />
+    <include file="$(find delphin2_mission)/launch/sonar_system.launch" />
+    <node name="energy_monitor" pkg="hardware_interfaces" type="energy_monitor.py" output="screen"/>
 
     <!-- Data logger -->
     <node name="logger" pkg="hardware_interfaces" type="logger.py" required="true" output="screen"/>
