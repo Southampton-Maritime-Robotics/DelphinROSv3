@@ -7,4 +7,4 @@ float32 ay
 float32 az
 float32 angular_velocity_x
 float32 angular_velocity_y
-float32 angular_velocity_z
+float32 angular_velocity_z # yaw rate in rad/s
