@@ -53,11 +53,11 @@ class manoeuvreSpiral(smach.State):
         self.__depthTol = depthTol # [m]. It is account as the AUV get to the depth if the depth error is less than this.
         self.__depthDemandMin = depthDemandMin # [m] if the depthDemand is less than this, it is accounted as no depth demand specified.
         self.__turningAngle = turningAngle # [deg] the vehicle has to turn this many degree before move to the next step
-        self.__listProp = [16] # [10,16,22] # list of propeller demand used in experiment
-        self.__listThruster = [0, 1400, 2100] # [0,800,1500,2200] # TODO [0,800,1500,2000] list of thruster demand used in experiment [+ve yaw CW]
-        self.__listRudder = [0, 10, 30] # [0,10,20,30] # TODO [0,10,20,30]] list of rudder angle used in experiment [+ve yaw CW]
+        self.__listProp = [10] # [10,16,22] # list of propeller demand used in experiment
+        self.__listThruster = [0] # [0,800,1500,2200] # TODO [0,800,1500,2000] list of thruster demand used in experiment [+ve yaw CW]
+        self.__listRudder = [0, 10, 20, 30] # [0,10,20,30] # TODO [0,10,20,30]] list of rudder angle used in experiment [+ve yaw CW]
         self.__direction = -1 # 1:cw, -1:ccw 
-        self.__headingBias = -self.__direction*30 # TODO [deg, +ve CW] point away from the target just so the vehicle has enough space for turning
+        self.__headingBias = -self.__direction*10 # TODO [deg, +ve CW] point away from the target just so the vehicle has enough space for turning
         
         self.__controlRate = 5 # [Hz]
         
@@ -178,7 +178,7 @@ class manoeuvreSpiral(smach.State):
                             r.sleep()
 
                 # get the AUV accelerated then apply demand
-                rangeAcc = wpRang*0.50
+                rangeAcc = wpRang*0.15
                 str = "get the AUV accelerates for %s m" %rangeAcc
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)

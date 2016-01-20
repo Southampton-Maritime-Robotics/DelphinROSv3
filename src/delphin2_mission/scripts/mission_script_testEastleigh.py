@@ -50,8 +50,8 @@ def main():
 
     ### points defined relative to the origin O #
     # North pier of the Eastleigh lake (50.957024,-1.366769)
-    O = array([-0.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
-    A = array([-28.,-20.]) # reference point A
+    O = array([0.,2.]) # home: shifted from the origin a little to make sure it will not collide with the pier
+    A = array([-33.,-20.]) # reference point A
     B = array([-1.,50.]) # reference point B
 #    # South pier of the Eastleigh lake (50.956473,-1.366835)
 #    O = array([-2.,2.]) # home: shifted from the origin a little to make sure it will not collide with the pier
@@ -71,7 +71,7 @@ def main():
     # general
     timeDemandHold = 60.    # 60 sec TODO actuator demand will be hold for this many second. used in sway and yaw test
     turningAngle = 720.     # [deg] TODO the vehicle has to turn this many degree before move to the next step
-    timeDelay = 30.         # 30 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
+    timeDelay = 15.         # 30 sec TODO the vehicle will stop for this many second as to let its motion decay to near zero
     errHeadingTol = 3.      # the heading error band that count as the AUV reachs a desired heading
     
     # for testing at depth # TODO:
@@ -101,9 +101,9 @@ def main():
 
             # [2/3] Added States
             #=================================================
-            ## VERBOSE LOCATION 
-            # This state will keep publishing the range and bearing to the specified location
-            smach.Sequence.add('VERBOSE_LOCATION', verboseLocation(lib,myUti,B,controlRate))
+####            ## VERBOSE LOCATION 
+####            # This state will keep publishing the range and bearing to the specified location
+####            smach.Sequence.add('VERBOSE_LOCATION', verboseLocation(lib,myUti,B,5.))
             #-------------------------------------------------
 
             #=================================================
@@ -123,7 +123,7 @@ def main():
             #=================================================
             ## SPIRAL MANOEUVRE 
             # This state will get the AUV transit to point A
-####            smach.Sequence.add('toWork', pathFollowingLOS(lib, myUti, pathMtoA))
+####            smach.Sequence.add('toWork', pathFollowingLOS(lib, myUti, A))
 ####            # This state will get the AUV perform a spiral manoeuvre
 ####            smach.Sequence.add('SPIRAL', manoeuvreSpiral(lib, myUti, pathAtoB, errHeadingTol, timeDelay, depthDemand, depthTol, depthDemandMin, turningAngle))
             #-------------------------------------------------
@@ -138,7 +138,7 @@ def main():
 
             #=================================================
             ## GET THE AUV HOME
-            smach.StateMachine.add('HOME', pathFollowingLOS(lib, myUti, pathMtoO))
+            smach.Sequence.add('HOME', pathFollowingLOS(lib, myUti, pathMtoO))
 
         smach.StateMachine.add('SEQUENCE', se, transitions={'succeeded':'STOP',
                                                             'aborted':'STOP',

@@ -55,13 +55,13 @@ class testDepthPitchControlAtSpeed(smach.State):
 ################################################################################
         # let the vehicle do depth-pitch tracking
 
-        demandDepth = 1. # [m]
+        demandDepth = 1.5 # [m]
         depthTol = 0.2 # [m] tolerant that counts as approach the demandDepth
         demandHeading = 270. # [deg] 
         demandPitch = 0. # [deg]
-        demandProp = 0
-        timeDepthSteady = 50. # [sec] the depth is steady for this many second then propeller will start spining
-        timePropHold = 90. # [sec] time that propeller will keep spining
+        demandProp = 16 # TODO
+        timeDepthSteady = 30. # TODO [sec] the depth is steady for this many second then propeller will start spining
+        timePropHold = 90. # TODO [sec] time that propeller will keep spining
 
         controlRate = 20 # Hz
         r = rospy.Rate(controlRate)
@@ -109,7 +109,7 @@ class testDepthPitchControlAtSpeed(smach.State):
             y = amplitude*math.sin(2*math.pi/period*t)
             
             self.__controller.setRearProp(demandProp)
-            self.__controller.setDepth(demandDepth)
+            self.__controller.setDepth(demandDepth+y)
             self.__controller.setPitch(demandPitch)
             self.__controller.setHeading(demandHeading)
             if time.time()-timeStart>timePropHold:

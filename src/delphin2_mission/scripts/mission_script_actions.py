@@ -45,7 +45,7 @@ def main():
     # Allow the topic to come online
     time.sleep(10)
 
-    O = array([0.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
+    O = array([4.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
     A = array([-28.,-20.]) # reference point A
     B = array([-1.,50.]) # reference point B
     
@@ -77,11 +77,11 @@ def main():
 
         with se:
         # [1/3] Initialise State (Must Be Run First!)
-            smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
+#            smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
 
         # [2/3] Added States
             # prop, th_ver[front, rear], th_hor[front, rear], cs_ver, cs_hor, actionHold
-            smach.Sequence.add('ACTIONS_1',actions(lib, 0, [0, 0], [0, 0], 0, 0, 10, ))
+            smach.Sequence.add('ACTIONS_1',actions(lib, 0, [0, 0], [0, 0], 0, 0, 50, ))
 #            smach.Sequence.add('GoHOME', pathFollowingLOS(lib, myUti, O))
 
 

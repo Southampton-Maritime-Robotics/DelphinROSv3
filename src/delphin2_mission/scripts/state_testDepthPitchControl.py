@@ -32,7 +32,7 @@ class testDepthPitchControl(smach.State):
     def __init__(self, lib):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
-        self.delay_action = 300 # let the vehicle doing those actions for a period of time (value is specified in second)
+        self.delay_action = 30 # let the vehicle doing those actions for a period of time (value is specified in second)
         
     def execute(self, userdata):
 
@@ -53,7 +53,7 @@ class testDepthPitchControl(smach.State):
 ################################################################################
         # let the vehicle do depth-pitch tracking
 
-        listDemandDepth = [1, 2, 1]
+        listDemandDepth = [1,2]
         demandHeading = 270.
         demandPitch = 0.
 
