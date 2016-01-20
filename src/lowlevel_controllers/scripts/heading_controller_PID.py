@@ -58,9 +58,9 @@ def set_params():
     HC.deadzone   = 0   # deadzone of the heading error [degree]
     
     ### CS Controller ###
-    HC.CS_Pgain       = 8 # FIXME: tune me kantapon
+    HC.CS_Pgain       = 8. # FIXME: tune me kantapon
     HC.CS_Igain       = 0
-    HC.CS_Dgain       = -13 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    HC.CS_Dgain       = -13. # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     HC.CS_Smax         = 30
     
     ### Thrust Controller ###

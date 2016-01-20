@@ -76,16 +76,16 @@ def set_params():
     DPC.deadzone_Pitch = 0      # deadzone of the pitch error [degree]
     
     # control surfaces
-    DPC.CS_Pgain = 8. # P gain for control surface
+    DPC.CS_Pgain = 5 # P gain for control surface
     DPC.CS_Igain = 1.5 # 0.5 # I gain for control surface
-    DPC.CS_Dgain = -8 # D gain for control surface
+    DPC.CS_Dgain = -10 # D gain for control surface
     
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
     # thruster
     DPC.Depth_Pgain = 3500000.00 # 5,000,000 700000.00 # FIXME: tune me kantapon
     DPC.Depth_Igain = 250000.00 # 50000.00 # FIXME: tune me kantapon
-    DPC.Depth_Dgain = -8000000.00 # 8,000,000 -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Depth_Dgain = -9500000.00 # 8,000,000 -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     
     DPC.Pitch_Pgain = 0.01 # 0.01 # 0.02 # FIXME: tune me kantapon
     DPC.Pitch_Igain = 0.001 # 0.0005 # 0.001 # FIXME: tune me kantapon
@@ -94,9 +94,9 @@ def set_params():
     DPC.Thrust_Smax = 2500       # maximum thruster setpoint # FIXME: unleash me kantapon
 
     DPC.pitchBiasMax = 10. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
-    DPC.pitchBiasGain_P = 25. # p gain to compute pitch bias
-    DPC.pitchBiasGain_I = 5. # i gain to compute pitch bias
-    DPC.pitchBiasGain_D = -20. # d gain to compute pitch bias
+    DPC.pitchBiasGain_P = 8. # p gain to compute pitch bias
+    DPC.pitchBiasGain_I = 2. # i gain to compute pitch bias
+    DPC.pitchBiasGain_D = -10. # d gain to compute pitch bias
     if DPC.pitchBiasGain_I != 0:
         int_error_pitchBias_max = 6./DPC.pitchBiasGain_I
     ### determine relative arm lengths for thrust allocation ###
@@ -111,8 +111,8 @@ def set_params():
     int_error_depth = 1.2e6/DPC.Depth_Igain # initialise the integrator for depth error signal
     int_error_depth_lim = 2.5e6/DPC.Depth_Igain # chosen
     int_error_pitch_th = 0. # initialise the integrator for pitch error signal used in thruster control allocation
-    int_error_pitch_cs = 10./DPC.CS_Igain # initialise the integrator for pitch error signal used in control surface control law
-    int_error_pitchBias = 4./DPC.pitchBiasGain_I # initialise the integrator for pitchBias
+    int_error_pitch_cs = 0./DPC.CS_Igain # initialise the integrator for pitch error signal used in control surface control law
+    int_error_pitchBias = 2./DPC.pitchBiasGain_I # initialise the integrator for pitchBias
     
 
     ### Parameter for Anti-Windup Scheme ###
@@ -132,11 +132,12 @@ def CS_controller(error_pitch, der_error_pitch, dt, w_cs):
     
     # update integrator and apply saturation, reset the integrator if propDemand = 0
     if propDemand != 0:
+        int_error_pitch_cs_max = DPC.CS_Smax/DPC.CS_Igain*8./30.
         int_error_pitch_cs += dt*error_pitch
         if DPC.CS_Igain != 0: # do the update only when the integral gain is specified
-            int_error_pitch_cs = myUti.limits(int_error_pitch_cs,-DPC.CS_Smax/DPC.CS_Igain,DPC.CS_Smax/DPC.CS_Igain)
+            int_error_pitch_cs = myUti.limits(int_error_pitch_cs, -int_error_pitch_cs_max, int_error_pitch_cs_max)
     else:
-        int_error_pitch_cs = 10./DPC.CS_Igain
+        int_error_pitch_cs = 0./DPC.CS_Igain
     
     DPC.CS_Pterm      = error_pitch*DPC.CS_Pgain
     DPC.CS_Iterm      = int_error_pitch_cs*DPC.CS_Igain
@@ -172,6 +173,7 @@ def thrust_controller(depth_current, error_depth, der_error_depth, error_pitch, 
         elif depth_current < 0.4 and numpy.abs(der_error_depth)<windup_der_err_thr: # guarantee the integrators is active when the sub is near the water surface
             int_error_depth += dt*error_depth
             flag_depth_int_th = 1
+####        int_error_depth += dt*error_depth # Calculate the integral error
         
         DPC.Depth_Pterm = error_depth*DPC.Depth_Pgain
         DPC.Depth_Iterm = int_error_depth*DPC.Depth_Igain
@@ -344,16 +346,13 @@ def main_control_loop():
 
 def determineActuatorWeight(_speed,_depth):
 
-####    U_star_th = 0.9;
-####    w_delta_th = 0.03;
-####    w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
+    U_star_th = 0.9;
+    w_delta_th = 0.03;
+    w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
 
-####    U_star_cs = 0.5;
-####    w_delta_cs = 0.04;
-####    w_cs = 0.5*(math.tanh((_speed-U_star_cs)/w_delta_cs)+1);
-    
-    w_th = 1
-    w_cs = 0
+    U_star_cs = 0.5;
+    w_delta_cs = 0.04;
+    w_cs = 0.5*(math.tanh((_speed-U_star_cs)/w_delta_cs)+1);
     
     return [w_th, w_cs]
 
@@ -371,11 +370,11 @@ def determinePitchBias(error_depth,der_error_depth,dt):
         pitchBias_ref = pitchBias
         pitchBias = myUti.limits(pitchBias,-DPC.pitchBiasMax,DPC.pitchBiasMax)
     else:
-        int_error_pitchBias = 4./DPC.pitchBiasGain_I
+        int_error_pitchBias = 2./DPC.pitchBiasGain_I
         pitchBias = 0
     
     DPC.pitchBias_Iterm = int_error_pitchBias
-        
+            
     return pitchBias
 
 def system_state_depth(dt,depth_current,depth_demand,der_error_depth):
