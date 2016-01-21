@@ -18,6 +18,6 @@ delphin2 software, written in ROS
 
 - depthControllerPIC      5  Hz
 
-- tail_section            5  Hz
+- tail_section            10  Hz
 
 - arduino_thruster        5  Hz
