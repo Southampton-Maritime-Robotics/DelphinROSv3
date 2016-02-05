@@ -83,15 +83,15 @@ def set_params():
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
     # thruster
-    DPC.Depth_Pgain = 3500000.00 # 5,000,000 700000.00 # FIXME: tune me kantapon
-    DPC.Depth_Igain = 250000.00 # 50000.00 # FIXME: tune me kantapon
-    DPC.Depth_Dgain = -9500000.00 # 8,000,000 -1000000.00 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Depth_Pgain = 3500000.00
+    DPC.Depth_Igain = 250000.00
+    DPC.Depth_Dgain = -9500000.00
     
-    DPC.Pitch_Pgain = 0.01 # 0.01 # 0.02 # FIXME: tune me kantapon
-    DPC.Pitch_Igain = 0.001 # 0.0005 # 0.001 # FIXME: tune me kantapon
-    DPC.Pitch_Dgain = -0.015 # 0.015 -0.005 # -0.01 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    DPC.Pitch_Pgain = 0.02
+    DPC.Pitch_Igain = 0.002
+    DPC.Pitch_Dgain = -0.1 # D gain has to be negative (c.f. PI-D)
     
-    DPC.Thrust_Smax = 2500       # maximum thruster setpoint # FIXME: unleash me kantapon
+    DPC.Thrust_Smax = 2500 # maximum thruster setpoint
 
     DPC.pitchBiasMax = 10. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
     DPC.pitchBiasGain_P = 8. # p gain to compute pitch bias
