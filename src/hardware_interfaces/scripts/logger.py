@@ -652,8 +652,11 @@ if __name__ == '__main__':
     
     time.sleep(5)
     
-    for i in range(15): # publish node status 10 times consecutively
-        pubStatus.publish(nodeID = 10, status = True)
-        time.sleep(0.1)
+    for i in range(20): # publish node status 10 times consecutively
+        if not rospy.is_shutdown():
+            pubStatus.publish(nodeID = 10, status = True)
+            time.sleep(0.1)
+        else:
+            break
     
     rospy.spin()
