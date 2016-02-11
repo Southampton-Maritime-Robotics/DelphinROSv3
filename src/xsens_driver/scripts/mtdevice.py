@@ -11,7 +11,6 @@ Specify
 -LatLonAlt
 -_baudrate
 
-    
 ## MODIFICATION ##
 25/11/1014 apply configuration to the sensor everytime the driver is run
 10/4/2015 control sampling rate with rospy.Rate()
@@ -20,7 +19,6 @@ Specify
         -> RestoreFactoryDefaults 
         -> close devide
         -> open the device with a prefered baudrate
-
 """
 
 import serial
@@ -31,9 +29,9 @@ from hardware_interfaces.msg import status
 
 import sys, time
 
-from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName
+from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName, location, req
 from hardware_interfaces.msg import compass # compass is a message that is originally used by delphin2.
-from custom_def import location, req
+########from custom_def import location, req
 
 ################################################################
 # set a configuration
@@ -43,11 +41,10 @@ from custom_def import location, req
 # available option {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
 # use dynamic for most cases
 # use vru_general when the magnetic reading can not be thrusted at all.
-
 try: 
     scenario_id = rospy.get_param('xsens_filter_profile')
 except:
-    scenario_id = 41
+    scenario_id = 43
 
 ## reference location (for a good heading measurement)
 # available options {Boldrewood_Campus, Common_Park, Eastleight_Lake}
@@ -67,13 +64,10 @@ _controlRate = 20.
 ## XSens MT device communication object.
 class MTDevice(object):
     """XSens MT device communication object."""
-    def __init__(self, port, baudrate=230400, timeout=0.01, autoconf=True,
-            config_mode=False):
+    def __init__(self, port, baudrate=115200, timeout=0.04, autoconf=True, config_mode=False):
         """Open device."""
-        
         ## serial interface to the device
-        self.device = serial.Serial(port, baudrate, timeout=timeout,
-                writeTimeout=timeout)
+        self.device = serial.Serial(port, baudrate, timeout=timeout, writeTimeout=timeout)
         self.device.flushInput()    # flush to make sure the port is ready 
         self.device.flushOutput()    # flush to make sure the port is ready 
         
@@ -83,7 +77,6 @@ class MTDevice(object):
     ############################################################
     # Low-level communication
     ############################################################
-
     ## Low-level message sending function.
     def write_msg(self, mid, data=[]):
         """Low-level message sending function."""
@@ -99,119 +92,102 @@ class MTDevice(object):
 
         self.device.write(msg)
 
+    # Wait until this many bytes available in the serial buffer.
+    def waitforAndRead(self, size, __timeout, __timeStart):
+        while self.device.inWaiting() < size and time.time()-__timeStart < __timeout:
+            pass
+        # verify the outcome
+        if self.device.inWaiting() >= size and time.time()-__timeStart < __timeout:
+            return self.device.read(size)
+        else:
+            pubStatus.publish(nodeID = 6, status = False)
+            str = "timeout: no data available in serial port"
+            rospy.logerr(str)
+            return -1
+
     ## Low-level MTData2 receiving function.
-    # Take advantage of known message length.
-    def read_data_msg2(self, dataLength):
-        """Low-level MTData2 receiving function.
-        Take advantage of known message length."""
-
-        buf=bytearray() # initialize byte array variable
-
-        HeaderMTData2 = '\xFA\xFF\x36'# [Pre][Bid][MID] of MTData2
-        HeaderLength = len(HeaderMTData2) # length of header;
-        TotLength = HeaderLength+1+dataLength+1 # [HeaderLength]+[LEN]+[dataLength]+[CS]
-
+    def read_data_msg2(self):
         start = time.time()        
+        __timeout = self.timeout
         self.device.flushInput()        # ensure the data is of this moment
         self.device.flushOutput()        # ensure the data is of this moment
-        
-        while (time.time()-start)<self.timeout:
+
+        while (time.time()-start)<self.timeout: # this is where the "continue" is pointing to
+            # search for [Pre] and [Bid]
+            _in = bytearray() # clear the buffer variable that is used for serial communication
+            _in.extend(self.waitforAndRead(1, __timeout, start)) # read one byte
+            if ord(_in[-1:])<>0xFA: # verify if the byte is [Pre]
+                continue # start searching for the header again
+            _in.extend(self.waitforAndRead(1, __timeout, start))   # read the next byte
+            if ord(_in[-1:])<>0xFF: # verify if the byte is [Bid]
+                continue # start searching for the header again
+            _in.extend(self.waitforAndRead(1, __timeout, start))   # read the next byte
+            if ord(_in[-1:])<>0x36: # verify if the byte is [MID] for MTData2
+                continue # start searching for the header again
+            _in.extend(self.waitforAndRead(1, __timeout, start))   # read the next byte
+            dataLength, = struct.unpack('!B', buffer(_in[-1:]))  # unpack the data length from the last byte of the buffer variable
             
-            new_start = time.time()
-
-            # Makes sure the buffer(of computer not of this driver) has 'size' bytes.
-            def waitfor(size=1):
-                while self.device.inWaiting() < size:
-                    pass
-####                    if time.time()-new_start >= self.timeout:
-####                        if not rospy.is_shutdown():
-####                            raise MTException("timeout waiting for message.")
+            # get the remaining parts of the message: data packets + checksum
+            _in.extend(self.waitforAndRead(dataLength+1, __timeout, start)) # read [datalength]+[CS]
             
-            waitfor(TotLength-len(buf))
-            while len(buf)<TotLength: # read output and store in buffer
-                buf.extend(self.device.read(TotLength-len(buf)))
-
-            preamble_ind = buf.find(HeaderMTData2)
-            if preamble_ind==-1: # header not found
-                del buf[:-HeaderLength]     # delete everything except last three pieces of data
-                continue        # go back to "while time.time..." to get a new set of output
-            else:                # header found
-
-                # trim unwanted data at the front end
-                del buf[:preamble_ind]         # junk before [Header]
+            """communication error detection: If all message bytes excluding the preamble are summed and the lower byte value of the result equals zero, the message is valid and it may be processed. The checksum value of the message should be included in the summation"""
+            if 0xFF&sum(_in[1:]):
+                continue # start searching for the header again
                 
-                # fill the missing data in the buffer
-                waitfor(TotLength-len(buf))
-                while len(buf)<TotLength:
-                    buf.extend(self.device.read(TotLength-len(buf)))
-                
-                if 0xFF&sum(buf[1:]):
-                    sys.stderr.write("MT: invalid checksum; discarding data and "\
-                            "waiting for next message.\n")
-                    del buf[:-HeaderLength]
-                    continue
+            data = _in[4:-1] # take only the data, i.e., ignore [Pre], [Bid], [MID], [LEN] and [CS]
+            return data
+        else:
+            pubStatus.publish(nodeID = 6, status = False)
+            str = "timeout: no valid MTData2 is received"
+            rospy.logerr(str)
+            return []
 
-                data = str(buf[HeaderLength+1:-1])
-                return data
-#        else:
-#            raise MTException("could not find MTData message.")
-            
     ## Low-level message receiving function.
     def read_msg(self):
         """Low-level message receiving function."""
         __timeout = self.timeout*200 # give extra time for the sensor to response
         start = time.time()
+
         while (time.time()-start)<__timeout:
-            new_start = time.time()
-
-            # Makes sure the buffer has 'size' bytes.
-            def waitfor(size=1):
-                while self.device.inWaiting() < size:
-                    if time.time()-new_start >= __timeout:
-                        pubStatus.publish(nodeID = 6, status = False)
-                        raise MTException("timeout waiting for message.")
-
-            c = self.device.read()
-            while (not c) and ((time.time()-new_start)<__timeout):
-                c = self.device.read()
-            if not c:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("timeout waiting for message.")
-            if ord(c)<>0xFA: # search for a begining of package
-                continue # go back to "while (time.time()-start)<__timeout:"
-            # second part of preamble
-            waitfor(3) # make sure that there are enought pieces of data to be collected
-            if ord(self.device.read())<>0xFF:    # we assume no timeout anymore
-                continue # go back to "while (time.time()-start)<__timeout:"
+            # search for [Pre] and [Bid]
+            _in = bytearray()
+            _in.extend(self.waitforAndRead(1, __timeout, start))
+            if ord(_in[-1:])<>0xFA: # verify if the byte is [Pre]
+                continue # start searching for the header again
+            _in.extend(self.waitforAndRead(1, __timeout, start))
+            if ord(_in[-1:])<>0xFF: # verify if the byte is [Bid]
+                continue # start searching for the header again
             
             # read message id and length of message
-            #msg = self.device.read(2)
-            mid, length = struct.unpack('!BB', self.device.read(2))
-            if length==255:    # extended length
-                waitfor(2)
-                length, = struct.unpack('!H', self.device.read(2))
-            
+            _in.extend(self.waitforAndRead(2, __timeout, start))
+            mid, length = struct.unpack('!BB', buffer(_in[-2:]))
+
             # read contents and checksum
-            waitfor(length+1)
-            buf = self.device.read(length+1)
-            while (len(buf)<length+1) and ((time.time()-start)<__timeout):
-                buf+= self.device.read(length+1-len(buf))
-            if (len(buf)<length+1):
+            _in.extend(self.waitforAndRead(length+1, __timeout, start))
+            
+            if length == 0:
+                data = []
+            else:
+                data = _in[4:-1] # take only the data, i.e., ignore [Pre], [Bid], [MID], [LEN] and [CS]
+                if mid == MID.Error:
+                    # TODO kantapon: will need to check if dataUnpacked is done corectly.
+                    dataUnpacked = struct.unpack('!%dB'%length, buffer(data))
+                    print "dataUnpacked :", dataUnpacked
+                    sys.stderr.write("MT error 0x%02X: %s."%(dataUnpacked[0], MID.ErrorCodes[dataUnpacked[0]]))
+            
+            """communication error detection: If all message bytes excluding the preamble are summed and the lower byte value of the result equals zero, the message is valid and it may be processed. The checksum value of the message should be included in the summation"""
+            if 0xFF&sum(_in[1:]):
                 continue
-            checksum = ord(buf[-1])
-            data = struct.unpack('!%dB'%length, buf[:-1])
-            if mid == MID.Error:
-                sys.stderr.write("MT error 0x%02X: %s."%(data[0],
-                        MID.ErrorCodes[data[0]]))
-            if 0xFF&sum(data, 0xFF+mid+length+checksum):
-                sys.stderr.write("invalid checksum; discarding data and "\
-                        "waiting for next message.\n")
-                continue
-            return (mid, buf[:-1])
+            
+            # return mid and the data
+            return (mid, data)
+        
         else:
             pubStatus.publish(nodeID = 6, status = False)
-            raise MTException("could not find message.")
-
+            str = "timeout: could not find message."
+            rospy.logerr(str)
+            return (-1, -1)
+            
     ## Send a message and read confirmation
     def write_ack(self, mid, data=[]):
         """Send a message a read confirmation."""
@@ -252,7 +228,7 @@ class MTDevice(object):
         Assume the device is in Config state."""
         data = self.write_ack(MID.SetCurrentScenario)
         ## current XKF id
-        self.scenario_id, = struct.unpack('!H', data)
+        self.scenario_id, = struct.unpack('!H', buffer(data))
         try:
             scenarios = self.scenarios
         except AttributeError:
@@ -291,19 +267,19 @@ class MTDevice(object):
         """Request the reference location.
         Assume the device is in Config state."""
         data = self.write_ack(MID.SetLatLonAlt)
-        data_interpreted = "".join("%02x"%ord(n) for n in data)
-        a =  struct.unpack('BBBBBBBBBBBBBBBBBBBBBBBB', data_interpreted.decode('hex'))
-        return a # "".join("%02x"%ord(n) for n in data)
+        data_interpreted = struct.unpack('BBBBBBBBBBBBBBBBBBBBBBBB',buffer(data))
+        return data_interpreted
 
     def ReqAvailableScenarios(self):
         """Request the available XKF scenarios on the device.
         Assume the device is in Config state."""
         scenarios_dat = self.write_ack(MID.ReqAvailableScenarios)
         scenarios = []
+
         try:
             for i in range(len(scenarios_dat)/22):
                 scenario_type, version, label =\
-                        struct.unpack('!BB20s', scenarios_dat[22*i:22*(i+1)])
+                        struct.unpack('!BB20s', buffer(scenarios_dat[22*i:22*(i+1)]))
                 scenarios.append((scenario_type, version, label.strip()))
             ## available XKF scenarios
             self.scenarios = scenarios
@@ -316,7 +292,8 @@ class MTDevice(object):
         """Request the baudrate.
         Assume the device is in Config state."""
         data = self.write_ack(MID.SetBaudrate)
-        return "".join("%02x"%ord(n) for n in data)
+        brid, = struct.unpack('!B', buffer(data)) #
+        return brid
 
     def RestoreFactoryDefaults(self):
         """Restore MT device configuration to factory defaults (soft version).
@@ -328,11 +305,10 @@ class MTDevice(object):
 
     ############################################################
     # High-level utility functions    ############################################################
-
-    def read_measurement2(self, dataLength):
+    def read_measurement2(self):
         # get data
-        data = self.read_data_msg2(dataLength)
-        return self.parse_MTData2(data)
+        data = self.read_data_msg2()
+        return self.parse_MTData2(buffer(data))
 
     ## Parse a new MTData2 message
     def parse_MTData2(self, data):
@@ -579,7 +555,7 @@ class XSensDriver(object):
         self.__baudrate = _baudrate
         # create messages and default values
         self.com = compass()
-        self.mt = None # declare a variable without assigning the value
+        self.mt = None # declare a publishing variable without assigning the value
         
     def setupSerial(self):
         device = '/dev/usbxsens'
@@ -589,10 +565,10 @@ class XSensDriver(object):
         except serial.SerialException:
             pubStatus.publish(nodeID = 6, status = False)
             return False
-            
+        
         # restore all the setting to factory defaults. 
         self.mt.RestoreFactoryDefaults()
-        # By this point, sensor baudrate is definitely 115200.
+        # By this point, sensor baudrate is definitely 115200."
         
         # If the sensor baudrate does not match the desired value, Set the baudrate and re-open the sensor.
         if self.__baudrate != 115200:
@@ -614,12 +590,9 @@ class XSensDriver(object):
             
             # construct a configuration vector that consists of requested packets
             OutputData = ()
-            self.dataLength = 0 # initialize expected_data_length of MTData2
             for n in ReqPacket:
                 dummy = eval(n)
                 OutputData += dummy[:-1]
-                self.dataLength += 3+dummy[4] # [packetID]+[packetLEN]+[data]
-        
             self.mt.SetOutputConfiguration(OutputData)
             
             # request a current configuration on the xsens
@@ -638,20 +611,23 @@ class XSensDriver(object):
 
     def spin(self):
         r = rospy.Rate(_controlRate)
-        controlPeriod = 1./_controlRate
-            
+        _controlPeriod = 1./_controlRate            
+
         try:
             while not rospy.is_shutdown():
                 
+                timeStart = time.time()
+                
                 pubStatus.publish(nodeID = 6, status = True)
                 
-                timeRef = time.time()
                 self.spin_once()
-                timeElapse = time.time()-timeRef
-                if timeElapse < controlPeriod:
+
+                timeElapse = time.time()-timeStart
+                if timeElapse < _controlPeriod:
                     r.sleep()
                 else:
-                    str = "xsens rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(_controlRate,1/timeElapse) 
+                    actualRate = 1./(timeElapse)
+                    str = "xsens rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(_controlRate, actualRate)
                     rospy.logwarn(str)
 
         # Ctrl-C signal interferes with select with the ROS signal handler
@@ -667,9 +643,9 @@ class XSensDriver(object):
         has_AngVel = False
         has_Acc = False
         pub_IMU = False
-
+        
         # get data and split it into particular variables
-        output = self.mt.read_measurement2(self.dataLength)
+        output = self.mt.read_measurement2()
 
         if output.has_key('Temperature'):
             out_Temp = output['Temperature']
@@ -695,7 +671,7 @@ class XSensDriver(object):
             if out_Ori['Yaw']>0:
                 out_Ori['Yaw'] = 360-out_Ori['Yaw']
             else:
-                out_Ori['Yaw'] = -out_Ori['Yaw']            
+                out_Ori['Yaw'] = -out_Ori['Yaw']
             # b-frame convension base on the orientation of sensor mounted on delphin2    
             self.com.roll = -out_Ori['Roll']
             self.com.pitch = out_Ori['Pitch']
@@ -733,19 +709,31 @@ if __name__=='__main__':
     driver = XSensDriver()
     _portReady = False
     _setConfig = False
-    _r = rospy.Rate(5) # Hz
+    _r = rospy.Rate(5.) # Hz
     for _nTry in range(20):
         if not rospy.is_shutdown():
-            try:
-                _portReady = driver.setupSerial()
-                _setConfig = driver.applyConfiguration()
-                if _portReady and _setConfig:
-                    rospy.loginfo("xsens_driver online")
-                    driver.spin()
-                    break
-            except:
-                _portReady = False
-                _setConfig = False
+            _portReady = driver.setupSerial()
+            _setConfig = driver.applyConfiguration()
+            print "set configuration: ", _setConfig
+            if _portReady and _setConfig:
+                rospy.loginfo("xsens_driver online")
+                driver.spin()
+                break
+
+####            try:
+####                _portReady = driver.setupSerial()
+####                
+####                print "set configuration: ", _setConfig
+####                _setConfig = driver.applyConfiguration()
+####                if _portReady and _setConfig:
+####                    rospy.loginfo("xsens_driver online")
+####                    driver.spin()
+####                    break
+####            except:
+####                _portReady = False
+####                _setConfig = False
+        else:
+            break
         _r.sleep()
 
     str = "fail to connect to xsens" 
