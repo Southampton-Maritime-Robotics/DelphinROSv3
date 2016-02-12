@@ -714,27 +714,23 @@ if __name__=='__main__':
         if not rospy.is_shutdown():
             _portReady = driver.setupSerial()
             _setConfig = driver.applyConfiguration()
-            print "set configuration: ", _setConfig
-            if _portReady and _setConfig:
-                rospy.loginfo("xsens_driver online")
-                driver.spin()
-                break
-
-####            try:
-####                _portReady = driver.setupSerial()
-####                
-####                print "set configuration: ", _setConfig
-####                _setConfig = driver.applyConfiguration()
-####                if _portReady and _setConfig:
-####                    rospy.loginfo("xsens_driver online")
-####                    driver.spin()
-####                    break
-####            except:
-####                _portReady = False
-####                _setConfig = False
+            try:
+                _portReady = driver.setupSerial()
+                _setConfig = driver.applyConfiguration()
+                if _portReady and _setConfig:
+                    rospy.loginfo("xsens_driver online")
+                    driver.spin()
+                    break
+            except:
+                _portReady = False
+                _setConfig = False
         else:
             break
         _r.sleep()
-
-    str = "fail to connect to xsens" 
-    rospy.logwarn(str)
+    
+    if not _portReady:
+        str = "fail to connect to xsens" 
+        rospy.logwarn(str)
+    elif not _setConfig:
+        str = "fail to apply a configuration" 
+        rospy.logwarn(str)
