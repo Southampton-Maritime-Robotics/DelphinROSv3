@@ -98,21 +98,22 @@ def main():
 ################################################################################
         # [1/3] Initialise State (Must Be Run First!)
         smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-            transitions={'succeeded':'depthPitchControlAtSpeed', 'aborted':'STOP','preempted':'STOP'})
-            
+            transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
+
 ################################################################################
         # [2/3] Added States
-####        smach.StateMachine.add('depthPitchControl', testDepthPitchControl(lib), 
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-            
-        smach.StateMachine.add('depthPitchControlAtSpeed', testDepthPitchControlAtSpeed(lib), 
-            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-            
-####        smach.StateMachine.add('Yaw', manoeuvreYaw(lib), 
-####            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        # creating the sequence state machine
+        se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
+                            connector_outcome = 'succeeded')
+        with se:
+#            smach.Sequence.add('depthPitchControl', testDepthPitchControl(lib))
+            smach.Sequence.add('depthPitchControl', testDepthPitchControlAtSpeed(lib))
+        
+        smach.StateMachine.add('SEQUENCE', se, transitions={'succeeded':'STOP',
+                                                            'aborted':'STOP',
+                                                            'preempted':'STOP'})
 
 ################################################################################
-
         # [3/3] Generic States (Come to this state just before terminating the mission)
         smach.StateMachine.add('STOP', Stop(lib), 
             transitions={'succeeded':'finish'})
