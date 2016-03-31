@@ -22,8 +22,6 @@ from state_stop                             import Stop
 from state_goToDepth                        import GoToDepth
 from state_goToHeading                      import GoToHeading
 from state_goForwards                       import GoForwards
-from state_goSideway                        import GoSideway
-from state_goYaw                            import GoYaw
 from state_pathFollowingLOS                 import pathFollowingLOS
 from std_msgs.msg import String
 
