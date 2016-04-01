@@ -39,7 +39,6 @@ from std_msgs.msg import Float32
 from std_msgs.msg import Int8
 from hardware_interfaces.msg import tsl_setpoints
 from hardware_interfaces.msg import tail_setpoints
-from pylab import *
 
 from delphin2_mission.utilities     import uti
 
@@ -264,10 +263,6 @@ def cs_vert_cb(new_angles):
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     rospy.init_node('auvsim')
-    
-    global pubCompass
-    global pubDepth
-    global pubPosition
     
     pubCompass = rospy.Publisher('compass_out', compass)
     pubDepth = rospy.Publisher('depth_out', depth)
