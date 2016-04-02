@@ -1,19 +1,37 @@
+#!/usr/bin/env python
+
 '''
 This 3DOF mathematical model includes surge sway and yaw dynamics. It is used as an observer to estimate the AUV state - denoted as nu - in according to the known actuator demands.
 Drag components due to wave making and thruster operation are included.
+
+Position will be updated using gpsInfo at when the reliable gps measurement connection is available; Otherwise, the deadreckoning technique will be used instead.
+During the abscense of gps: lat-long will be back calculated from the X_pos and Y_pos that is updated from deadreckoner
+
 '''
 
-# get actuator demands from the topics and compact them into a vector u
-# use Runge-Kutta method to update the state vector accordingly
-# publish the AUV state to the corresponding topics
+# FIXME kantapon: subscribe to compass and use measured heading in deadreckoning technique to update the position
+# TODO:
+# - publish mission string
+# - get altitude from altimater and publish to the position topic
+# - get depth from the pressure sensor and publish to the posotion topic
+# - may implement kalman filter to fuse the gps-reading with the position estimation from deadreckoner
 
 from __future__ import division
 import numpy as np
 import math
 from copy import deepcopy
 import time
-import pylab
-from mpl_toolkits.mplot3d import Axes3D
+
+import rospy
+
+from hardware_interfaces.msg    import compass
+from hardware_interfaces.msg    import depth
+from hardware_interfaces.msg    import position
+from std_msgs.msg               import Int8
+from hardware_interfaces.msg    import tsl_setpoints
+from hardware_interfaces.msg    import tail_setpoints
+from hardware_interfaces.msg    import gps
+from delphin2_mission.utilities import uti
 
 class delphin2_AUV(object):
     def __init__(self):
@@ -84,7 +102,6 @@ class delphin2_AUV(object):
         self.N_r_p  = -5.348    # [-*1000]
 
         # damping coefficients: nonlinear
-#        self.X_uu = -2.788      # [kg/m]
         self.Y_vv = -183.2206   # [kg/m]
         self.Y_rr = 0           # [kg/m/rad^2]
         self.N_vv = 59.032      # [kg]
@@ -112,10 +129,8 @@ class delphin2_AUV(object):
         t_th_fh     = np.array([0, 1, l_th_fh])
         t_th_ah     = np.array([0, 1, l_th_ah])
         self.t      = np.vstack((t_prop,t_cs_drag,t_cs_lift,t_cs_moment,t_th_fh,t_th_ah)).T
-
-
+        
     def actuator_models(self,u,_nu):
-        # _nu denotes a state vector at this time instance
         F_prop = self.propeller_model(u[0],_nu)
         X_cs, Y_cs, N_cs = self.rudder_model(u[1],_nu)
         F_th_fh, self.thruster_rpm_fh = self.thruster_model(u[2],self.thruster_rpm_fh,_nu)
@@ -151,9 +166,7 @@ class delphin2_AUV(object):
         
         return X_cs, Y_cs, N_cs
         
-        
-    def thruster_model(self,u_th,rpm_old,_nu):
-        # _nu denotes a state vector at this time instance        
+    def thruster_model(self,u_th,rpm_old,_nu):     
         # apply thruster deadband to the demand
         if np.abs(u_th) < self.deadband_th:
             u_th = 0
@@ -178,9 +191,6 @@ class delphin2_AUV(object):
         return F_thruster, rpm
     
     def rigidbodyDynamics(self,_nu,_tau):
-        # _nu denotes a state vector at this time instance
-        # _tau denotes a force vector at this time instance
-
         ## update nonlinear time-varying coefficient matrices
         # centripetal and coriolis matrix of rigid-body (assumed y_g = 0)
         C_RB = np.array([[0,                                   0,                  -self.m*(self.r_g[0]*_nu[2]+_nu[1])],
@@ -259,128 +269,198 @@ class delphin2_AUV(object):
         
         return nu_dot
     
+    def verify_actuator_demand(self):
+        # verify propeller demand
+        global demand_prop
+        global demand_th_fh
+        global demand_th_ah
+        global demand_rudder
+        
+        if time.time()-timeLastDemand_prop>timeLastDemand_max:
+            demand_prop = 0
+        # verify horizontal thruster demand
+        if time.time()-timeLastDemand_th_hori>timeLastDemand_max:
+            demand_th_fh = 0
+            demand_th_ah = 0
+        # verify rudder demand
+        if time.time()-timeLastDemand_cs_vert>timeLastDemand_max:
+            demand_rudder = 0
+        
+        u = [demand_prop, demand_rudder, demand_th_fh, demand_th_ah] # demands: [u_prop, u_cs, u_th_frt, u_th_aft]
+        return u
+
     def spin(self,controlRate):
-        testScenarioID = 3 # 1: pure surge, 2: pure yaw, 3: coupled surge-yaw, 4: surge-yaw selection and 5: pullout test TODO: remove me
-        self.depthNow = 1.0 # [m] current depth of the AUV
-        self.dt = 1./controlRate
-                
-        # map the testScenarioID to the function blocks TODO: remove me
-        def pureSurge():
-            _timeSpan = 60 # [sec]
-            _timeActuatorStart = 0 # [sec]
-            _propDemand = np.array([10, 12, 14, 16, 18, 20, 22])
-            _thDemand = np.array([0, 0, 0, 0, 0, 0, 0])
-            _csDemand = np.array([0, 0, 0, 0, 0, 0, 0])
-            if self.depthNow < self.depthSat: # at surface
-                _refData = np.array([0.4191, 0.5698, 0.7140, 0.8226, 0.9002, 0.9645, 1.0310])
-            else: # deeply submerge
-                _refData = np.array([0.261294118, 0.337058824, 0.478823529, 0.591058824, 0.691294118, 0.838941176, 1.012705882])
-            return _timeSpan, _timeActuatorStart, _propDemand, _thDemand, _csDemand, _refData
-        def pureYaw():
-            _timeSpan = 60 # [sec]
-            _timeActuatorStart = 10 # [sec]
-            _propDemand = np.array([0, 0, 0, 0, 0])
-            _thDemand = np.array([500, 1000, 1500, 2000, 2500])
-            _csDemand = np.array([0, 0, 0, 0, 0])
-            _refData = np.array([5,11,18,26,32])*np.pi/180
-            return _timeSpan, _timeActuatorStart, _propDemand, _thDemand, _csDemand, _refData
-        def coupledSurgeYaw():
-            _timeSpan = 80 # [sec]
-            _timeActuatorStart = 0 # [sec]
-            _propDemand = np.array([10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-                                    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-                                    22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22])
-            _thDemand   = np.array([0, 0, 0, 0, 800, 800, 800, 800, 1600, 1600, 1600, 1600, 2400, 2400, 2400, 2400,
-                                    0, 0, 0, 0, 800, 800, 800, 800, 1600, 1600, 1600, 1600, 2400, 2400, 2400, 2400,
-                                    0, 0, 0, 0, 800, 800, 800, 800, 1600, 1600, 1600, 1600, 2400, 2400, 2400, 2400])
-            _csDemand   = np.array([0, 10, 20, 30, 0, 10, 20, 30, 0, 10, 20, 30, 0, 10, 20, 30,
-                                    0, 10, 20, 30, 0, 10, 20, 30, 0, 10, 20, 30, 0, 10, 20, 30,
-                                    0, 10, 20, 30, 0, 10, 20, 30, 0, 10, 20, 30, 0, 10, 20, 30])
-            _refData    = np.array([0, 3.02, 4.51, 5.36, 5.2, 6.3, 7.27, 7.78, 15, 15.2, 15.8, 16.55, 24.17, 24.3, 25.2, 26.7,
-                                    0, 5.93, 7.26, 8.53, 5.93, 7.7, 8.83, 10.1, 12.44, 13.61, 15.02, 16.16, 22.24, 22.79, 23.22, 24.34,
-                                    0, 7.31, 8.79, 10.32, 8.25, 8.49, 10.28, 12.14, 12.15, 13.3, 14.65, 15.48, 21, 22, 22.8, 23.72])*np.pi/180
-            return _timeSpan, _timeActuatorStart, _propDemand, _thDemand, _csDemand, _refData
+        r = rospy.Rate(controlRate)
+        global headingNow
+        global comOut # FIXME: subscribe to the compass_out and use for deadreckoning technique
+        global posOut
+        global gpsInfo
+        
+        # initialise the initial position
+        X_pos = 0
+        Y_pos = 0
+        try: 
+            lat_orig  = rospy.get_param('lat_orig')
+            long_orig = rospy.get_param('long_orig')
+        except:
+            lat_orig  = 50.9567
+            long_orig = -1.36735
+        R = 6367500 #Radius of the earth in m
+        latitude  = lat_orig
+        longitude = long_orig
             
-        # TODO: remove me
-        testScenario = {1 : pureSurge,
-                        2 : pureYaw,
-                        3 : coupledSurgeYaw,
-        }
-        timeSpan, timeActuatorStart, propDemand, thDemand, csDemand, refData = testScenario[testScenarioID]()
-        
-        # TODO: remove me
-        nStep = int(timeSpan/self.dt)
-        indTimeStart = timeActuatorStart/self.dt
-        timeVector = np.linspace(0,nStep,nStep+1)*self.dt
-        nCase = len(propDemand)
-
-        fig = pylab.figure(1)
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(thDemand, csDemand, refData, c='k', marker='^')
-        
-        for indCase in range(nCase):
-            print 'case:', indCase
             
-            # reset the state before start the new case TODO this will be removed
-            self.nu = np.array([0,0,0]) # [u: surge vel (m/s), v: sway vel (m/s), r: yaw rate (rad/s) ]
-            self.thruster_rpm_fh    = 0. # initial thruster rpm
-            self.thruster_rpm_ah    = 0. # initial thruster rpm
-
-#            timeRef = time.time()
-            for i in range(nStep): # for [0,nStep-1]
-                nu0 = deepcopy(self.nu) # create a deep copy of the state vector
+        while not rospy.is_shutdown():
+            timeRef = time.time()
+            
+            ## update the velocity vector with mathematical model
+            # create a deep copy of the state vector
+            nu0 = deepcopy(self.nu)
+            
+            # get actuator demand
+            u = self.verify_actuator_demand()
+            
+            # compute force due to actuators
+            f = self.actuator_models(u,nu0)
+            tau = np.dot(self.t,f) # generalised forces expressed in b-frame
+            
+            # form the state vector and implement Runge-Kutta 4th order
+            k1 = self.rigidbodyDynamics(nu0,tau)
+            k2 = self.rigidbodyDynamics(nu0+self.dt/2.*k1,tau)
+            k3 = self.rigidbodyDynamics(nu0+self.dt/2.*k2,tau)
+            k4 = self.rigidbodyDynamics(nu0+self.dt*k3,tau)
+                            
+            delta_nu0 = self.dt/6.*(k1+2*k2+2*k3+k4)
+            self.nu = nu0 + delta_nu0
+            self.nu = np.array([0,1,0])
+            print self.nu
+            
+            # update heading FIXME: use heading from compass_out
+            headingNow = headingNow + self.nu[2]*180./np.pi
+            headingNow = np.mod(headingNow,360)
+            ## update position with either gps or dead reckoning
+            if gpsInfo.fix == 1 and gpsInfo.number_of_satelites >= 5:
+                X_pos = gpsInfo.x
+                Y_pos = gpsInfo.y
+                latitude  = np.float64(gpsInfo.latitude)
+                longitude = np.float64(gpsInfo.longitude)
+            else:
+                h_rad = headingNow/180*np.pi
                 
-                if timeVector[i] < timeActuatorStart:        
-                    u = [0., 0., 0., 0.] # demands: [u_prop, u_cs, u_th_frt, u_th_aft]
-                else:
-                    u = [propDemand[indCase], csDemand[indCase], thDemand[indCase], -thDemand[indCase]] # demands: [u_prop, u_cs, u_th_frt, u_th_aft]
-                f = self.actuator_models(u,nu0) # forces expressed in b-frame
-                tau = np.dot(self.t,f)
+                # velocity in earth frame [m/s] - X:east, Y:north
+                X_vel = self.nu[0]*np.sin(h_rad)+self.nu[1]*np.cos(h_rad)
+                Y_vel = self.nu[0]*np.cos(h_rad)-self.nu[1]*np.sin(h_rad)
+                print 'velocity', [X_vel, Y_vel]
                 
-                # form the state vector and implement Runge-Kutta 4th order
-                k1 = self.rigidbodyDynamics(nu0,tau)
-                k2 = self.rigidbodyDynamics(nu0+self.dt/2.*k1,tau)
-                k3 = self.rigidbodyDynamics(nu0+self.dt/2.*k2,tau)
-                k4 = self.rigidbodyDynamics(nu0+self.dt*k3,tau)
-                                
-#                delta_nu0 = self.dt/6.*(k1+2*k2+2*k3+k4)
-#                self.nu = nu0 + delta_nu0
-#                pylab.figure(1)
-#                pylab.subplot(3,1,1)
-#                pylab.grid(True)
-#                pylab.ylabel('surge velocity [m/s]')
-#                pylab.plot(i*self.dt,self.nu[0],'*k')
-#                pylab.subplot(3,1,2)
-#                pylab.grid(True)
-#                pylab.ylabel('sway velocity [m/s]')
-#                pylab.plot(i*self.dt,self.nu[1],'*k')
-#                pylab.subplot(3,1,3)
-#                pylab.grid(True)
-#                pylab.ylabel('yaw velocity [rad/s]')
-#                pylab.plot(i*self.dt,self.nu[2],'*k')
-#                pylab.xlabel('time [sec]')
+                # position in earth frame [m] - X:east, Y:north                
+                X_pos = X_pos + X_vel*self.dt
+                Y_pos = Y_pos + Y_vel*self.dt
+                
+                # lat long estimation with known position from dead reckoning technique #
+                # TODO: this will need doublecheck
+                try:
+                    brng=math.atan2(X_pos,Y_pos)
+                    d=math.sqrt(X_pos**2+Y_pos**2)
+                    lat1 = math.radians(lat_orig)
+                    lon1 = math.radians(long_orig)
+                    lat2 = math.asin(math.sin(lat1)*math.cos(d/R) + math.cos(lat1)*math.sin(d/R)*math.cos(brng))
+                    lon2 = lon1 + math.atan2(math.sin(brng)*math.sin(d/R)*math.cos(lat1), math.cos(d/R)-math.sin(lat1)*math.sin(lat2))
+                    latitude    = np.float64(math.degrees(lat2))
+                    longitude   = np.float64(math.degrees(lon2))
+                except:
+                    pass
+            
+            ## pack the information into the message and publish to the topic
+            comOut.heading = headingNow # FIXME: this will be removed
+            pubCompass.publish(comOut)
+            
+            posOut.X = X_pos
+            posOut.Y = Y_pos
+            posOut.forward_vel = self.nu[0]
+            posOut.sway_vel = self.nu[1]
+            posOut.lat         = latitude
+            posOut.long        = longitude
+            posOut.ValidGPSfix = gpsInfo.fix
+            pubPosition.publish(posOut)
+            
+            ## Verify and maintain loop timing
+            timeElapse = time.time()-timeRef
+            if timeElapse < self.dt:
+                r.sleep()
+            else:
+                str = "auvSim_horixontalPlane rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse)
+                rospy.logwarn(str)
 
-#            print time.time()-timeRef
-#            ax.scatter(thDemand[indCase], csDemand[indCase], self.nu[2]*180/np.pi, c='r', marker='*')
-            pylab.figure(3)
-            pylab.plot(i*self.dt,self.nu[2]*180/np.pi)
-            pylab.figure(2)
-            if testScenarioID == 1:
-                pylab.plot(propDemand[indCase],self.nu[0],'*b')
-            elif testScenarioID == 2:
-                pylab.plot(thDemand[indCase],self.nu[2],'*b')
-        
-        # show figure after running all testing scenarios
+################################################################################
+######## SATURATION AND UPDATE PARAMETERS FROM TOPICS ##########################
+################################################################################
 
-        pylab.figure(2)
-        if testScenarioID == 1:
-            pylab.plot(propDemand,refData,'k')
-        elif testScenarioID == 2:
-            pylab.plot(thDemand,refData,'k')
-        pylab.show()
-
-        
+def demand_prop_cb(newDemand_th):
+    global demand_prop
+    global timeLastDemand_prop
+    demand_prop = newDemand_th.data
+    timeLastDemand_prop = time.time()
+    
+def demand_th_hor_cb(newDemand_th):
+    global demand_th_fh
+    global demand_th_ah
+    global timeLastDemand_th_hori
+    demand_th_fh = newDemand_th.thruster0
+    demand_th_ah = newDemand_th.thruster1
+    timeLastDemand_th_hori = time.time()
+    
+def demand_rudder_cb(newDemand_rudder):
+    global demand_rudder
+    global timeLastDemand_rudder
+    demand_rudder = newDemand_rudder.cs0 # assume the command on top and bottom surface are identical
+    timeLastDemand_cs_vert = time.time()
+    
+def gps_callback(gps):
+    global gpsInfo
+    gpsInfo = gps
+    
 if __name__ == '__main__':
+    time.sleep(1) #Allow System to come Online
+    rospy.init_node('auvsim')
+    
+    global timeLastDemand_prop
+    global timeLastDemand_th_hori
+    global timeLastDemand_cs_vert
+    global timeLastDemand_max
+    timeLastDemand_prop = time.time()
+    timeLastDemand_th_hori = time.time()
+    timeLastDemand_cs_vert = time.time()
+    timeLastDemand_max = 1 # [sec]
+    
+    global demand_prop
+    global demand_th_fh
+    global demand_th_ah
+    global demand_rudder
+    demand_prop = 0
+    demand_th_fh = 0
+    demand_th_ah = 0
+    demand_rudder = 0
+    
+    global headingNow # FIXME: this is not needed
+    headingNow = 260.0
+    
+    global comOut
+    global posOut
+    global gpsInfo
+    comOut = compass()
+    posOut = position()
+    gpsInfo = gps()
+    
+    pubCompass = rospy.Publisher('compass_out', compass) # FIXME should subscribe to compass instead
+    pubPosition = rospy.Publisher('position_dead', position)
+    
+    rospy.Subscriber('gps_out', gps, gps_callback)
+    rospy.Subscriber('prop_demand', Int8, demand_prop_cb)
+    rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, demand_th_hor_cb)
+    rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, demand_rudder_cb)
+    
     delphin2 = delphin2_AUV()
     controlRate = 20. # [Hz]
+    delphin2.depthNow = 0.0 # [m] current depth of the AUV
+    delphin2.dt = 1./controlRate
     delphin2.spin(controlRate)
