@@ -7,11 +7,12 @@ Drag components due to wave making and thruster operation are included.
 Position will be updated using gpsInfo at when the reliable gps measurement connection is available; Otherwise, the deadreckoning technique will be used instead.
 During the abscense of gps: lat-long will be back calculated from the X_pos and Y_pos that is updated from deadreckoner
 
+note1: actual depth of the AUV will not be considered in the mathematical model - a constant depth is used instead.
+note2: this node requires either the mtdevice.py or mtdevice_dummy.py to update the AUV heading.
+
 '''
 
-# FIXME kantapon: subscribe to compass and use measured heading in deadreckoning technique to update the position
 # TODO:
-# - publish mission string
 # - get altitude from altimater and publish to the position topic
 # - get depth from the pressure sensor and publish to the posotion topic
 # - may implement kalman filter to fuse the gps-reading with the position estimation from deadreckoner
@@ -28,6 +29,8 @@ from hardware_interfaces.msg    import compass
 from hardware_interfaces.msg    import depth
 from hardware_interfaces.msg    import position
 from std_msgs.msg               import Int8
+from std_msgs.msg               import String
+from hardware_interfaces.msg    import status
 from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import gps
@@ -37,7 +40,10 @@ class delphin2_AUV(object):
     def __init__(self):
         ## initial state of the AUV
         self.nu = np.array([0,0,0]) # [u: surge vel (m/s), v: sway vel (m/s), r: yaw rate (rad/s) ]
-        
+        self.headingNow = 0.0 # [deg]
+        self.controlRate = 20. # [Hz]
+        self.dt = 1./self.controlRate
+                
         ## constants
         self.rho = 1000. # water density [kg/m^3]
         self.depthNow = 0 # [m] a depth of the AUV in this particular moment
@@ -129,6 +135,10 @@ class delphin2_AUV(object):
         t_th_fh     = np.array([0, 1, l_th_fh])
         t_th_ah     = np.array([0, 1, l_th_ah])
         self.t      = np.vstack((t_prop,t_cs_drag,t_cs_lift,t_cs_moment,t_th_fh,t_th_ah)).T
+        
+        # messages for publishing the data to ROS topics
+        self.comOut = compass()
+        self.posOut = position()
         
     def actuator_models(self,u,_nu):
         F_prop = self.propeller_model(u[0],_nu)
@@ -289,12 +299,10 @@ class delphin2_AUV(object):
         u = [demand_prop, demand_rudder, demand_th_fh, demand_th_ah] # demands: [u_prop, u_cs, u_th_frt, u_th_aft]
         return u
 
-    def spin(self,controlRate):
-        r = rospy.Rate(controlRate)
-        global headingNow
-        global comOut # FIXME: subscribe to the compass_out and use for deadreckoning technique
-        global posOut
+    def spin(self):
+        r = rospy.Rate(self.controlRate)
         global gpsInfo
+        gpsInfo = gps()
         
         # initialise the initial position
         X_pos = 0
@@ -311,6 +319,7 @@ class delphin2_AUV(object):
             
             
         while not rospy.is_shutdown():
+            pubStatus.publish(nodeID = 9, status = True)
             timeRef = time.time()
             
             ## update the velocity vector with mathematical model
@@ -332,12 +341,11 @@ class delphin2_AUV(object):
                             
             delta_nu0 = self.dt/6.*(k1+2*k2+2*k3+k4)
             self.nu = nu0 + delta_nu0
-            self.nu = np.array([0,1,0])
-            print self.nu
             
-            # update heading FIXME: use heading from compass_out
-            headingNow = headingNow + self.nu[2]*180./np.pi
-            headingNow = np.mod(headingNow,360)
+            # update heading: use heading from compass_out
+            self.headingNow = self.headingNow + self.nu[2]*180./np.pi
+            self.headingNow = np.mod(self.headingNow,360)
+            
             ## update position with either gps or dead reckoning
             if gpsInfo.fix == 1 and gpsInfo.number_of_satelites >= 5:
                 X_pos = gpsInfo.x
@@ -345,19 +353,17 @@ class delphin2_AUV(object):
                 latitude  = np.float64(gpsInfo.latitude)
                 longitude = np.float64(gpsInfo.longitude)
             else:
-                h_rad = headingNow/180*np.pi
+                h_rad = self.headingNow/180*np.pi
                 
                 # velocity in earth frame [m/s] - X:east, Y:north
                 X_vel = self.nu[0]*np.sin(h_rad)+self.nu[1]*np.cos(h_rad)
                 Y_vel = self.nu[0]*np.cos(h_rad)-self.nu[1]*np.sin(h_rad)
-                print 'velocity', [X_vel, Y_vel]
                 
                 # position in earth frame [m] - X:east, Y:north                
                 X_pos = X_pos + X_vel*self.dt
                 Y_pos = Y_pos + Y_vel*self.dt
                 
-                # lat long estimation with known position from dead reckoning technique #
-                # TODO: this will need doublecheck
+                # lat long estimation with known position from dead reckoning technique
                 try:
                     brng=math.atan2(X_pos,Y_pos)
                     d=math.sqrt(X_pos**2+Y_pos**2)
@@ -368,28 +374,32 @@ class delphin2_AUV(object):
                     latitude    = np.float64(math.degrees(lat2))
                     longitude   = np.float64(math.degrees(lon2))
                 except:
+                    str = "dead_reckoner fails to compute lat-long from position"
+                    rospy.logwarn(str)
+                    pubMissionLog.publish(str)
                     pass
-            
+                    
             ## pack the information into the message and publish to the topic
-            comOut.heading = headingNow # FIXME: this will be removed
-            pubCompass.publish(comOut)
+            self.comOut.heading = self.headingNow
+            pubCompass.publish(self.comOut)
             
-            posOut.X = X_pos
-            posOut.Y = Y_pos
-            posOut.forward_vel = self.nu[0]
-            posOut.sway_vel = self.nu[1]
-            posOut.lat         = latitude
-            posOut.long        = longitude
-            posOut.ValidGPSfix = gpsInfo.fix
-            pubPosition.publish(posOut)
+            self.posOut.X = X_pos
+            self.posOut.Y = Y_pos
+            self.posOut.forward_vel = self.nu[0]
+            self.posOut.sway_vel = self.nu[1]
+            self.posOut.lat         = latitude
+            self.posOut.long        = longitude
+            self.posOut.ValidGPSfix = gpsInfo.fix
+            pubPosition.publish(self.posOut)
             
             ## Verify and maintain loop timing
             timeElapse = time.time()-timeRef
             if timeElapse < self.dt:
                 r.sleep()
             else:
-                str = "auvSim_horixontalPlane rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse)
+                str = "dead_reckoner rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(self.controlRate,1/timeElapse)
                 rospy.logwarn(str)
+                pubMissionLog.publish(str)
 
 ################################################################################
 ######## SATURATION AND UPDATE PARAMETERS FROM TOPICS ##########################
@@ -441,18 +451,10 @@ if __name__ == '__main__':
     demand_th_ah = 0
     demand_rudder = 0
     
-    global headingNow # FIXME: this is not needed
-    headingNow = 260.0
-    
-    global comOut
-    global posOut
-    global gpsInfo
-    comOut = compass()
-    posOut = position()
-    gpsInfo = gps()
-    
-    pubCompass = rospy.Publisher('compass_out', compass) # FIXME should subscribe to compass instead
+    pubCompass = rospy.Publisher('compass_out', compass)
     pubPosition = rospy.Publisher('position_dead', position)
+    pubStatus = rospy.Publisher('status', status)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     
     rospy.Subscriber('gps_out', gps, gps_callback)
     rospy.Subscriber('prop_demand', Int8, demand_prop_cb)
@@ -460,7 +462,4 @@ if __name__ == '__main__':
     rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, demand_rudder_cb)
     
     delphin2 = delphin2_AUV()
-    controlRate = 20. # [Hz]
-    delphin2.depthNow = 0.0 # [m] current depth of the AUV
-    delphin2.dt = 1./controlRate
-    delphin2.spin(controlRate)
+    delphin2.spin()
