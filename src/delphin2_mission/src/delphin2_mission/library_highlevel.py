@@ -491,36 +491,26 @@ class library_highlevel:
     def callback_status(self, status):
         if status.nodeID == 1:
             self.__TSL_status = status.status
-            return
         elif status.nodeID == 2:
             self.__tail_status = status.status
-            return
         elif status.nodeID == 3:
             self.__altimeter_status = status.status
-            return
         elif status.nodeID == 4:
             self.__gps_status = status.status
-            return
         elif status.nodeID == 5:
-            self.__depth_transducer_status = status.status
-            return
+            self.__depth_transducer_status = status.stat
         elif status.nodeID == 6:
             self.__xsens_status = status.status
-            return
         elif status.nodeID == 7:
             self.__heading_ctrl_status = status.status
-            return
         elif status.nodeID == 8:
             self.__depth_ctrl_status = status.status
-            return
         elif status.nodeID == 9:
             self.__deadreckoner_status = status.status
-            return
         elif status.nodeID == 10:
             self.__logger_status = status.status
-            return
         elif status.nodeID == 11:
             self.__backSeatDriver_status = status.status
-            return
         elif status.nodeID == 12:
             self.__energyMonitor_status = status.status
+        return
