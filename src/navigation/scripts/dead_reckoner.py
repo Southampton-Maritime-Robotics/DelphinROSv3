@@ -137,7 +137,6 @@ class delphin2_AUV(object):
         self.t      = np.vstack((t_prop,t_cs_drag,t_cs_lift,t_cs_moment,t_th_fh,t_th_ah)).T
         
         # messages for publishing the data to ROS topics
-        self.comOut = compass()
         self.posOut = position()
         
     def actuator_models(self,u,_nu):
@@ -302,7 +301,9 @@ class delphin2_AUV(object):
     def spin(self):
         r = rospy.Rate(self.controlRate)
         global gpsInfo
+        global comInfo
         gpsInfo = gps()
+        comInfo = compass()
         
         # initialise the initial position
         X_pos = 0
@@ -316,10 +317,20 @@ class delphin2_AUV(object):
         R = 6367500 #Radius of the earth in m
         latitude  = lat_orig
         longitude = long_orig
-            
-            
+        
+        # to control a timing for status publishing
+        timeZero_status = time.time()
+        try:
+            dt_status = rospy.get_param('status_timing')
+        except:
+            dt_status = 2.
+                    
         while not rospy.is_shutdown():
-            pubStatus.publish(nodeID = 9, status = True)
+            # to control a timing for status publishing
+            if time.time()-timeZero_status > dt_status:
+                timeZero_status = time.time()
+                pubStatus.publish(nodeID = 9, status = True)
+                
             timeRef = time.time()
             
             ## update the velocity vector with mathematical model
@@ -342,8 +353,8 @@ class delphin2_AUV(object):
             delta_nu0 = self.dt/6.*(k1+2*k2+2*k3+k4)
             self.nu = nu0 + delta_nu0
             
-            # update heading: use heading from compass_out
-            self.headingNow = self.headingNow + self.nu[2]*180./np.pi
+            # update heading: measured from xsens or dummy xsens
+            self.headingNow = comInfo.heading
             self.headingNow = np.mod(self.headingNow,360)
             
             ## update position with either gps or dead reckoning
@@ -380,9 +391,6 @@ class delphin2_AUV(object):
                     pass
                     
             ## pack the information into the message and publish to the topic
-            self.comOut.heading = self.headingNow
-            pubCompass.publish(self.comOut)
-            
             self.posOut.X = X_pos
             self.posOut.Y = Y_pos
             self.posOut.forward_vel = self.nu[0]
@@ -425,6 +433,10 @@ def demand_rudder_cb(newDemand_rudder):
     demand_rudder = newDemand_rudder.cs0 # assume the command on top and bottom surface are identical
     timeLastDemand_cs_vert = time.time()
     
+def compass_cb(newComInfo):
+    global comInfo
+    comInfo = newComInfo
+    
 def gps_callback(gps):
     global gpsInfo
     gpsInfo = gps
@@ -451,7 +463,6 @@ if __name__ == '__main__':
     demand_th_ah = 0
     demand_rudder = 0
     
-    pubCompass = rospy.Publisher('compass_out', compass)
     pubPosition = rospy.Publisher('position_dead', position)
     pubStatus = rospy.Publisher('status', status)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
@@ -460,6 +471,7 @@ if __name__ == '__main__':
     rospy.Subscriber('prop_demand', Int8, demand_prop_cb)
     rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, demand_th_hor_cb)
     rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, demand_rudder_cb)
+    rospy.Subscriber('compass_out', compass, compass_cb)
     
     delphin2 = delphin2_AUV()
     delphin2.spin()
