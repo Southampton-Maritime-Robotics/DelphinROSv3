@@ -158,11 +158,21 @@ def motor_control():
     controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
-    while not rospy.is_shutdown():      
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
+    
+    while not rospy.is_shutdown():
+        # to control a timing for status publishing
+        if time.time()-timeZero_status > dt_status:
+            timeZero_status = time.time()
+            pubStatus.publish(nodeID = 1, status = True)
         
         timeRef = time.time()
         
-        pubStatus.publish(nodeID = 1, status = True)
         data_now = current_data #Get the data at the current time. This is in the range of [-2500,2500]
         
         ############################# ON/OFF MSG ######################################    
