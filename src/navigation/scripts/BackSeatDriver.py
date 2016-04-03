@@ -77,12 +77,19 @@ def main(controller):
     
     #Initialise BackSeatFlag to zero
     BackSeatFlag=0
-    pubMissionLog.publish('Backseat Driver Node Is Active')
     
-    pubStatus.publish(nodeID = 11, status = True)
-    
-    while not rospy.is_shutdown():
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
 
+    while not rospy.is_shutdown():
+        # to control a timing for status publishing
+        if time.time()-timeZero_status > dt_status:
+            timeZero_status = time.time()
+            pubStatus.publish(nodeID = 11, status = True)
         timeRef = time.time()
         
         #Poll System For Any Potential Errors or Status Warnings
@@ -217,6 +224,7 @@ def main(controller):
         else:
             str = "BackSeatDriver rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse)
             rospy.logwarn(str)
+            pubMissionLog.publish(str)
             
 if __name__ == '__main__':
     # Define an instance of highlevelcontrollibrary to pass to all action servers
