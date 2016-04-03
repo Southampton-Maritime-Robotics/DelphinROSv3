@@ -12,12 +12,12 @@ delphin2 software, written in ROS
 
 - xsens                   20 Hz
 
-- compass_oceanserver     10 Hz
+- depth_transducer        10 Hz
 
 - headingControllerPID    5  Hz
 
 - depthControllerPIC      5  Hz
 
-- tail_section            10  Hz
+- tail_section            5  Hz
 
 - arduino_thruster        5  Hz
