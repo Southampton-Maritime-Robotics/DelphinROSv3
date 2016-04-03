@@ -38,12 +38,38 @@ from delphin2_mission.utilities import uti
 
 class delphin2_AUV(object):
     def __init__(self):
+
+        ### ros communication ###
+        # create publishers and messages to be published
+        self.pubPosition = rospy.Publisher('position_dead', position)
+        self.pubStatus = rospy.Publisher('status', status)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
+        self.posOut = position()
+
+        # create subscribers and parameters for callback functions
+        rospy.Subscriber('gps_out', gps, self.gps_callback)
+        rospy.Subscriber('prop_demand', Int8, self.demand_prop_cb)
+        rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, self.demand_th_hor_cb)
+        rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, self.demand_rudder_cb)
+        rospy.Subscriber('compass_out', compass, self.compass_cb)
+        self.gpsInfo = gps()
+        self.comInfo = compass()
+        self.timeLastDemand_prop = time.time()
+        self.timeLastDemand_th_hori = time.time()
+        self.timeLastDemand_cs_vert = time.time()
+        self.timeLastDemand_max = 1 # [sec]
+        self.demand_prop = 0
+        self.demand_th_fh = 0
+        self.demand_th_ah = 0
+        self.demand_rudder = 0
+            
+        ### AUV model parameters ###
         ## initial state of the AUV
         self.nu = np.array([0,0,0]) # [u: surge vel (m/s), v: sway vel (m/s), r: yaw rate (rad/s) ]
         self.headingNow = 0.0 # [deg]
         self.controlRate = 20. # [Hz]
         self.dt = 1./self.controlRate
-                
+        
         ## constants
         self.rho = 1000. # water density [kg/m^3]
         self.depthNow = 0 # [m] a depth of the AUV in this particular moment
@@ -59,41 +85,50 @@ class delphin2_AUV(object):
         O_b         = np.array([0.8, 0, 0])
         r_g_nose    = np.array([0.8, 0, -0.06])
         self.r_g    = O_b - r_g_nose
-        
-        ## actuator parameters
-        # propeller Turnock2010 e.q. 16.19 
+
+        ## actuators models
+        # propeller parameters
         self.Kt0_prop       = 0.094554711647155 # K_t-J relation
         self.a_prop         = 0.699859170492637 # K_t-J relation
         self.b_prop         = 1.520485949644561 # K_t-J relation
         self.w_t_prop       = 0.36              # wake fraction [-]
         self.t_prop         = 0.11              # thrust deduction [-]
         self.D_prop         = 0.305             # peopeller diameter [m]
-        self.deadband_prop  = 10                # deadband on propeller setpoint
-        
-        # thruster
-        self.Kn_th              = 2.3483
-        self.Ku_th              = 2.3553
-        self.c1_th              = 0.35
-        self.c2_th              = 1.5
-        self.D_th               = 0.070 # thruster diameter [m]
-        self.K_T_th             = 1.2870e-04
-        self.thruster_rpm_fh    = 0. # initial thruster rpm
-        self.thruster_rpm_ah    = 0. # initial thruster rpm
-        self.deadband_th        = 145 # deadband on thruster setpoint
-        l_th_frt_nose           = 0.205 # location of the front horizontal thruster w.r.t. AUV nose [m]
-        l_th_aft_nose           = 1.45 # location of the aft horizontal thruster w.r.t. AUV nose [m]
-        l_th_fh                 = O_b[0]-l_th_frt_nose # location of the front horizontal thruster wrt. origin of b-frame [m]
-        l_th_ah                 = O_b[0]-l_th_aft_nose # location of the aft horizontal thruster wrt. origin of b-frame [m]
-        self.a_th_drag          = 0.565993917435650 # coefficient for extradrad due to thruster operation
-        self.b_th_drag          = -7.608906885747783 # coefficient for extradrad due to thruster operation
-        self.c_th_drag          = 0.056535966126787 # coefficient for extradrad due to thruster operation
-        self.d_th_drag          = -0.896791505996002 # coefficient for extradrad due to thruster operation
+        self.deadband_prop  = 10                # deadband on propeller setpoint 
 
-        # rudders
+        # thruster parameters
+        self.Kn_th              = 2.3483    # thruster transient model parameter
+        self.Ku_th              = 2.3553    # thruster transient model parameter
+        self.c1_th              = 0.35      # thruster transient model parameter
+        self.c2_th              = 1.5       # thruster transient model parameter
+        self.D_th               = 0.070 # thruster diameter [m]
+        self.K_T_th             = 1.2870e-04 # thrust coefficient [-]
+        self.thruster_rpm_fh    = 0.    # initial thruster rpm
+        self.thruster_rpm_ah    = 0.    # initial thruster rpm
+        self.deadband_th        = 145   # deadband on thruster setpoint
+        l_th_frt_nose           = 0.205 # location of the front horizontal thruster w.r.t. AUV nose [m]
+        l_th_aft_nose           = 1.45  # location of the aft horizontal thruster w.r.t. AUV nose [m]
+        l_th_fh                 = O_b[0]-l_th_frt_nose  # location of the front horizontal thruster wrt. origin of b-frame [m]
+        l_th_ah                 = O_b[0]-l_th_aft_nose  # location of the aft horizontal thruster wrt. origin of b-frame [m]
+        self.a_th_drag          = 0.565993917435650     # coefficient for extradrad due to thruster operation
+        self.b_th_drag          = -7.608906885747783    # coefficient for extradrad due to thruster operation
+        self.c_th_drag          = 0.056535966126787     # coefficient for extradrad due to thruster operation
+        self.d_th_drag          = -0.896791505996002    # coefficient for extradrad due to thruster operation
+
+        # rudders parameters
         self.X_uu_delta_delta    = -0.003632126810901
         self.Y_uu_delta          = -0.324087707662035
         self.N_uu_delta          =  0.325363360000000
-        
+
+        # actuator configuration matrix
+        t_prop      = np.array([1, 0, 0])
+        t_cs_drag   = np.array([1, 0, 0])
+        t_cs_lift   = np.array([0, 1, 0])
+        t_cs_moment = np.array([0, 0, 1])
+        t_th_fh     = np.array([0, 1, l_th_fh])
+        t_th_ah     = np.array([0, 1, l_th_ah])
+        self.t      = np.vstack((t_prop,t_cs_drag,t_cs_lift,t_cs_moment,t_th_fh,t_th_ah)).T
+
         ## hydrodynamic coefficients
         # added masses and inertia
         self.X_u_dot = -2.4102  # [kg]
@@ -126,19 +161,10 @@ class delphin2_AUV(object):
         # total inertia matrix and its inverse
         M = M_RB+M_A
         self.M_inv = np.linalg.inv(M)
-        
-        # actuator configuration matrix
-        t_prop      = np.array([1, 0, 0])
-        t_cs_drag   = np.array([1, 0, 0])
-        t_cs_lift   = np.array([0, 1, 0])
-        t_cs_moment = np.array([0, 0, 1])
-        t_th_fh     = np.array([0, 1, l_th_fh])
-        t_th_ah     = np.array([0, 1, l_th_ah])
-        self.t      = np.vstack((t_prop,t_cs_drag,t_cs_lift,t_cs_moment,t_th_fh,t_th_ah)).T
-        
-        # messages for publishing the data to ROS topics
-        self.posOut = position()
-        
+
+################################################################################
+######## AUV MODEL #############################################################
+################################################################################
     def actuator_models(self,u,_nu):
         F_prop = self.propeller_model(u[0],_nu)
         X_cs, Y_cs, N_cs = self.rudder_model(u[1],_nu)
@@ -278,32 +304,22 @@ class delphin2_AUV(object):
         
         return nu_dot
     
-    def verify_actuator_demand(self):
-        # verify propeller demand
-        global demand_prop
-        global demand_th_fh
-        global demand_th_ah
-        global demand_rudder
-        
-        if time.time()-timeLastDemand_prop>timeLastDemand_max:
-            demand_prop = 0
+    def verify_actuator_demand(self):        
+        if time.time()-self.timeLastDemand_prop>self.timeLastDemand_max:
+            self.demand_prop = 0
         # verify horizontal thruster demand
-        if time.time()-timeLastDemand_th_hori>timeLastDemand_max:
-            demand_th_fh = 0
-            demand_th_ah = 0
+        if time.time()-self.timeLastDemand_th_hori>self.timeLastDemand_max:
+            self.demand_th_fh = 0
+            self.demand_th_ah = 0
         # verify rudder demand
-        if time.time()-timeLastDemand_cs_vert>timeLastDemand_max:
-            demand_rudder = 0
+        if time.time()-self.timeLastDemand_cs_vert>self.timeLastDemand_max:
+            self.demand_rudder = 0
         
-        u = [demand_prop, demand_rudder, demand_th_fh, demand_th_ah] # demands: [u_prop, u_cs, u_th_frt, u_th_aft]
+        u = [self.demand_prop, self.demand_rudder, self.demand_th_fh, self.demand_th_ah] # demands: [u_prop, u_cs, u_th_frt, u_th_aft]
         return u
 
     def spin(self):
         r = rospy.Rate(self.controlRate)
-        global gpsInfo
-        global comInfo
-        gpsInfo = gps()
-        comInfo = compass()
         
         # initialise the initial position
         X_pos = 0
@@ -329,7 +345,7 @@ class delphin2_AUV(object):
             # to control a timing for status publishing
             if time.time()-timeZero_status > dt_status:
                 timeZero_status = time.time()
-                pubStatus.publish(nodeID = 9, status = True)
+                self.pubStatus.publish(nodeID = 9, status = True)
                 
             timeRef = time.time()
             
@@ -354,15 +370,15 @@ class delphin2_AUV(object):
             self.nu = nu0 + delta_nu0
             
             # update heading: measured from xsens or dummy xsens
-            self.headingNow = comInfo.heading
+            self.headingNow = self.comInfo.heading
             self.headingNow = np.mod(self.headingNow,360)
             
             ## update position with either gps or dead reckoning
-            if gpsInfo.fix == 1 and gpsInfo.number_of_satelites >= 5:
-                X_pos = gpsInfo.x
-                Y_pos = gpsInfo.y
-                latitude  = np.float64(gpsInfo.latitude)
-                longitude = np.float64(gpsInfo.longitude)
+            if self.gpsInfo.fix == 1 and self.gpsInfo.number_of_satelites >= 5:
+                X_pos = self.gpsInfo.x
+                Y_pos = self.gpsInfo.y
+                latitude  = np.float64(self.gpsInfo.latitude)
+                longitude = np.float64(self.gpsInfo.longitude)
             else:
                 h_rad = self.headingNow/180*np.pi
                 
@@ -387,7 +403,7 @@ class delphin2_AUV(object):
                 except:
                     str = "dead_reckoner fails to compute lat-long from position"
                     rospy.logwarn(str)
-                    pubMissionLog.publish(str)
+                    self.pubMissionLog.publish(str)
                     pass
                     
             ## pack the information into the message and publish to the topic
@@ -397,8 +413,8 @@ class delphin2_AUV(object):
             self.posOut.sway_vel = self.nu[1]
             self.posOut.lat         = latitude
             self.posOut.long        = longitude
-            self.posOut.ValidGPSfix = gpsInfo.fix
-            pubPosition.publish(self.posOut)
+            self.posOut.ValidGPSfix = self.gpsInfo.fix
+            self.pubPosition.publish(self.posOut)
             
             ## Verify and maintain loop timing
             timeElapse = time.time()-timeRef
@@ -407,71 +423,32 @@ class delphin2_AUV(object):
             else:
                 str = "dead_reckoner rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(self.controlRate,1/timeElapse)
                 rospy.logwarn(str)
-                pubMissionLog.publish(str)
+                self.pubMissionLog.publish(str)
 
 ################################################################################
 ######## SATURATION AND UPDATE PARAMETERS FROM TOPICS ##########################
 ################################################################################
-
-def demand_prop_cb(newDemand_th):
-    global demand_prop
-    global timeLastDemand_prop
-    demand_prop = newDemand_th.data
-    timeLastDemand_prop = time.time()
-    
-def demand_th_hor_cb(newDemand_th):
-    global demand_th_fh
-    global demand_th_ah
-    global timeLastDemand_th_hori
-    demand_th_fh = newDemand_th.thruster0
-    demand_th_ah = newDemand_th.thruster1
-    timeLastDemand_th_hori = time.time()
-    
-def demand_rudder_cb(newDemand_rudder):
-    global demand_rudder
-    global timeLastDemand_rudder
-    demand_rudder = newDemand_rudder.cs0 # assume the command on top and bottom surface are identical
-    timeLastDemand_cs_vert = time.time()
-    
-def compass_cb(newComInfo):
-    global comInfo
-    comInfo = newComInfo
-    
-def gps_callback(gps):
-    global gpsInfo
-    gpsInfo = gps
+    def demand_prop_cb(self, newDemand_th):
+        self.demand_prop = newDemand_th.data
+        self.timeLastDemand_prop = time.time()
+        
+    def demand_th_hor_cb(self, newDemand_th):
+        self.demand_th_fh = newDemand_th.thruster0
+        self.demand_th_ah = newDemand_th.thruster1
+        self.timeLastDemand_th_hori = time.time()
+        
+    def demand_rudder_cb(self, newDemand_rudder):
+        self.demand_rudder = newDemand_rudder.cs0 # assume the command on top and bottom surface are identical
+        self.timeLastDemand_cs_vert = time.time()
+        
+    def compass_cb(self, newComInfo):
+        self.comInfo = newComInfo
+        
+    def gps_callback(self, gps):
+        self.gpsInfo = gps
     
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     rospy.init_node('auvsim')
-    
-    global timeLastDemand_prop
-    global timeLastDemand_th_hori
-    global timeLastDemand_cs_vert
-    global timeLastDemand_max
-    timeLastDemand_prop = time.time()
-    timeLastDemand_th_hori = time.time()
-    timeLastDemand_cs_vert = time.time()
-    timeLastDemand_max = 1 # [sec]
-    
-    global demand_prop
-    global demand_th_fh
-    global demand_th_ah
-    global demand_rudder
-    demand_prop = 0
-    demand_th_fh = 0
-    demand_th_ah = 0
-    demand_rudder = 0
-    
-    pubPosition = rospy.Publisher('position_dead', position)
-    pubStatus = rospy.Publisher('status', status)
-    pubMissionLog = rospy.Publisher('MissionStrings', String)
-    
-    rospy.Subscriber('gps_out', gps, gps_callback)
-    rospy.Subscriber('prop_demand', Int8, demand_prop_cb)
-    rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, demand_th_hor_cb)
-    rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, demand_rudder_cb)
-    rospy.Subscriber('compass_out', compass, compass_cb)
-    
     delphin2 = delphin2_AUV()
     delphin2.spin()
