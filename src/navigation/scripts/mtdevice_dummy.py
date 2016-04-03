@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-A node to publish a face gps information. It is mainly used when testing the dead_reckoner.
+A node to publish a fake compass information that is estimated using mathematical model of the AUV. It is mainly used when testing the dead_reckoner.
 
 """
 
