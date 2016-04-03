@@ -181,6 +181,13 @@ def listenForData(status):
 
     first_reading = True
     mean_earth_radius = 6370973.27862					#metres
+
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
     
     while not rospy.is_shutdown():
 
@@ -191,12 +198,15 @@ def listenForData(status):
             getAll = False
             
             while serialPort.inWaiting() > 0 and serialPort.read(1) == '$': #while there is data to be read - read the line...
-            
+                # to control a timing for status publishing
+                if time.time()-timeZero_status > dt_status:
+                    timeZero_status = time.time()
+                    pubStatus.publish(nodeID = 4, status = True)
+
                 serialPort.flushInput()
                 
                 timeRef = time.time()
                 
-                pubStatus.publish(nodeID = 4, status = status)
                 data = serialPort.readline() 		#Read in line of data
                 split_data = string.split(data,',')				#Split message by comma separator
 ####                print 'Data: ', data

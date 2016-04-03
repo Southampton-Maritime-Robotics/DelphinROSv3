@@ -87,11 +87,20 @@ def listenForData(status):
     controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
     
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
+        
     while not rospy.is_shutdown():
     
-        while serialPort.inWaiting() > 8:    
-            
-            pubStatus.publish(nodeID = 3, status = status)
+        while serialPort.inWaiting() > 8:
+            # to control a timing for status publishing
+            if time.time()-timeZero_status > dt_status:
+                timeZero_status = time.time()
+                pubStatus.publish(nodeID = 3, status = True)
             
             try:                       # while there is data to be read - read the line
                 data = serialPort.readline()

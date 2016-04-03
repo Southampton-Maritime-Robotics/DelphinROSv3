@@ -168,11 +168,20 @@ def main_loop():
     controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
+    
     while not rospy.is_shutdown():
         
         timeRef = time.time()
-        
-        pubStatus.publish(nodeID = 12, status = True)        
+        # to control a timing for status publishing
+        if time.time()-timeZero_status > dt_status:
+            timeZero_status = time.time()
+            pubStatus.publish(nodeID = 12, status = True)     
 
         ############################# GET INFO. ######################################    
         voltage = getVoltage()
