@@ -6,6 +6,7 @@
     <param name="max-internal-temp"      value="45" />                   <!-- Maximum internal pressure vessel temp (deg) - causes abort -->
     <param name="min-motor-voltage"      value="19000" />                <!-- Minimum Motor voltage (mV) - causes abort -->
     <param name="mission-timeout"        value="5" />                    <!-- Mission timeout (minutes) -->
+    <param name="status_timing"          value="2." />                   <!-- To control publishing timing interval of node status (sec) -->
     <param name="lat_orig"               value="50.957024" />            <!-- Origin Latitude -->
     <param name="long_orig"              value="-1.366769" />            <!-- Origin Longitude -->
     <param name="ImportWaypoints"        value="False" />                <!-- Import Waypoints -->
