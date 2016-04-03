@@ -1,11 +1,7 @@
 <launch>
     
     <!-- Deadreckoner -->
-    <!--
-        The dead_reckoner_withDummyCompass (dummy compass is embeded) is mainly used as an AUV simulator - gps_dummy is always required for this to run properly
-        The typical dead_reckoner
-    -->
-    <!-- <node name="dead_reckoner" pkg="navigation" type="dead_reckoner_withDummyCompass.py" required="true" output="screen"/> -->
+    <!-- For the dead_reckoner to function correctly, mtdevice_dummy and gps_dummy are required in place of the actual xsens and gps sensor. -->
     <node name="dead_reckoner" pkg="navigation" type="dead_reckoner.py" required="true" output="screen"/>
     <node name="xsens" pkg="navigation" type="mtdevice_dummy.py" />
     <node name="gps" pkg="navigation" type="gps_dummy.py" />
