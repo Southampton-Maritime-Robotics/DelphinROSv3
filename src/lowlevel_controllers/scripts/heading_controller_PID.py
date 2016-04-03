@@ -164,9 +164,19 @@ def main_control_loop():
     
     [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360) # On first loop, initialize relevant parameters
     
-    while not rospy.is_shutdown():
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
     
-        pubStatus.publish(nodeID = 7, status = True)
+    while not rospy.is_shutdown():
+        # to control a timing for status publishing
+        if time.time()-timeZero_status > dt_status:
+            timeZero_status = time.time()
+            pubStatus.publish(nodeID = 7, status = True)
+            
         timeRef = time.time()                
         
         if time.time()-timeLastDemandProp > timeLastDemandProp_lim:

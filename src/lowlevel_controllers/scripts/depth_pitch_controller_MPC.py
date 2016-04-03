@@ -141,10 +141,20 @@ def main_control_loop():
     
     propSP = 0
     speed = 0
-    while not rospy.is_shutdown():
-
-        pubStatus.publish(nodeID = 8, status = True)    ####
+    
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
         
+    while not rospy.is_shutdown():
+        # to control a timing for status publishing
+        if time.time()-timeZero_status > dt_status:
+            timeZero_status = time.time()
+            pubStatus.publish(nodeID = 8, status = True)
+            
         timeRef = time.time()
 
         propDemand = propSP
@@ -154,7 +164,7 @@ def main_control_loop():
         
         if controller_onOff == True:    
             
-            depth = DPC.depth # depth filtered by PT_filter in compass_oceanserver.py
+            depth = DPC.depth # depth filtered by PT_filter in depth_transducer.py
             depth_demand = round(DPC.depth_demand,2)
                       
             velX = DPC.speed
@@ -896,7 +906,7 @@ def compass_callback(compass):
     
 def depth_callback(data):
     global DPC
-    DPC.depth = data.depth_filt # depth filtered by PT_filter in compass_oceanserver.py
+    DPC.depth = data.depth_filt # depth filtered by PT_filter in depth_transducer.py
     
 def depth_onOff_callback(onOff):
     global controller_onOff

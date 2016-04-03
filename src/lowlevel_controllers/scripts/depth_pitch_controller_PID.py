@@ -257,7 +257,7 @@ def main_control_loop():
     #### SETUP ####
     global controller_onOff
     global DPC
-    global depth_der # depth derivative from PT-type filter in compass_oceanserver.py
+    global depth_der # depth derivative from PT-type filter in depth_transducer.py
     global speed
     global propDemand
     
@@ -272,9 +272,18 @@ def main_control_loop():
     error_depth = system_state_depth(-1,0,0,0)
     [error_pitch, der_error_pitch] = system_state_pitch(-1,0,0,0)
     
-    while not rospy.is_shutdown():
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
     
-        pubStatus.publish(nodeID = 8, status = True)
+    while not rospy.is_shutdown():
+        # to control a timing for status publishing
+        if time.time()-timeZero_status > dt_status:
+            timeZero_status = time.time()
+            pubStatus.publish(nodeID = 8, status = True)
 
         timeRef = time.time()
         # regulary update the AUV speed in according to the propeller demand
@@ -292,8 +301,8 @@ def main_control_loop():
         
         if controller_onOff == True:
             # get sampling
-            depth_current = DPC.depth # depth filtered by PT_filter in compass_oceanserver.py
-            der_error_depth = depth_der # derivative depth filtered by PT_filter in compass_oceanserver.py
+            depth_current = DPC.depth # depth filtered by PT_filter in depth_transducer.py
+            der_error_depth = depth_der # derivative depth filtered by PT_filter in depth_transducer.py
             depth_demand = DPC.depth_demand
             pitch_current = DPC.pitch # pitch angle measured by xsens
             pitch_demand = DPC.pitch_demand
@@ -389,7 +398,7 @@ def system_state_depth(dt,depth_current,depth_demand,der_error_depth):
         ### INTEGRAL ###
         # integrater is moved into thrust_control()
         ### DERIVATIVE ###
-        # derivative depth is determined using PT-type filter by compass_oceanserver.py.
+        # derivative depth is determined using PT-type filter by depth_transducer.py.
         # remember, this is the PI-D strategy that use derivative of actual depth rathen than the derivative of err_depth
 
     # update the error terms. These will be subscribed by the logger node.
@@ -436,9 +445,9 @@ def compass_callback(compass):
     
 def depth_callback(data):
     global DPC
-    global depth_der # depth derivative from PT-type filter in compass_oceanserver.py
-    DPC.depth = data.depth_filt # depth filtered by PT_filter in compass_oceanserver.py
-    depth_der = data.depth_der # derivative depth filtered by PT_filter in compass_oceanserver.py
+    global depth_der # depth derivative from PT-type filter in depth_transducer.py
+    DPC.depth = data.depth_filt # depth filtered by PT_filter in depth_transducer.py
+    depth_der = data.depth_der # derivative depth filtered by PT_filter in depth_transducer.py
 
 def depth_demand_callback(depthd):
     global DPC
