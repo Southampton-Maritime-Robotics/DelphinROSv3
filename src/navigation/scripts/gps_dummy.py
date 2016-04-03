@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-A node to publish a face gps information. It is mainly used when testing the dead_reckoner.
+A node to publish a fake gps information. It is mainly used when testing the dead_reckoner.
 
 """
 
