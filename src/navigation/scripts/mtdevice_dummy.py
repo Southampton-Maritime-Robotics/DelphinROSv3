@@ -24,32 +24,14 @@ from delphin2_mission.utilities import uti
 
 class delphin2_AUV(object):
     def __init__(self):
-        ### ros communication ###
-        # create publishers and messages to be published
-        self.pubCompassOut = rospy.Publisher('compass_out',compass)
-        self.pubStatus = rospy.Publisher('status', status)
-        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
-        self.comInfo = compass()
-
-        # create subscribers and parameters for callback functions
-        rospy.Subscriber('prop_demand', Int8, self.demand_prop_cb)
-        rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, self.demand_th_hor_cb)
-        rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, self.demand_rudder_cb)
-        self.timeLastDemand_prop = time.time()
-        self.timeLastDemand_th_hori = time.time()
-        self.timeLastDemand_cs_vert = time.time()
-        self.timeLastDemand_max = 1 # [sec]
-        self.demand_prop = 0
-        self.demand_th_fh = 0
-        self.demand_th_ah = 0
-        self.demand_rudder = 0
-            
+        ### loop timing control ###
+        self.controlRate = 20. # [Hz]
+        self.dt = 1./self.controlRate
+        
         ### AUV model parameters ###
         ## initial state of the AUV
         self.nu = np.array([0,0,0]) # [u: surge vel (m/s), v: sway vel (m/s), r: yaw rate (rad/s) ]
         self.headingNow = 0.0 # [deg]
-        self.controlRate = 20. # [Hz]
-        self.dt = 1./self.controlRate
         
         ## constants
         self.rho = 1000. # water density [kg/m^3]
@@ -142,7 +124,27 @@ class delphin2_AUV(object):
         # total inertia matrix and its inverse
         M = M_RB+M_A
         self.M_inv = np.linalg.inv(M)
+        
+        ### ros communication ###
+        # create publishers and messages to be published
+        self.pubCompassOut = rospy.Publisher('compass_out',compass)
+        self.pubStatus = rospy.Publisher('status', status)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
+        self.comInfo = compass()
 
+        # create subscribers and parameters for callback functions
+        rospy.Subscriber('prop_demand', Int8, self.demand_prop_cb)
+        rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, self.demand_th_hor_cb)
+        rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, self.demand_rudder_cb)
+        self.timeLastDemand_prop = time.time()
+        self.timeLastDemand_th_hori = time.time()
+        self.timeLastDemand_cs_vert = time.time()
+        self.timeLastDemand_max = 1 # [sec]
+        self.demand_prop = 0
+        self.demand_th_fh = 0
+        self.demand_th_ah = 0
+        self.demand_rudder = 0
+        
 ################################################################################
 ######## AUV MODEL #############################################################
 ################################################################################
@@ -346,7 +348,10 @@ class delphin2_AUV(object):
             self.headingNow = np.mod(self.headingNow,360)
             
             ## pack the information into the message and publish to the topic
-            self.comInfo.heading = self.headingNow
+            self.comInfo.heading = self.headingNow # [deg]
+            self.angular_velocity_x = self.nu[0] # [rad/s]
+            self.angular_velocity_y = self.nu[1] # [rad/s]
+            self.angular_velocity_z = self.nu[2] # [rad/s]
             self.pubCompassOut.publish(self.comInfo)
             
             ## Verify and maintain loop timing
