@@ -429,8 +429,8 @@ class delphin2_AUV(object):
 ################################################################################
 ######## SATURATION AND UPDATE PARAMETERS FROM TOPICS ##########################
 ################################################################################
-    def demand_prop_cb(self, newDemand_th):
-        self.demand_prop = newDemand_th.data
+    def demand_prop_cb(self, newDemand_prop):
+        self.demand_prop = newDemand_prop.data
         self.timeLastDemand_prop = time.time()
         
     def demand_th_hor_cb(self, newDemand_th):
