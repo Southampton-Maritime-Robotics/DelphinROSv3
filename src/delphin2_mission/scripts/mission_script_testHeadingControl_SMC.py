@@ -80,9 +80,9 @@ def main():
         # [2/3] Added States
             # prop, th_ver[front, rear], th_hor[front, rear], cs_ver, cs_hor, actionHold
             # test surge at depth and at surface TODO
-            smach.Sequence.add('SURGE1',actions(lib, 16, [0, 0], [0, 0], 0, 0, 10, ))
-            smach.Sequence.add('SURGE2',actions(lib, 10, [0, 0], [-1000, -1000], 0, 0, 10, ))
-            smach.Sequence.add('SURGE3',actions(lib, 10, [0, 0], [1000, -1000], 0, 0, 10, ))
+            smach.Sequence.add('SURGE1',actions(lib, 16, [0, 0], [0, 0], 0, 0, 20, ))
+            smach.Sequence.add('SURGE2',actions(lib, 10, [0, 0], [-1000, -1000], 0, 0, 20, ))
+            smach.Sequence.add('SURGE3',actions(lib, 10, [0, 0], [1000, -1000], 0, 0, 20, ))
             
         smach.StateMachine.add('SEQUENCE', se, transitions={'succeeded':'STOP',
                                                             'aborted':'STOP',
