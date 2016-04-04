@@ -23,7 +23,7 @@ Procedure
 29/May/2015: keep the AUV heading during descent
 
 
-@return: preemped: if the backSeatErrorFlag has been raised
+@return: preempted: if the backSeatErrorFlag has been raised
 @return: succeeded: if the AUV execute all the thruster demands in a given list
 
 '''

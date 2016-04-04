@@ -7,7 +7,7 @@ Given a path, it will get the AUV follow the path starts from the current locati
 Given a point, it will get the AUV to the point starts from the current location
 
 execute:
-@return: preemped: if the backSeatErrorFlag has been raised
+@return: preempted: if the backSeatErrorFlag has been raised
 @return: succeeded: when the AUV has arrived to the destination
 @return: aborted: not in use
 

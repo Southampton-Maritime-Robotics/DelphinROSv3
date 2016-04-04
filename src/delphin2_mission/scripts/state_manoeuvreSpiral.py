@@ -27,7 +27,7 @@ Procedure:
 28/May/2015: included the backSeatErrorFlag as a terminating criteria
 29/May/2015: keep the AUV heading during descent
 
-@return: preemped: if the backSeatErrorFlag has been raised
+@return: preempted: if the backSeatErrorFlag has been raised
 @return: succeeded: if the AUV execute all the combination of actuator demands (propeller, thruster, rudder) in a given lists
 
 '''

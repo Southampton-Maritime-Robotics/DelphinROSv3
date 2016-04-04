@@ -3,13 +3,13 @@
 '''
 Usage1 - stabilising: if stable_time is specified
 Get the AUV to a desired heading and stay steady for some many seconds.
-@return: preemped: the backSeatErrorFlag has been raised
+@return: preempted: the backSeatErrorFlag has been raised
 @return: succeeded: stable at the heading long enough withing the timeout
 @return: aborted: not stable at the heading long enough withing the timeout
 
 Usage2 - reaching: if stable_time is -1
 Keep publishing heading demand until a timeout criteria has been reached.
-@return: preemped: the backSeatErrorFlag has been raised
+@return: preempted: the backSeatErrorFlag has been raised
 @return: succeeded: the heading has been reached withing the timeout
 @return: aborted: the heading has not been reached withing the timeout
 

@@ -3,7 +3,7 @@
 '''
 Get the AUV moving forward/backward for a given period of time.
 
-@return: preemped: if the backSeatErrorFlag has been raised
+@return: preempted: if the backSeatErrorFlag has been raised
 @return: succeeded: if the timeout criteria has been reached (for other states, timeout will lead to mission aborted)
 @return: aborted: not in use
 

@@ -6,7 +6,7 @@
 determine range and bearing to the specify location
 will stop only when terminated
 
-@return: preemped: if the backSeatErrorFlag has been raised
+@return: preempted: if the backSeatErrorFlag has been raised
 
 '''
 

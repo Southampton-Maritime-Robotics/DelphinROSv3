@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 '''
-A state that directly operates the actuators in a certain way for a certain period of time.
+A state that directly operates the actuators in a certain way for a certain period of time. 
+
+This is very useful when recovering the auv!!!
 
 user needs to specify
 -self.__actionHold: how long the action will be held
@@ -11,6 +13,10 @@ user needs to specify
 -self.__controller.setArduinoThrusterVertical(0,0) # (FrontVer,RearVer)
 -self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
 -more commands are available in library_highlevel
+
+@return: preempted: if the backSeatErrorFlag has been raised
+@return: succeeded: if the timeout criteria has been reached (for other states, timeout will lead to mission aborted)
+@return: aborted: not in use
 
 '''
 
