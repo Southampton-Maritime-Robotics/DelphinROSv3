@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
 '''
-Usage1: if stable_time is specified
+Usage1 - stabilising: if stable_time is specified
 Get the AUV to a desired heading and stay steady for some many seconds.
+@return: preemped: the backSeatErrorFlag has been raised
+@return: succeeded: stable at the heading long enough withing the timeout
+@return: aborted: not stable at the heading long enough withing the timeout
 
-Usage1: if stable_time is -1
+Usage2 - reaching: if stable_time is -1
 Keep publishing heading demand until a timeout criteria has been reached.
-
-@return: preemped: if the backSeatErrorFlag has been raised
-@return: succeeded: if goal has been satisfied
-@return: aborted: if the timeout criteria has been reached
+@return: preemped: the backSeatErrorFlag has been raised
+@return: succeeded: the heading has been reached withing the timeout
+@return: aborted: the heading has not been reached withing the timeout
 
 '''
 
@@ -42,20 +44,17 @@ class GoToHeading(smach.State):
         str='Execute GoToHeading State: heading demand = %.3f deg, stable time = %s.' %(self.__demandHeading, self.__stable_time)
         pubMissionLog.publish(str)
         rospy.loginfo(str)
-
-        at_heading = False
+        
         self.__at_heading_time = time.time() # a reference time for heading stady
         timeStart = time.time()              # a reference time for state timeout
         
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
-        
-            if stable_time != -1:
-                at_heading = check_heading()
-                
-            if not at_heading:
-                self.__controller.setHeading(self.__demandHeading)
-            else:
-                str= 'goToHeading succeeded at time = %s' %(time.time())
+            
+            at_heading_reached, at_heading_stable = self.check_heading()
+            self.__controller.setHeading(self.__demandHeading)
+            
+            if self.__stable_time != -1 and at_heading_stable:
+                str= 'goToHeading - stabilising: succeeded at time = %s' %(time.time())
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 return 'succeeded'
@@ -63,32 +62,44 @@ class GoToHeading(smach.State):
             r.sleep()
 
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'goForwards preempted at time = %s' %(time.time())
+            str= 'goToHeading preempted at time = %s' %(time.time())
             pubMissionLog.publish(str)
             rospy.loginfo(str)
             return 'preempted'
         else:
-            if stable_time == -1:
-                str= 'goToHeading succeeded at time = %s' %(time.time())
-                pub.publish(str)
-                rospy.loginfo(str)
-                return 'succeeded'
+            if self.__stable_time == -1:
+                if at_heading_reached:
+                    str= 'goToHeading - reaching: succeeded at time = %s' %(time.time())
+                    pubMissionLog.publish(str)
+                    rospy.loginfo(str)
+                    return 'succeeded'
+                else:
+                    str= 'goToHeading - reaching: aborted at time = %s' %(time.time())
+                    pubMissionLog.publish(str)
+                    rospy.loginfo(str)
+                    return 'aborted'
             else:
-                str= 'goForwards aborted at time = %s' %(time.time())
+                str= 'goForwards - stabilising: aborted at time = %s' %(time.time())
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 return 'aborted'
             
-    def check_heading(self):                
-            
-        heading = self.__controller.getHeading()
-        errHeading = self.__uti.computeHeadingError(self.__demandHeading,heading)
+    def check_heading(self):
+        
+        headingNow = self.__controller.getHeading()
+        errHeading = self.__uti.computeHeadingError(self.__demandHeading,headingNow)
 
-        # if the AUV lost a control in heading, reset at_heading_time
-        if abs(errHeading)>self.__tolerance:
+        # verify if the heading has been reached
+        if abs(errHeading) > self.__tolerance:
             self.__at_heading_time = time.time()
-
-        if time.time()-self.__at_heading_time <= self.__stable_time:
-            return True
+            at_heading_reached = False
         else:
-            return False
+            at_heading_reached = True
+            
+        # verify if the heading is stable long enough
+        if time.time()-self.__at_heading_time <= self.__stable_time:
+            at_heading_stable = False
+        else:
+            at_heading_stable = True
+        
+        return at_heading_reached, at_heading_stable

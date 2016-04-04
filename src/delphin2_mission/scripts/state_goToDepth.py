@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
 '''
-Usage1: if stable_time is specified
+Usage1 - stabilising: if stable_time is specified
 Get the AUV to a desired depth and stay steady for some many seconds.
+@return: preemped: the backSeatErrorFlag has been raised
+@return: succeeded: stable at the depth long enough withing the timeout
+@return: aborted: not stable at the depth long enough withing the timeout
 
-Usage1: if stable_time is -1
+Usage2 - reaching: if stable_time is -1
 Keep publishing depth demand until a timeout criteria has been reached.
-
-@return: preemped: if the backSeatErrorFlag has been raised
-@return: succeeded: if goal has been satisfied
-@return: aborted: if the timeout criteria has been reached
+@return: preemped: the backSeatErrorFlag has been raised
+@return: succeeded: the depth has been reached withing the timeout
+@return: aborted: the depth has not been reached withing the timeout
 
 '''
 
@@ -45,24 +47,22 @@ class GoToDepth(smach.State):
         str= 'Execute goToDepth State: Depth demand = %s, stable time = %s.' %(self.__depth_demand, self.__stable_time)
         pubMissionLog.publish(str)
         rospy.loginfo(str)
-         
-        at_depth = False
+        
         self.__at_depth_time = time.time()   # a reference time for depth stady
         timeStart = time.time()              # a reference time for state timeout
         
         ##### Main loop #####
         while (time.time()-time_zero < self.__timeout) and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
             
-            if stable_time != -1:
-                at_depth = self.check_depth()
+            at_depth_reached, at_depth_stable = self.check_depth()
+            self.__controller.setDepth(self.__depth_demand)
             
-            if not at_depth:
-                self.__controller.setDepth(self.__depth_demand)
-            else:
-                str= 'goToDepth succeeded at time = %s' %(time.time())
+            if self.__stable_time != -1 and at_depth_stable:
+                str= 'goToDepth - stabilising: succeeded at time = %s' %(time.time())
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 return 'succeeded'
+                
             r.sleep()
             
         if self.__controller.getBackSeatErrorFlag() == 1:
@@ -71,24 +71,39 @@ class GoToDepth(smach.State):
             rospy.loginfo(str)
             return 'preempted'
         else:
-            if stable_time == -1:
-                str= 'goToDepth succeeded at time = %s' %(time.time())
-                pubMissionLog.publish(str)
-                rospy.loginfo(str)
-                return 'succeeded'
+            if self.__stable_time == -1: # TODO: add a condition to clarify whether the depth has been reached or not
+                if at_depth_reached:
+                    str= 'goToDepth - reaching: succeeded at time = %s' %(time.time())
+                    pubMissionLog.publish(str)
+                    rospy.loginfo(str)
+                    return 'succeeded'
+                else:
+                    str= 'goToDepth - reaching: aborted at time = %s' %(time.time())
+                    pubMissionLog.publish(str)
+                    rospy.loginfo(str)
+                    return 'aborted'
             else:
-                str= 'goToDepth timed-out at time = %s' %(time.time())
+                str= 'goToDepth - stabilising: timed-out at time = %s' %(time.time())
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
-                return 'aborted'  
+                return 'aborted'
             
-    def check_depth(self):                
-            
-        # if the AUV lost a control in depth, reset at_depth_time
-        if (abs(self.__controller.getDepth() - self.__depth_demand) >= self.__tolerance):
+    def check_depth(self):
+        
+        depthNow = self.__controller.getDepth()
+        errDepth = self.__depth_demand - depthNow
+        
+        # verify if the depth has been reached
+        if abs(errDepth) > self.__tolerance:
             self.__at_depth_time = time.time()
-            
-        if time.time()-self.__at_depth_time > self.__stable_time:
-            return True
+            at_depth_reached = False
         else:
-            return False
+            at_depth_reached = True
+            
+        # verify if the depth is stable long enough
+        if time.time()-self.__at_depth_time <= self.__stable_time:
+            at_depth_stable = False
+        else:
+            at_depth_stable = True
+            
+        return at_depth_reached, at_depth_stable
