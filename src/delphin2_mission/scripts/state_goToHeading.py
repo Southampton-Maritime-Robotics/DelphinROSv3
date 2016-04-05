@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 '''
+Set heading demand to None to track the current heading; Otherwise, specify the value for the heading demand.
+
 Usage1 - stabilising: if stable_time is specified
 Get the AUV to a desired heading and stay steady for some many seconds.
 @return: preempted: the backSeatErrorFlag has been raised
@@ -41,6 +43,10 @@ class GoToHeading(smach.State):
         # Set Up Loop Timing Control
         r = rospy.Rate(self.__controlRate)
 
+        # If the heading demand is not specified, use the current heading instead.
+        if self.__demandHeading == None: # tracking a current heading
+            self.__demandHeading = self.__controller.getHeading()
+
         str='Execute GoToHeading State: heading demand = %.3f deg, stable time = %s.' %(self.__demandHeading, self.__stable_time)
         pubMissionLog.publish(str)
         rospy.loginfo(str)
@@ -49,7 +55,6 @@ class GoToHeading(smach.State):
         timeStart = time.time()              # a reference time for state timeout
         
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
-            
             at_heading_reached, at_heading_stable = self.check_heading()
             self.__controller.setHeading(self.__demandHeading)
             
