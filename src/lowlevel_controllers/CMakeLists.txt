@@ -48,6 +48,7 @@ catkin_python_setup()
  add_message_files(
    FILES
    heading_control.msg
+   heading_control_SMC.msg
    depth_pitch_control.msg
    heading_MPC.msg
    depthandspeed_MPC.msg
