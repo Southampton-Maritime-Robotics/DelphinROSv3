@@ -111,6 +111,11 @@ class library_highlevel:
         self.__CS_e = 0.0
         self.__PropRPS = 0.0
    
+    def wakeUp(self,_timeDelay):
+        # Called in the mission script, just after creating the libraly object, as to let the object starts working
+        # Without this the callback mechanism will not yet start.
+        time.sleep(_timeDelay)
+        
     # stops vehicle and shuts down ROS
     # may be better as an action....
     def stop(self):
