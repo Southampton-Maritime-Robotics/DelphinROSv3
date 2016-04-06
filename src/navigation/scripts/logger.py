@@ -25,7 +25,7 @@ from hardware_interfaces.msg import tsl_feedback
 from hardware_interfaces.msg import tail_setpoints
 from hardware_interfaces.msg import tail_feedback
 from hardware_interfaces.msg import energy_consumed
-from hardware_interfaces.msg import position
+from navigation.msg          import position
 from hardware_interfaces.msg import gps
 from hardware_interfaces.msg import altitude
 from hardware_interfaces.msg import sonar
