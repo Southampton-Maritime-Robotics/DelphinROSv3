@@ -48,7 +48,6 @@ catkin_python_setup()
  add_message_files(
    FILES
    compass.msg
-   position.msg
    status.msg
    gps.msg
    tail_setpoints.msg
