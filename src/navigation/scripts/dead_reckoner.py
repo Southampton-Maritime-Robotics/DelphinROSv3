@@ -20,14 +20,14 @@ note2: this node requires either the mtdevice.py or mtdevice_dummy.py to update 
 from __future__ import division
 import numpy as np
 import math
-from copy import deepcopy
+import copy
 import time
 
 import rospy
 
 from hardware_interfaces.msg    import compass
 from hardware_interfaces.msg    import depth
-from hardware_interfaces.msg    import position
+from navigation.msg             import position
 from std_msgs.msg               import Int8
 from std_msgs.msg               import String
 from hardware_interfaces.msg    import status
@@ -351,8 +351,8 @@ class delphin2_AUV(object):
             timeRef = time.time()
             
             ## update the velocity vector with mathematical model
-            # create a deep copy of the state vector
-            nu0 = deepcopy(self.nu)
+            # create a copy of the state vector: if copy is not being used, change on nuO will affect self.nu
+            nu0 = copy.copy(self.nu)
             
             # get actuator demand
             u = self.verify_actuator_demand()
@@ -415,6 +415,8 @@ class delphin2_AUV(object):
             self.posOut.lat         = latitude
             self.posOut.long        = longitude
             self.posOut.ValidGPSfix = self.gpsInfo.fix
+            self.posOut.th_rpm_fh   = self.thruster_rpm_fh
+            self.posOut.th_rpm_ah   = self.thruster_rpm_ah
             self.pubPosition.publish(self.posOut)
             
             ## Verify and maintain loop timing
