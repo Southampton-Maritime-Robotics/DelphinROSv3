@@ -20,7 +20,6 @@ A heading controller for the AUV when moving on a horizontal plane based-on PI-D
 """
 
 import rospy
-import serial
 import time
 import numpy
 from hardware_interfaces.msg    import tsl_setpoints
@@ -29,9 +28,8 @@ from hardware_interfaces.msg    import compass
 from lowlevel_controllers.msg   import heading_control
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Int8
-from std_msgs.msg               import Bool
 from std_msgs.msg               import String
-from hardware_interfaces.msg import status
+from hardware_interfaces.msg    import status
 
 from delphin2_mission.utilities     import uti
 
