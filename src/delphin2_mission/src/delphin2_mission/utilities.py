@@ -5,8 +5,8 @@
 from pylab import *
 from math import *
 
-class uti:
-
+class uti(object):
+    
     def waypointSwitching(self,target,eta,R_wp): ### FIXME: not functioning
         # identify if it is has to move onto the next waypoint
 #        self.testPrint(path)
