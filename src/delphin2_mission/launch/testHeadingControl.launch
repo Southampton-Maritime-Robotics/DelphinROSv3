@@ -7,12 +7,10 @@
     <include file="$(find delphin2_mission)/launch/auv_system.txt" />
 
     <!-- Controllers! -->
-    <!--
-        <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py" output = "screen"/>
-        <node name="depth_pitch_controller" pkg="lowlevel_controllers" type="depth_pitch_controller_PID.py" output = "screen"/>
-    -->
+    <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_SMC.py" required="true" output="screen"/>
+    <!-- <node name="depth_pitch_controller" pkg="lowlevel_controllers" type="depth_pitch_controller_PID.py" required="true" output="screen"/> -->
     
     <!-- Mission File! -->    
-    <node name="mission_script" pkg="delphin2_mission" type="mission_script_testHeadingControl_SMC.py"  output="screen" required="true" /> 
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_testHeadingControl_SMC.py" required="true" output="screen"/> 
     
 </launch>
