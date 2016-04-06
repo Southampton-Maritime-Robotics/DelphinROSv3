@@ -32,13 +32,13 @@ import rospy
 import numpy
 import time
 import math
-from hardware_interfaces.msg import compass
-from hardware_interfaces.msg import depth
-from hardware_interfaces.msg import position
-from std_msgs.msg import Float32
-from std_msgs.msg import Int8
-from hardware_interfaces.msg import tsl_setpoints
-from hardware_interfaces.msg import tail_setpoints
+from hardware_interfaces.msg    import compass
+from hardware_interfaces.msg    import depth
+from navigation.msg             import position
+from std_msgs.msg               import Float32
+from std_msgs.msg               import Int8
+from hardware_interfaces.msg    import tsl_setpoints
+from hardware_interfaces.msg    import tail_setpoints
 
 from delphin2_mission.utilities     import uti
 
