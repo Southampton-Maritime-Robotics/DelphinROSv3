@@ -15,7 +15,7 @@ from std_msgs.msg import String
 #import message types for subscribing:
 from hardware_interfaces.msg    import compass
 from hardware_interfaces.msg    import depth
-from hardware_interfaces.msg    import position
+from navigation.msg             import position
 from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_feedback
@@ -28,7 +28,7 @@ from hardware_interfaces.msg    import energy_consumed
 
 from lowlevel_controllers.msg   import heading_control
 
-class library_highlevel:
+class library_highlevel(object):
 # library class for high-level controller.  Defines the inputs, output and basic functionality that
 # all high-level controllers should inherit.
 
