@@ -22,26 +22,73 @@ from state_stop                             import Stop
 from state_goToDepth                        import GoToDepth
 from state_goToHeading                      import GoToHeading
 from state_goForwards                       import GoForwards
+from state_goTurning                        import GoTurning
 from state_pathFollowingLOS                 import pathFollowingLOS
 from std_msgs.msg import String
 
 from state_actions                          import actions
 
 ################################################################################
-            
-def main():
 
-    rospy.init_node('smach_example_state_machine')
-    
+def construct_stateMachine():
     # Define an instance of highlevelcontrollibrary to pass to all action servers
     lib = library_highlevel()
     myUti = uti()
+    lib.wakeUp(5)
     
-    #Set Up Publisher for Mission Control Log
-    pub = rospy.Publisher('MissionStrings', String)
+    # Create the sub SMACH state machine
+    sm_con = smach.Concurrence(outcomes=['succeeded','aborted','preempted'],
+                               default_outcome='aborted',
+                               outcome_map={'succeeded':
+                                               {'GoToHeading':'succeeded'},
+                                            'aborted':
+                                               {'GoToHeading':'aborted'}})
+    # Open the container
+    with sm_con:
+        # Add states to the container
+        smach.Concurrence.add('GoTurning', GoTurning(lib, 0, 20, 200))
+        smach.Concurrence.add('GoForwards', GoForwards(lib, 22, 200))
+        smach.Concurrence.add('GoToHeading', GoToHeading(lib, myUti, 20.02, -1, 200))
+
+    # creating the sub SMACH state machine
+    se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
+                        connector_outcome = 'succeeded')
+    with se:
+#        smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
+#        smach.Sequence.add('GoTurning', GoTurning(lib, -1000, -12, 100))
+        smach.Sequence.add('GoToHeading', GoToHeading(lib, myUti, None, -1, 10))
+#        smach.Sequence.add('GoForwards', GoForwards(lib, 10, 20))
+        smach.Sequence.add('GoToDepth', GoToDepth(lib, 0.5, 10, 15))
+
+
+    # Create a SMACH state machine - with outcome 'finish'
+    sm_top = smach.StateMachine(outcomes=['finish'])
+
+
+    # Open the main container
+    with sm_top:
+            
+        smach.StateMachine.add('CON', sm_con, transitions={'succeeded':'SEQUENCE',
+                                                                'aborted':'CON',
+                                                                'preempted':'STOP'})
+        smach.StateMachine.add('SEQUENCE', se, transitions={'succeeded':'STOP',
+                                                            'aborted':'STOP',
+                                                            'preempted':'STOP'})
+
+################################################################################
+
+        # [3/3] Generic States (Come to this state just before terminating the mission)
+        smach.StateMachine.add('STOP', Stop(lib), 
+            transitions={'succeeded':'finish'})
+    
+    return sm_top
+
+def main():
+
+    rospy.init_node('smach_example_state_machine')
 
     # Allow the topic to come online
-    time.sleep(10)
+#    time.sleep(0)
 
     O = array([4.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
     A = array([-28.,-20.]) # reference point A
@@ -57,46 +104,8 @@ def main():
     pathOtoM = numpy.vstack((O,M)).T
     pathTest = numpy.vstack((M,A,B,M)).T
 
-################################################################################
-########### STATE MACHINE ######################################################
-################################################################################
-
-    # Create a SMACH state machine - with outcome 'finish'
-    sm = smach.StateMachine(outcomes=['finish'])
-
-    # Open the container
-    with sm:
-        # Add states to the container
-        # generic state
-
-        # creating the sequence state machine
-        se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
-                            connector_outcome = 'succeeded')
-
-        with se:
-        # [1/3] Initialise State (Must Be Run First!)
-#            smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
-
-        # [2/3] Added States
-            # prop, th_ver[front, rear], th_hor[front, rear], cs_ver, cs_hor, actionHold
-            # test surge at depth and at surface TODO
-            smach.Sequence.add('SURGE1',actions(lib, 16, [0, 0], [0, 0], 0, 0, 20, ))
-            smach.Sequence.add('SURGE2',actions(lib, 10, [0, 0], [-1000, -1000], 0, 0, 20, ))
-            smach.Sequence.add('SURGE3',actions(lib, 10, [0, 0], [1000, -1000], 0, 0, 20, ))
-            
-        smach.StateMachine.add('SEQUENCE', se, transitions={'succeeded':'STOP',
-                                                            'aborted':'STOP',
-                                                            'preempted':'STOP'})
-
-################################################################################
-
-        # [3/3] Generic States (Come to this state just before terminating the mission)
-        smach.StateMachine.add('STOP', Stop(lib), 
-            transitions={'succeeded':'finish'})
-
-################################################################################
-########### EXECUTE STATE MACHINE AND STOP #####################################
-################################################################################
+    # create state machine
+    sm = construct_stateMachine()
 
     # Create and start the introspection server - for visualisation
     sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
@@ -104,8 +113,7 @@ def main():
     
     # Execute the state machine
     outcome = sm.execute()
-    print 'finished executing state machine'
-
+    
     # Wait for ctrl-c to stop the application
     rospy.spin()
     sis.stop()
