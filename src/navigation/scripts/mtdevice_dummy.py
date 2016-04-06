@@ -9,7 +9,7 @@ from __future__ import division
 import rospy
 import numpy as np
 import math
-from copy import deepcopy
+import copy
 import time
 
 from hardware_interfaces.msg    import compass
@@ -324,8 +324,8 @@ class delphin2_AUV(object):
             timeRef = time.time()
             
             ## update the velocity vector with mathematical model
-            # create a deep copy of the state vector
-            nu0 = deepcopy(self.nu)
+            # create a copy of the state vector: if copy is not being used, change on nuO will affect self.nu
+            nu0 = copy.copy(self.nu)
             
             # get actuator demand
             u = self.verify_actuator_demand()
@@ -349,9 +349,7 @@ class delphin2_AUV(object):
             
             ## pack the information into the message and publish to the topic
             self.comInfo.heading = self.headingNow # [deg]
-            self.angular_velocity_x = self.nu[0] # [rad/s]
-            self.angular_velocity_y = self.nu[1] # [rad/s]
-            self.angular_velocity_z = self.nu[2] # [rad/s]
+            self.comInfo.angular_velocity_z = self.nu[2] # [rad/s]
             self.pubCompassOut.publish(self.comInfo)
             
             ## Verify and maintain loop timing
