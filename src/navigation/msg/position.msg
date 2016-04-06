@@ -7,3 +7,6 @@ float64 lat
 float64 long
 float32 altitude
 int8 ValidGPSfix
+float32 th_rpm_fh # estimated rpm of front thruster
+float32 th_rpm_ah # estimated rpm of rear thruster
+
