@@ -13,10 +13,16 @@ from hardware_interfaces.msg import sonar
 from hardware_interfaces.msg import sonar_setting
 
 
-""" Interface for updating various sonar parameters
+class Settings(QtGui.QWidget):
+""" 
+Graphical interface for manually updating 
+various sonar parameters
+
+gets input from graphical interface,
+regularly publishes the values set in the interface
 """
 
-class Settings(QtGui.QWidget):
+
  
     def __init__(self,pub):
         super(Settings, self).__init__()
