@@ -39,8 +39,9 @@ from std_msgs.msg import Float32
 from std_msgs.msg import Int8
 from std_msgs.msg import String
 
-from lowlevel_controllers.msg import heading_control
-from lowlevel_controllers.msg import depth_pitch_control
+from lowlevel_controllers.msg import heading_control_PID
+from lowlevel_controllers.msg import heading_control_SMC
+from lowlevel_controllers.msg import depth_pitch_control_PID
 from lowlevel_controllers.msg import depthandspeed_MPC
 
 from hardware_interfaces.msg import ForcesAndMoments    #Only temporary
@@ -342,7 +343,7 @@ def sonar_callback(sonar): ## Problem with logging raw data
         
 ##############################################################
 
-def headingPID_callback(data): 
+def heading_PID_callback(data): 
     stringtime = time.time()-time_zero
     
     headingPIDList = [stringtime, 
@@ -377,6 +378,32 @@ def headingPID_callback(data):
         try:
             Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             Writer.writerow(headingPIDList)
+        except ValueError:
+            print 'writerow error'
+            
+def heading_SMC_callback(data): 
+    stringtime = time.time()-time_zero
+    
+    headingSMCList =   [stringtime, 
+                        data.heading, # deg
+                        data.yawRate, # rad/s
+                        data.forwardVel,
+                        data.swayVel,
+                        data.controller_onOff,
+                        data.headingDemand,
+                        data.heading_error,
+                        data.yawRateDemand,
+                        data.s,
+                        data.s_dot,
+                        data.N_eq,
+                        data.N_sw,
+                        data.u_R,
+                        data.u_th]
+    
+    with open('%s/headingSMCLog.csv' %(dirname), "a") as f:
+        try:
+            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            Writer.writerow(headingSMCList)
         except ValueError:
             print 'writerow error'
 
@@ -636,9 +663,10 @@ if __name__ == '__main__':
     rospy.Subscriber('sonar_processed', sonar_data, sonar_callback)
     rospy.Subscriber('MissionStrings', String, mission_callback)
     
-##    rospy.Subscriber('dead_reckoner', dead_reckoner, reckoner_callback) 
-    rospy.Subscriber('Heading_controller_values', heading_control, headingPID_callback)
-    rospy.Subscriber('Depth_pitch_controller_values', depth_pitch_control, depth_pitch_PID_callback)
+##    rospy.Subscriber('dead_reckoner', dead_reckoner, reckoner_callback)
+    rospy.Subscriber('Heading_controller_values_PID', heading_control_PID, heading_PID_callback)
+    rospy.Subscriber('Heading_controller_values_SMC', heading_control_SMC, heading_SMC_callback)
+    rospy.Subscriber('Depth_pitch_controller_values_PID', depth_pitch_control_PID, depth_pitch_PID_callback)
     rospy.Subscriber('Depth_pitch_controller_values_MPC', depthandspeed_MPC, depth_pitch_MPC_callback)
     
     rospy.Subscriber('camera_info', camera_info, camera_callback)
