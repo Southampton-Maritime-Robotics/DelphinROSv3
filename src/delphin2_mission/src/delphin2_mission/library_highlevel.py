@@ -26,8 +26,6 @@ from hardware_interfaces.msg    import camera
 from hardware_interfaces.msg    import sonar_data
 from hardware_interfaces.msg    import energy_consumed
 
-from lowlevel_controllers.msg   import heading_control
-
 class library_highlevel(object):
 # library class for high-level controller.  Defines the inputs, output and basic functionality that
 # all high-level controllers should inherit.
@@ -42,16 +40,11 @@ class library_highlevel(object):
         self.pub_depth_demand              = rospy.Publisher('depth_demand', Float32)
         self.pub_speed                     = rospy.Publisher('speed_demand', Float32)
         self.pub_pitch_demand              = rospy.Publisher('pitch_demand', Float32)
-        self.pub_tsl_onOff_horizontal      = rospy.Publisher('TSL_onOff_horizontal', Bool)      #turns thrusters on and off 
-        self.pub_tsl_onOff_vertical        = rospy.Publisher('TSL_onOff_vertical', Bool)        #turns thrusters on and off
         self.pub_tail_setpoints_vertical   = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
         self.pub_tail_setpoints_horizontal = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
         self.pub_tsl_heading               = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
         self.pub_tsl_depth                 = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
-        self.pub_heading_control_onOff     = rospy.Publisher('Heading_onOFF', Bool)             #turns heading controller on and off
-        self.pub_depth_control_onOff       = rospy.Publisher('Depth_onOFF', Bool)               #turns depth controller on and off
         self.pub_camera                    = rospy.Publisher('Camera', camera)
-        self.pub_pitch_control_onOff       = rospy.Publisher('Pitch_onOFF', Bool)
         self.Mission_pub                   = rospy.Publisher('MissionStrings', String)
         self.pub_SMS                       = rospy.Publisher('SMS_message', String)
         self.pub_light                     = rospy.Publisher('light_onOff', Bool)
@@ -65,7 +58,6 @@ class library_highlevel(object):
         rospy.Subscriber('TSL_feedback', tsl_feedback, self.callback_tsl_feedback)
         rospy.Subscriber('status', status, self.callback_status)
         rospy.Subscriber('tail_output', tail_feedback, self.callback_tail_feedback)
-        rospy.Subscriber('Heading_controller_values', heading_control, self.callback_heading_control)
         rospy.Subscriber('sonar_processed', sonar_data, self.callback_sonar_range)
         rospy.Subscriber('EnergyConsumed', energy_consumed, self.EnergyConsumed_callback)
         
@@ -97,7 +89,6 @@ class library_highlevel(object):
         self.__backSeatDriver_status = 0
         self.__energyMonitor_status = 0
         
-        self.__heading_error=0.0
         self.__altitude=0.0
    
         self.__motor_voltage = 10.0
@@ -125,7 +116,8 @@ class library_highlevel(object):
         self.setArduinoThrusterHorizontal(0, 0)
         self.setArduinoThrusterVertical(0, 0)
         self.setRearProp(0)
-        self.setControlSurfaceAngle(0, 0, 0, 0)
+        self.setRudderAngle(0)
+        self.setSternPlaneAngle(0)
         time.sleep(5)
         rospy.logfatal("Shutting down")
         self.Mission_pub.publish('Shutting Down')
@@ -363,9 +355,6 @@ class library_highlevel(object):
     def getPropRPS(self):
         return self.__PropRPS
     
-    def getHeadingError(self):
-        return self.__heading_error
-
     #################################################
     #Navigation commands
     #################################################
@@ -489,10 +478,7 @@ class library_highlevel(object):
         self.__CS_d = tail_feedback.d_fb
         self.__CS_e = tail_feedback.e_fb
         self.__PropRPS = tail_feedback.prop_rps
-           
-    def callback_heading_control(self, heading_control):
-        self.__heading_error = heading_control.error
-           
+        
     def callback_status(self, status):
         if status.nodeID == 1:
             self.__TSL_status = status.status
