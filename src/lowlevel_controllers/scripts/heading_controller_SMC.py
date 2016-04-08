@@ -14,7 +14,7 @@ from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import compass
 from navigation.msg             import position
-from lowlevel_controllers.msg   import heading_control_SMC # TODO: create this message
+from lowlevel_controllers.msg   import heading_control_SMC
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Int8
 from std_msgs.msg               import Bool
@@ -23,6 +23,8 @@ from hardware_interfaces.msg    import status
 
 from delphin2_mission.utilities     import uti
 from delphin2_mission.library_highlevel     import library_highlevel
+
+import math
 
 class controller_SMC(object):
 ################################################################################
@@ -35,7 +37,7 @@ class controller_SMC(object):
         
         ### controller parameter ###
         self.timelastDemand_heading = 1 # [sec] if there is no new demand available for this many seconds, the controller will be off.
-        self.yawRateDemand_slop = 0.1   # to control a shape of yaw rate demand [deg/s per deg of heading error]
+        self.yawRateDemand_slope = 0.1  # to control a shape of yaw rate demand [deg/s per deg of heading error]
         self.yawRateDemand_sat = 30     # to control a shape of yaw rate demand [deg/s]
         h1 = 1                          # gain to compute sliding variable
         h2 = 0.01*h1                    # gain to compute sliding variable
@@ -43,7 +45,7 @@ class controller_SMC(object):
         self.k_s_1 = 0.5                # gain for a sliding term
         self.k_s_2 = 0.1                # gain for an integral sliding term
         self.bound_int = 0.35*self.dt   # bound on the integral sliding term
-        self.sw_bl = 0.1                # boundary layer thicknerr for tanh function
+        self.sw_bl = 0.2                # boundary layer thicknerr for tanh function
         
         ### AUV model parameters ###
         ## rigid-gody parameter
@@ -82,7 +84,7 @@ class controller_SMC(object):
         # Transformation matrix for a generalised moment
         b = np.array([1,  0.])
         self.B = np.dot(self.M_inv,b)
-        self.hB = np.dot(self.h,self.B)
+        self.inv_hB = 1./np.dot(self.h,self.B) # may need "np.linalg.inv" when doing an inverse of matrix
         
         ## utility functions
         self.__myUti = uti()
@@ -94,20 +96,21 @@ class controller_SMC(object):
         self.pub_HC   = rospy.Publisher('Heading_controller_values_SMC', heading_control_SMC)
         self.pubMissionLog = rospy.Publisher('MissionStrings', String)
         self.pubStatus = rospy.Publisher('status', status)
+        self.HC = heading_control_SMC()
         
         # create subscribers and parameters for callback functions
         rospy.Subscriber('heading_demand', Float32, self.heading_demand_cb)
         rospy.Subscriber('compass_out', compass, self.compass_cb)
         rospy.Subscriber('position_dead', position, self.position_dead_cb)
-        self.HC = heading_control_SMC()
+
         self.timeLastCallback_headingDemand = time.time()
-        self.controller_onOff = False
+        self.th_rpm_fh = 0
         
 ################################################################################
 ######## CONTROLLER ############################################################
 ################################################################################
     def compute_yawRateDemand(self,errHeading):
-        yawRateDemand = -errHeading*self.yawRateDemand_slop # [deg/s]
+        yawRateDemand = -errHeading*self.yawRateDemand_slope # [deg/s]
         yawRateDemand = self.__myUti.limits(yawRateDemand, -self.yawRateDemand_sat, self.yawRateDemand_sat)
         return yawRateDemand # [deg/s]
         
@@ -129,9 +132,9 @@ class controller_SMC(object):
         # initialise recuring parameters
         headingDemand_old = 0
         yawRateDemand_old = 0
-        s_old = np.array([0,0])
+        s_old = 0
         sw_int = 0
-            
+        
         while not rospy.is_shutdown():
             # to control a timing for status publishing
             if time.time()-timeZero_status > dt_status:
@@ -139,13 +142,17 @@ class controller_SMC(object):
                 self.pubStatus.publish(nodeID = 7, status = True)
                 
             timeRef = time.time()
+            
+            heading     = self.HC.heading
+            surgeVel    = self.HC.forwardVel
+            swayVel     = self.HC.swayVel
+            yawRate     = self.HC.yawRate # [rad/s]
+            th_rpm      = self.th_rpm_fh # assumed front and rear thruster are operating at the same speed
+            
             if time.time()-self.timeLastCallback_headingDemand < self.timelastDemand_heading:
-                heading     = self.HC.heading
-                surgeVel    = self.HC.forwardVel
-                swayVel     = self.HC.swayVel
-                yawRate     = self.HC.yawRate
-                th_rpm      = self.HC.th_rpm_fh # assumed front and rear thruster are operating at the same speed
+                self.HC.controller_onOff = True
                 
+                ## update controller parameters
                 headingDemand = self.HC.headingDemand # [deg]
                 heading_error = self.__myUti.computeHeadingError(heading,headingDemand) # [deg]
                 
@@ -166,7 +173,7 @@ class controller_SMC(object):
                 N_v = 4.539*0.5*self.L_AUV**3*surgeVel  # [kg.m/s]
                 N_r = -5.348*0.5*self.L_AUV**4*surgeVel # [kg.m^2/rad/s]
                 D = np.array([[-N_r-self.N_rr*np.abs(yawRate),  0.],
-                              [-180./np.pi,                     1.]])
+                              [-180./np.pi,                     0.]])
                 f = np.array([(self.X_u_dot-self.Y_v_dot)*swayVel*surgeVel-(N_v+self.N_vv*np.abs(swayVel))*swayVel,  0.])
                 
                 A = np.dot(-self.M_inv,D)
@@ -174,14 +181,16 @@ class controller_SMC(object):
                 
                 s = np.dot(self.h,x_err)
                 s_dot = (s-s_old)/self.dt
+                s_old = s
                 
                 ## generalise yaw moment control law
                 # equivalent control law
-                N_eq = self.hB * ( np.dot(self.h,x_demand_der) - np.dot(self.h,F) - np.dot(self.h,np.dot(A,x)) )
+                N_eq = self.inv_hB * ( np.dot(self.h,x_demand_der) - np.dot(self.h,F) - np.dot(self.h,np.dot(A,x)) )
                 # switching control law
                 sw_int = self.__myUti.limits(sw_int + self.k_s_2*np.tanh(s/self.sw_bl), -self.bound_int, self.bound_int)
                 sw_term = self.k_s_1*np.tanh(s/self.sw_bl) + sw_int
-                N_sw = self.hB * sw_term
+                N_sw = -self.inv_hB * sw_term
+
                 # total genaralised yaw moment required
                 N_summed = N_eq + N_sw
                 
@@ -189,46 +198,58 @@ class controller_SMC(object):
                 # allocate to rudder
                 if surgeVel > 0.4:
                     u_R = N_summed/self.N_uu_delta/surgeVel**2
-                    N_res = N_summed - (self.N_uu_delta)*surgeVel**2*u_R
+                    # apply rudder limit
+                    if np.abs(u_R) > self.u_R_lim:
+                        u_R = np.sign(u_R)*self.u_R_lim
+                        N_res = N_summed - (self.N_uu_delta)*surgeVel**2*u_R
+                    else:
+                        u_R = u_R
+                        N_res = 0
                 else:
                     u_R = 0
-                    N_res = 0
-                
+                    N_res = N_summed
+                    
+
                 # allocate to horizontal thrusters
                 if N_res != 0:
-                    K_2 = np.exp(-self._c1_th*surgeVel**2)
+                    K_1 = np.exp(-self.c1_th*surgeVel**2)
                     # assume front and rear horizontal thruster are operating at the same speed
                     if th_rpm == 0:
                         K_2 = 1
                     else:
-                        K2 = 1-np.abs(self.c2_th*swayVel/th_rpm/self.D_th)
-                    u_th = np.sign(N_res)*np.sqrt(np.abs(N_res)/self.L_th_h/self.rho/self.D_th**4/self.K_T_th)
+                        K_2 = 1-np.abs(self.c2_th*swayVel/th_rpm/self.D_th)
+                        if K_2<=0.1:
+                            K_2 = 0.1
+                        
+                    u_th = np.sign(N_res)*np.sqrt(np.abs(N_res)/self.L_th_h/self.rho/self.D_th**4/self.K_T_th/K_1/K_2)
+                    u_th = self.__myUti.limits(u_th, -self.u_th_lim, self.u_th_lim)
+                    
                     if np.abs(u_th) < self.deadband_th:
                         u_th = 0
                 else:
                     u_th = 0
-                    
+                
             else:
-                pass
-                # TODO: construct a message for when the controller is off
+                self.HC.controller_onOff = False
+                s = 0
+                s_dot = 0
+                N_eq = 0
+                N_sw = 0
+                u_R = 0
+                u_th = 0
             
-            print '>>>>>>>>>:', [u_R, u_th]
-#            print 'heading:', self.HC.heading
-#            print 'yaw rate:', self.HC.yawRate
-#            print 'heading demand:', self.HC.headingDemand
-#            print 'forward velocity:', self.HC.forwardVel
-#            print 'sway velocity:', self.HC.swayVel
-#            print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+            self.pub_tail.publish(cs0 = u_R, cs1 = u_R)
+            self.pub_tsl.publish(thruster0 = u_th, thruster1 = -u_th)
             
-            ## control law
-            # compute generalised control moment required
-            
-            ## control allocation
-            # distribute the generalised moment to the available actuators
-            
-            ## pack the information into the message and publish to the topic
-            # putlish to actuator demand topics
-            # publish to heading control values topics
+            self.HC.heading_error = heading_error
+            self.HC.yawRateDemand = yawRateDemand
+            self.HC.s = s
+            self.HC.s_dot = s_dot
+            self.HC.N_eq = N_eq
+            self.HC.N_sw = N_sw
+            self.HC.u_R = u_R
+            self.HC.u_th = u_th
+            self.pub_HC.publish(self.HC)
             
             ## Verify and maintain loop timing
             timeElapse = time.time()-timeRef
@@ -244,17 +265,16 @@ class controller_SMC(object):
 ################################################################################
     def heading_demand_cb(self, newHeadingDemand):
         self.HC.headingDemand = newHeadingDemand.data
-        self.controller_onOff = True
         self.timeLastCallback_headingDemand = time.time()
 
     def compass_cb(self, newCompassInfo):
         self.HC.heading = newCompassInfo.heading # [deg]
-        self.HC.yawRate = newCompassInfo.angular_velocity_z # available in rad/s. TODO: check if it has to be deg/s or rad/s
+        self.HC.yawRate = newCompassInfo.angular_velocity_z # available in rad/s
         
     def position_dead_cb(self, newPositionInfo):
         self.HC.forwardVel = newPositionInfo.forward_vel
         self.HC.swayVel  = newPositionInfo.sway_vel
-        self.HC.th_rpm_fh = newPositionInfo.th_rpm_fh
+        self.th_rpm_fh = newPositionInfo.th_rpm_fh
         
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
