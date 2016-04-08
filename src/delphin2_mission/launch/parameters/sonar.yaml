@@ -64,6 +64,10 @@ sonar/BlankDist: 0.6
 
 #
 # Communication protocol
+# 
+# these settings are needed for use in the serial protocol,
+# but either they are just part of the serial protocol
+# or it is not specified clearly what they do
 #
 
 # head Type selection
@@ -86,45 +90,21 @@ sonar/serial/Node: 255
 # HdCtrl bytes
 # see datasheets delphin2_sonar_micron_*.pdf
 # most significant bit: left most bit
-sonar/HdCtrl1: '00000101'
-sonar/HdCtrl2: '00100011'
+sonar/serial/HdCtrl1: '00000101'
+sonar/serial/HdCtrl2: '00100011'
 
 # set as DST head type
-sonar/DstHead: 11
+sonar/serial/DstHead: 11
 
 # Default 500, no further explanation given
-sonar/MaxADBuf: 500
+sonar/serial/MaxADBuf: 500
 # Blanking interval, default 100
 # in [microseconds]
-sonar/Lockout: 100
+sonar/serial/Lockout: 100
 # Default 1600 for single channel, no further explanation given
-sonar/MinorAxis: 1600
+sonar/serial/MinorAxis: 1600
 # Default 1 for single channel, no further explanation given
-sonar/MajorAxis: 1
+sonar/serial/MajorAxis: 1
 # Extra control parameters, default 0, no further explanation given
-sonar/Ctl2: 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sonar/serial/Ctl2: 0
 
