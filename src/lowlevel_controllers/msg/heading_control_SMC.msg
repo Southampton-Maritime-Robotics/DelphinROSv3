@@ -1,17 +1,18 @@
-float32 heading
+float32 heading # deg
 float32 yawRate # rad/s
 float32 forwardVel
 float32 swayVel
 
-float32 headingDemand
-float32 heading_err
-float32 heading_err_int
-float32 yawDemand
-
 int32 controller_onOff
 
-int32 CS_demand
-int32 thruster0
-int32 thruster1
+float32 headingDemand
+float32 heading_error
+float32 yawRateDemand
 
-float32 th_rpm_fh
+float32 s
+float32 s_dot
+float32 N_eq
+float32 N_sw
+
+int32 u_R
+int32 u_th
