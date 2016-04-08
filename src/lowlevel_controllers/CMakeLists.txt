@@ -47,12 +47,12 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   heading_control.msg
+   heading_control_PID.msg
    heading_control_SMC.msg
-   depth_pitch_control.msg
-   heading_MPC.msg
-   depthandspeed_MPC.msg
-   depthandpitch_MPC.msg
+   depth_pitch_control_PID.msg
+   # heading_MPC.msg
+   # depthandspeed_MPC.msg
+   # depthandpitch_MPC.msg
  )
 
 ## Generate services in the 'srv' folder
