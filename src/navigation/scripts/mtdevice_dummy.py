@@ -344,7 +344,7 @@ class delphin2_AUV(object):
             self.nu = nu0 + delta_nu0
             
             # update heading: measured from xsens or dummy xsens
-            self.headingNow = self.headingNow + self.nu[2]*180/np.pi
+            self.headingNow = self.headingNow + self.nu[2]*180/np.pi*self.dt
             self.headingNow = np.mod(self.headingNow,360)
             
             ## pack the information into the message and publish to the topic
