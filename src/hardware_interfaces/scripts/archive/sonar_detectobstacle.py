@@ -2,7 +2,7 @@
 ###########
 
 # smaria moved to archive 19/06/2015
-# The funcitoning part of this was moved into the analyse_sonar.py library in src
+# The funcitoning part of this was moved into the sonar_analyse.py library in src
 
 #  VERSION AS OF 2/4/2012 
 ###########

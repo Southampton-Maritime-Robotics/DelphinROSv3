@@ -16,7 +16,7 @@ from std_msgs.msg import Float32
 from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import sonar	
 
-from hardware_interfaces import analyse_sonar
+from hardware_interfaces import sonar_analyse
 
 ################################################################
 
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     # rospy.Subscriber('dead_reckoner', dead_reckoner, DR_callback)
     print("la")
     pub = rospy.Publisher('sonar_processed', sonar_data)
-    sonar = analyse_sonar.sonar()
+    sonar = sonar_analyse.sonar()
     rospy.spin()
 
    

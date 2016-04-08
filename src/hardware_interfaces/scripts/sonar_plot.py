@@ -22,7 +22,7 @@ from std_msgs.msg import Float32
 from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import sonar	
 
-from hardware_interfaces import analyse_sonar
+from hardware_interfaces import sonar_analyse
 
 ################################################################
 
@@ -116,7 +116,7 @@ if __name__ == '__main__':
 
     rospy.init_node('plot_sonar', log_level=rospy.DEBUG)
     rospy.Subscriber('sonar_output', String, get_sonar)
-    sonar = analyse_sonar.sonar()
+    sonar = sonar_analyse.sonar()
     time.sleep(1)
     draw_figures()
     
