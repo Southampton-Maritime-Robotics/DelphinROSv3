@@ -28,7 +28,7 @@ class GoToHeading(smach.State):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller       = lib
         self.__uti              = myUti
-        self.__demandHeading    = demandHeading
+        self.__demandHeading    = demandHeading%360
         self.__tolerance        = 3                 # [deg] a band that accounts as the AUV is at a desired heading
         self.__stable_time      = stable_time       # AUV must stay at a desired heading for this many seconds
         self.__timeout          = timeout           # [sec] abort criteria
