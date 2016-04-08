@@ -25,7 +25,7 @@ import numpy
 from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import compass
-from lowlevel_controllers.msg   import heading_control
+from lowlevel_controllers.msg   import heading_control_PID
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Int8
 from std_msgs.msg               import String
@@ -201,7 +201,7 @@ def main_control_loop():
             # Thruster controller # 
             [thruster0, thruster1] = thrust_controller(error, int_error, der_error)
             
-            # update the heading_control.msg, and this will be subscribed by the logger.py
+            # update the heading_control_PID.msg, and this will be subscribed by the logger.py
             pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
             pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
             pub_HC.publish(HC)
@@ -340,7 +340,7 @@ if __name__ == '__main__':
     rospy.init_node('Heading_controller')
     
     global HC
-    HC = heading_control()
+    HC = heading_control_PID()
    
     rospy.Subscriber('heading_demand', Float32, heading_demand_cb)
     rospy.Subscriber('sway_demand', Float32, sway_demand_cb)
@@ -349,7 +349,7 @@ if __name__ == '__main__':
     
     pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
     pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
-    pub_HC   = rospy.Publisher('Heading_controller_values', heading_control)
+    pub_HC   = rospy.Publisher('Heading_controller_values_PID', heading_control_PID)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
     pubStatus = rospy.Publisher('status', status)
     
