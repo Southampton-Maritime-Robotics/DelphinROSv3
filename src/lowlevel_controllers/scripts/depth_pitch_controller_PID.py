@@ -29,7 +29,7 @@ from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import compass
 from hardware_interfaces.msg    import depth
-from lowlevel_controllers.msg   import depth_pitch_control
+from lowlevel_controllers.msg   import depth_pitch_control_PID
 from std_msgs.msg               import Float32
 from std_msgs.msg               import Int8
 from std_msgs.msg               import Bool
@@ -326,7 +326,7 @@ def main_control_loop():
                                                        controlPeriod, 
                                                        w_th)
             
-            # update the depth_pitch_control.msg, and this will be subscribed by the logger.py
+            # update the depth_pitch_control_PID.msg, and this will be subscribed by the logger.py
             pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
             pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
             pub_DPC.publish(DPC)
@@ -523,7 +523,7 @@ if __name__ == '__main__':
     rospy.init_node('Heading_controller')
     
     global DPC # Depth-Pitch Control
-    DPC = depth_pitch_control()
+    DPC = depth_pitch_control_PID()
     
     rospy.Subscriber('depth_demand', Float32, depth_demand_callback)
     DPC.pitch_demand = 0 # rospy.Subscriber('pitch_demand', Float32, pitch_demand_callback)
@@ -533,7 +533,7 @@ if __name__ == '__main__':
     
     pub_tail = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
     pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
-    pub_DPC  = rospy.Publisher('Depth_pitch_controller_values', depth_pitch_control)
+    pub_DPC  = rospy.Publisher('Depth_pitch_controller_values_PID', depth_pitch_control_PID)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
     pubStatus = rospy.Publisher('status', status)
     
