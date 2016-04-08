@@ -1,0 +1,130 @@
+# Parameters for the MICRON and SEAKING sonar
+#
+
+#
+# Sonar Settings
+#
+
+# Right limit for Heading
+# in [1/16th gradian]
+sonar/RLim: 95.0
+
+# Left limit for Heading
+# in [1/16th gradian]
+sonar/LLim: 85.0
+
+# Number of sample bins over scan-line
+# Max for SeaKing/SeaPrince/MiniKing/Micron: 800
+# New digital DST sonar products: 1500
+# see delphin2_sonar_micron_*.pdf in the datasheets
+sonar/NBins: 200
+
+# Samping interval of each range bin
+# usually not used, since Range is used to calculate this 
+# in units of [640 nanoseconds]
+sonar/ADInterval: 5
+
+# Range
+# used to calculate the ADInterval
+# in [metres]
+sonar/Range: 6
+
+# not used in 8 bit mode
+sonar/hdctrl/ADSpan:  210
+sonar/hdctrl/ADLow: 0
+
+# Initial gain for channel 1
+sonar/hdctrl/IGainB1: 84
+# Initial gain for channel 2
+sonar/hdctrl/IGainB2: 84
+
+# High-speed limit of scanning motor
+# in [10 microseconds]
+sonar/hdctrl/MoTime: 25
+# Step resolution of scanning motor
+# in [16th of a gradian]
+# defaults: 32, 16, 8, 4
+# 64 used in all Delphin2 sonar applications before 2016
+sonar/hdctrl/Step: 64
+
+
+#
+# Evaluation Configurations
+#
+
+# Number of repeated returns (+1 from SonarPing.m) to remove glitches
+sonar/GlitchCount: 1
+
+# Power level (0 to 250) above which sonar 'sees' a target
+sonar/Threshold: 10
+
+# Blanking distance to remove returns from the sonar mount
+# probably in [metres]
+sonar/BlankDist: 0.6
+
+#
+# Communication protocol
+#
+
+# head Type selection
+# 1 for MICRON, 29 for SEAKING
+sonar/serial/HeadType: 1
+
+# Source transmissiono node
+sonar/serial/SID: 255
+
+# Msg destination node
+sonar/serial/DID: 2
+
+# Default msgSeq value
+sonar/serial/MsgSeq: 128
+
+# Repeat of SID (not what it sais in the manual!)
+sonar/serial/Node: 255
+
+#
+# HdCtrl bytes
+# see datasheets delphin2_sonar_micron_*.pdf
+# most significant bit: left most bit
+sonar/hdctrl/HdCtrl1: '00000101'
+sonar/hdctrl/HdCtrl2: '00100011'
+
+# set as DST head type
+sonar/hdctrl/DstHead: 11
+
+# Default 500, no further explanation given
+sonar/hdctrl/MaxADBuf: 500
+# Blanking interval, default 100
+# in [microseconds]
+sonar/hdctrl/Lockout: 100
+# Default 1600 for single channel, no further explanation given
+sonar/hdctrl/MinorAxis: 1600
+# Default 1 for single channel, no further explanation given
+sonar/hdctrl/MajorAxis: 1
+# Extra control parameters, default 0, no further explanation given
+sonar/hdctrl/Ctl2: 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
