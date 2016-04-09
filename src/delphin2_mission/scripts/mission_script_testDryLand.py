@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 '''
-A mission script to test if all actuators are working correctly. This must be before every mission.
+A mission script to test if all actuators are working correctly. This must be done before a mission.
+
+TODO:
+- camera test may be added
 
 '''
 
@@ -10,106 +13,68 @@ import smach
 import smach_ros
 import time
 
-from delphin2_mission.library_highlevel             import library_highlevel
-from state_initialise             import Initialise
-from state_stop                   import Stop
-from state_goToHeading            import GoToHeading
-from state_trackFollow            import TrackFollow
-from state_trackAltitude          import trackAltitude
-from state_surface                import Surface
-from state_camera                 import camera
-from state_testDryLand            import testDryLand
+from delphin2_mission.library_highlevel import library_highlevel
+from state_initialise                   import Initialise
+from state_stop                         import Stop
+from state_verify_lights                import verify_lights
+from state_verify_thrusters             import verify_thrusters
+from state_verify_fins                  import verify_fins
+from state_verify_prop                  import verify_prop
+
 from std_msgs.msg import String
-import matplotlib.pyplot as plt;
+################################################################################
+### create functionality objects
+_lib = library_highlevel()
 
 ################################################################################
-            
-def main():
-
-    rospy.init_node('smach_example_state_machine')
+# state container generating section
+def construct_smach_sequence():
+    # creating a sequence state machine
+    sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
+                        connector_outcome = 'succeeded')
     
-    # Define an instance of highlevelcontrollibrary to pass to all action servers
-    lib = library_highlevel()
+    # define a sequence of tasks
+    with sm_se:
+        smach.Sequence.add('VERIFY_LIGHTS', verify_lights(_lib))
+        smach.Sequence.add('VERIFY_THRUSTERS', verify_thrusters(_lib))
+        smach.Sequence.add('VERIFY_FINS', verify_fins(_lib))
+        smach.Sequence.add('VERIFY_PROP', verify_prop(_lib))
+        
+    return sm_se
+
+def construct_smach_top():
+    # Create the top level state machine
+    sm_top = smach.StateMachine(outcomes=['finish'])
     
-    #Set Up Publisher for Mission Control Log
-    pub = rospy.Publisher('MissionStrings', String)
-    
-    # Allow the topic to come online
-    time.sleep(10)
-    
-    #Read back seat driver Settings    
-    overDepth = rospy.get_param('over-depth')
-    str = 'Backseat Driver Parameter: over depth set to %s m' %(overDepth)
-    pub.publish(str)
-    rospy.loginfo(str)
-    time.sleep(0.1)
-    overPitch = rospy.get_param('over-pitch')    
-    str = 'Backseat Driver Parameter: over pitch set to %s deg' %(overPitch)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    time.sleep(0.1)    
-    overRoll = rospy.get_param('over-roll')
-    str = 'Backseat Driver Parameter: over roll set to %s deg' %(overRoll)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    time.sleep(0.1)         
-    maxInternalTemp = rospy.get_param('max-internal-temp')  
-    str = 'Backseat Driver Parameter: max internal temperature %s deg' %(maxInternalTemp)
-    pub.publish(str)
-    rospy.loginfo(str)
-    time.sleep(0.1)
-    minMotorVoltage = rospy.get_param('min-motor-voltage')
-    str = 'Backseat Driver Parameter: min motor voltage %s V' %(minMotorVoltage)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    time.sleep(0.1) 
-    missionTimeout = rospy.get_param('mission-timeout') 
-    str = 'Backseat Driver Parameter: mission-timeout %s min' %(missionTimeout)
-    pub.publish(str) 
-    rospy.loginfo(str) 
-
-    # Create a SMACH state machine - with outcome 'finish'
-    sm = smach.StateMachine(outcomes=['finish'])
-
-    # Open the container
-    with sm:
-        # Add states to the container
-        # generic state
-
-################################################################################
-########### MAIN CODE ##########################################################
-################################################################################
-
-################################################################################
-         # [1/3] Initialise State (Must Be Run First!)
-        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
-            transitions={'succeeded':'TESTDRYLAND', 'aborted':'STOP','preempted':'STOP'})  
-            
-################################################################################
-        # [2/3] Added States
-        smach.StateMachine.add('TESTDRYLAND', testDryLand(lib), 
+    # Open the container, add state and define state transition
+    with sm_top:
+        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
+            transitions={'succeeded':'DRY_LAND_TEST', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('DRY_LAND_TEST', construct_smach_sequence(),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-  
-################################################################################
-        # [3/3] Generic States (Come to this state just before terminating the mission)
-        smach.StateMachine.add('STOP', Stop(lib),
-            transitions={'succeeded':'finish'})    
+        smach.StateMachine.add('STOP', Stop(_lib), 
+            transitions={'succeeded':'finish'})
+
+    return sm_top
 
 ################################################################################
-########### EXECUTE STATE MACHINE AND STOP #####################################
-################################################################################
+# main code section
+def main():
+    # create state machine
+    sm_top = construct_smach_top()
 
     # Create and start the introspection server - for visualisation
-    sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
+    sis = smach_ros.IntrospectionServer('server_name', sm_top, '/SM_ROOT')
     sis.start()
-
+    
     # Execute the state machine
-    outcome = sm.execute()
-    print 'finished executing state machine'
-
+    outcome = sm_top.execute()
+    
     # Wait for ctrl-c to stop the application
     rospy.spin()
     sis.stop()
 
 if __name__ == '__main__':
+    rospy.init_node('smach_state_machine')
+    _lib.wakeUp(5)
     main()
