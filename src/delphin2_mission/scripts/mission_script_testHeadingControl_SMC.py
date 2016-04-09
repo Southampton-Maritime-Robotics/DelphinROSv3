@@ -7,116 +7,90 @@ A general purpose mission script that lets the user quickly manages a sequence o
 -X is defined as east, Y is defined as north
 """
 
-
 import rospy
 import smach
 import smach_ros
 import time
 import numpy
-from pylab import *
 
 from delphin2_mission.library_highlevel     import library_highlevel
 from delphin2_mission.utilities             import uti
-from state_initialise                       import Initialise
-from state_stop                             import Stop
-from state_goToDepth                        import GoToDepth
-from state_goToHeading                      import GoToHeading
-from state_goForwards                       import GoForwards
-from state_goTurning                        import GoTurning
-from state_pathFollowingLOS                 import pathFollowingLOS
-from std_msgs.msg import String
+from std_msgs.msg                           import String
 
-from state_actions                          import actions
+## import simple states
+from delphin2_mission.basic_states          import *
+## import a comples state cconstructor
+from delphin2_mission.construct_stateContainer import construct_stateContainer
 
 ################################################################################
+### create functionality objects
+_lib = library_highlevel()
+_myUti = uti()
+_smCon = construct_stateContainer(_lib, _myUti)
 
-def construct_stateMachine():
-    # Define an instance of highlevelcontrollibrary to pass to all action servers
-    lib = library_highlevel()
-    myUti = uti()
-    lib.wakeUp(5)
-    
-    # Create the sub SMACH state machine
-    sm_con = smach.Concurrence(outcomes=['succeeded','aborted','preempted'],
-                               default_outcome='aborted',
-                               outcome_map={'succeeded':
-                                               {'GoToHeading':'succeeded'},
-                                            'aborted':
-                                               {'GoToHeading':'aborted'}})
-    # Open the container
-    with sm_con:
-        # Add states to the container
-        smach.Concurrence.add('GoTurning', GoTurning(lib, 0, 20, 200))
-        smach.Concurrence.add('GoForwards', GoForwards(lib, 22, 200))
-        smach.Concurrence.add('GoToHeading', GoToHeading(lib, myUti, 20.02, -1, 200))
+### define a key waypoints and paths in according to the mission requirement
+# waypoints
+O = numpy.array([4.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
+A = numpy.array([-28.,-20.]) # reference point A
+B = numpy.array([-1.,50.]) # reference point B
+M = numpy.array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
+# reference paths
+pathAtoB = numpy.vstack((A,B)).T
+pathBtoA = numpy.vstack((B,A)).T
+pathMtoO = numpy.vstack((M,O)).T
+pathMtoA = numpy.vstack((M,A)).T
+pathOtoM = numpy.vstack((O,M)).T
+pathTest = numpy.vstack((M,A,B,M)).T
 
-    # creating the sub SMACH state machine
-    se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
+################################################################################
+# state container generating section
+def construct_smach_sequence():
+    # creating a sequence state machine
+    sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
                         connector_outcome = 'succeeded')
-    with se:
-#        smach.Sequence.add('INITIALISE',Initialise(lib, 15)) #15 = timeout for initialisation state
-#        smach.Sequence.add('GoTurning', GoTurning(lib, -1000, -12, 100))
-        smach.Sequence.add('GoToHeading', GoToHeading(lib, myUti, None, -1, 10))
-#        smach.Sequence.add('GoForwards', GoForwards(lib, 10, 20))
-        smach.Sequence.add('GoToDepth', GoToDepth(lib, 0.5, 10, 15))
-
-
-    # Create a SMACH state machine - with outcome 'finish'
-    sm_top = smach.StateMachine(outcomes=['finish'])
-
-
-    # Open the main container
-    with sm_top:
-            
-        smach.StateMachine.add('CON', sm_con, transitions={'succeeded':'SEQUENCE',
-                                                                'aborted':'CON',
-                                                                'preempted':'STOP'})
-        smach.StateMachine.add('SEQUENCE', se, transitions={'succeeded':'STOP',
-                                                            'aborted':'STOP',
-                                                            'preempted':'STOP'})
-
-################################################################################
-
-        # [3/3] Generic States (Come to this state just before terminating the mission)
-        smach.StateMachine.add('STOP', Stop(lib), 
-            transitions={'succeeded':'finish'})
     
+    # define a sequence of tasks
+    with sm_se:
+        smach.Sequence.add('GoForwards', GoForwards(_lib, demandProp = 22, timeout = 20))
+        smach.Sequence.add('GoToHeading_90_atSpeed_1', _smCon.track_heading_while_going_forward(demandProp = 22, demandHeading = 90, timeout = 25))
+        smach.Sequence.add('GoToHeading_180_atSpeed_1', _smCon.track_heading_while_going_forward(demandProp = 22, demandHeading = 180, timeout = 25))
+        smach.Sequence.add('GoToHeading_90_atSpeed_2', _smCon.track_heading_while_going_forward(demandProp = 22, demandHeading = 90, timeout = 25))
+    
+    return sm_se
+    
+def construct_smach_top():
+    # Create the top level state machine
+    sm_top = smach.StateMachine(outcomes=['finish'])
+    
+    # Open the container, add state and define state transition
+    with sm_top:
+#        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
+#            transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('SEQUENCE', construct_smach_sequence(),
+            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('STOP', Stop(_lib), 
+            transitions={'succeeded':'finish'})
+
     return sm_top
 
+################################################################################
+# main code section
 def main():
-
-    rospy.init_node('smach_example_state_machine')
-
-    # Allow the topic to come online
-#    time.sleep(0)
-
-    O = array([4.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
-    A = array([-28.,-20.]) # reference point A
-    B = array([-1.,50.]) # reference point B
-    
-    M = array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
-
-    # Reference paths created from the reference points
-    pathAtoB = numpy.vstack((A,B)).T
-    pathBtoA = numpy.vstack((B,A)).T
-    pathMtoO = numpy.vstack((M,O)).T
-    pathMtoA = numpy.vstack((M,A)).T
-    pathOtoM = numpy.vstack((O,M)).T
-    pathTest = numpy.vstack((M,A,B,M)).T
-
     # create state machine
-    sm = construct_stateMachine()
+    sm_top = construct_smach_top()
 
     # Create and start the introspection server - for visualisation
-    sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
+    sis = smach_ros.IntrospectionServer('server_name', sm_top, '/SM_ROOT')
     sis.start()
     
     # Execute the state machine
-    outcome = sm.execute()
+    outcome = sm_top.execute()
     
     # Wait for ctrl-c to stop the application
     rospy.spin()
     sis.stop()
 
 if __name__ == '__main__':
+    rospy.init_node('smach_state_machine')
+    _lib.wakeUp(5)
     main()
