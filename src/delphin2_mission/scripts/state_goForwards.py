@@ -16,10 +16,10 @@ import time
 from std_msgs.msg import String
 
 class GoForwards(smach.State):
-    def __init__(self, lib, propDemand, timeout):
+    def __init__(self, lib, demandProp, timeout):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller           = lib
-        self.__propDemand           = propDemand
+        self.__propDemand           = demandProp
         self.__timeout              = timeout
         self.__controlRate          = 5 # [Hz]
             
