@@ -1,47 +1,20 @@
 guideline for using state machine
 
-taskDepthHeadingTracking
-- use concurrent state machine with GoToDepth and GoToHeading
-- taskDepthHeadingTracking return:
-    - preeampted: if either GoToDepth or GoToHeading return preempted - terminate mission
-    - aborted: if either GoToDepth or GoToHeading return aborted - start over the taskDepthHeadingTraking
-    - succeeded: if both GoToDepth and GoToHeading return succeeded - move onto the next task
-- GoToDepth:
-    - time steady: -1
-    - timeout: 5, for example, to onstantly verify the outcome every 5 sec
-- GoToHeading:
-    - time steady: -1
-    - timeout: 5, for example, to onstantly verify the outcome every 5 sec
+for available behaviour check src/delphin2_mission/src/delphin2_mission/:
+- basic_states.py
+- construct_stateContainer.py
+
+container types
+- simple container:
+    - to define an explicit transition between states
+- concurrent container:
+    - to execute multiple states simultaneously
+- sequence container:
+    - to execute a state in a sequence
+- iteration container:
+    - for recuring task
     
-taskDivingHelix
-- use concurrent state machine with GoToDepth, GoTurning and GoForwards
-- taskDivingHelix return:
-    - preeampted: if either GoToDepth, GoTurning or GoForwards return preempted - terminate mission
-    - aborted: if either GoToDepth return aborted - start over the taskDivingHelix
-    - succeeded: if both GoToDepth return succeeded - move onto the next task
-- GoToDepth:
-    - time steady: -1
-    - timeout: 5, for example, to onstantly verify the outcome every 5 sec
-- GoTurning:
-    - define a suitable rudder angle and set horizontal thruster demand to zero
-    - timeout: 5, for example, to onstantly verify the outcome every 5 sec
-- GoForwards:
-    - use a suitable propeller demand
-    - timeout: 5, for example, to onstantly verify the outcome every 5 sec
-    
-taskGoForwardsAtDepth: at a certain heading.
-- use concurrent state machine with GoToDepth, GoToHeading and GoForwards
-- taskGoForwardsAtDepth return:
-    - preeampted: if either GoToDepth, GoToHeading or GoForwards return preempted - terminate mission
-    - aborted: not in use but set to return succeeded - move onto the next task
-    - succeeded: if both GoToDepth return succeeded - move onto the next task
-- GoToDepth:
-    - time steady: -1
-    - timeout: as long as it has to be
-- GoToHeading:
-    - set heading demand to None as to track the current heading; otherwise, specify the heading demand
-    - time steady: -1
-    - timeout: as long as it has to be
-- GoForwards:
-    - use a suitable propeller demand
-    - timeout: as long as it has to be
+general meaning for state outcomes:
+- succeeded: goal is fulfilled
+- preempted: backSeatDriver flag is raised or the mission is terminated
+- aborted: goal is not fulliled within timeout
