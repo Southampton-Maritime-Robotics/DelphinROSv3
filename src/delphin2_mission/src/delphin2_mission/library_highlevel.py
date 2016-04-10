@@ -489,7 +489,7 @@ class library_highlevel(object):
         elif status.nodeID == 4:
             self.__gps_status = status.status
         elif status.nodeID == 5:
-            self.__depth_transducer_status = status.stat
+            self.__depth_transducer_status = status.status
         elif status.nodeID == 6:
             self.__xsens_status = status.status
         elif status.nodeID == 7:
