@@ -18,7 +18,7 @@ from std_msgs.msg import String
 
 ################### GLOBAL VARIABLES ################### 
 
-def listenForData(status):
+def listenForData(n_sat, valid_gpsFix):
     # initialise message structure
     gpsOut = gps()
 
@@ -51,29 +51,16 @@ def listenForData(status):
         if time.time()-timeZero_status > dt_status:
             timeZero_status = time.time()
             pubStatus.publish(nodeID = 4, status = True)
-            
-        X = X + 0.5
-        Y = Y + 0.5
         
         timeRef = time.time()
-        if time.time()-timeZero > 20 and time.time()-timeZero < 40:
-            gpsOut.latitude = 555
-            gpsOut.longitude = 666 
-            gpsOut.time = 99
-            gpsOut.number_of_satelites = 11
-            gpsOut.fix = 1
-            gpsOut.speed = 99
-            gpsOut.x = X
-            gpsOut.y = Y
-        else:
-            gpsOut.latitude = 555
-            gpsOut.longitude = 666 
-            gpsOut.time = 99
-            gpsOut.number_of_satelites = 0
-            gpsOut.fix = 0
-            gpsOut.speed = 0
-            gpsOut.x = X
-            gpsOut.y = Y
+        gpsOut.latitude = 555
+        gpsOut.longitude = 666 
+        gpsOut.time = 99
+        gpsOut.number_of_satelites = n_sat
+        gpsOut.fix = valid_gpsFix
+        gpsOut.speed = 99
+        gpsOut.x = X
+        gpsOut.y = Y
         pub.publish(gpsOut)
                     
         timeElapse = time.time()-timeRef
@@ -92,6 +79,9 @@ if __name__ == '__main__':
     #Define Publishers
     pub = rospy.Publisher('gps_out', gps)
     pubStatus = rospy.Publisher('status', status)
+    n_sat = 11
+    valid_gpsFix = False
+    str = "\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n A dummy auv system is being used instead of the actual system. \n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n number of (dummy) satellites being detected: %s \n valid GPS fix: %s \n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" %(n_sat, valid_gpsFix) 
+    rospy.logwarn(str)
     
-    listenForData(status)                     #Main loop for receiving data
-
+    listenForData(n_sat, valid_gpsFix)                     #Main loop for receiving data
