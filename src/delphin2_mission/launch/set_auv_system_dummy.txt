@@ -1,0 +1,10 @@
+<launch>
+    
+    <!-- Load simulated AUV system -->
+    <!-- For the dead_reckoner to function correctly, mtdevice_dummy and gps_dummy are required in place of the actual xsens and gps sensor. -->
+    <node name="dead_reckoner" pkg="navigation" type="dead_reckoner.py" required="true"/>
+    <node name="xsens" pkg="navigation" type="mtdevice_dummy.py" required="true"/>
+    <node name="gps" pkg="navigation" type="gps_dummy.py" output="screen"/>
+    <node name="node_status_dummy" pkg="navigation" type="node_status_dummy.py" required="true"/>
+
+</launch>
