@@ -46,6 +46,8 @@ class Initialise(smach.State):
         str= 'Entered State Initialise'
         pub.publish(str)
         
+        time.sleep(10) # give enought time for the system to come online (extra time that is start counting after mission script)
+        
         r = rospy.Rate(2) # [Hz] for controlling the loop timing
         while (time.time()-time_zero < self.__timeout) and not(all_online) and not rospy.is_shutdown():
            all_online = (self.__controller.getThrusterStatus() 
@@ -62,12 +64,9 @@ class Initialise(smach.State):
                 and self.__controller.getEnergyMonitorStatus())
            r.sleep()
 
-        rospy.loginfo('##############################################')
-        rospy.loginfo('############ CRITICAL NODE STATUS ############')
-        rospy.loginfo('##############################################')
-        pub.publish('##############################################')
-        pub.publish('############ CRITICAL NODE STATUS ############')
-        pub.publish('##############################################')
+        str = "\n ############################################################################### \n ############################################### CRITICAL NODE STATUS ########## \n ###############################################################################"
+        rospy.loginfo(str)
+        pub.publish(str)
         str = 'thruster status = %r' % self.__controller.getThrusterStatus()
         pub.publish(str)
         rospy.loginfo(str)
@@ -87,8 +86,9 @@ class Initialise(smach.State):
         str='xsens status = %r' %self.__controller.getXsensStatus()
         pub.publish(str)
         rospy.loginfo(str)
-        rospy.loginfo('##############################################')
-        pub.publish('##############################################')
+        str = "###########################################"
+        rospy.loginfo(str)
+        pub.publish(str)
         str='heading ctrl status = %r' %self.__controller.getHeadingCtrlStatus()
         pub.publish(str)
         rospy.loginfo(str)
@@ -107,8 +107,9 @@ class Initialise(smach.State):
         str='energyMonitor status = %r' %self.__controller.getEnergyMonitorStatus()
         pub.publish(str)
         rospy.loginfo(str)
-        rospy.loginfo('##############################################')
-        pub.publish('##############################################')
+        str = "###########################################"
+        rospy.loginfo(str)
+        pub.publish(str)
         
         #if timeout...                
         if all_online == False:    
@@ -119,7 +120,6 @@ class Initialise(smach.State):
             pub.publish(str)                      
             return 'aborted'
 
-        time.sleep(0.1) #give motor control board time to return a voltage measurement
         voltage = self.__controller.getVoltage()
         str = "Battery voltage: %smV" %(voltage)
         rospy.loginfo(str)
@@ -127,10 +127,9 @@ class Initialise(smach.State):
         str='time elapsed = %s s' %(time.time()-time_zero)
         pub.publish(str)
         rospy.loginfo(str)
-        rospy.loginfo('##############################################')
-        rospy.loginfo('##############################################')
-        pub.publish('##############################################')
-        pub.publish('##############################################')
+        str = "\n ################################################################################# \n #################################################################################"
+        rospy.loginfo(str)
+        pub.publish(str)
         
         if voltage < voltage_min:
             "Initial battery voltage, %smV < 20,000mV" %voltage
