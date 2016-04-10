@@ -1,14 +1,7 @@
 <launch>
-
-    <!-- Set Parameters! -->
-    <include file="$(find delphin2_mission)/launch/paramSet.txt" />
     
-    <!-- AUV system! -->
-    <include file="$(find delphin2_mission)/launch/auv_system.txt" />
-
-    <!-- Controllers! -->
-    <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_PID.py" output = "screen"/>
-    <node name="depth_pitch_controller" pkg="lowlevel_controllers" type="depth_pitch_controller_PID.py" output = "screen"/>
+    <!-- Load AUV System! -->
+    <include file="$(find delphin2_mission)/launch/system_loader.txt" />
     
     <!-- Mission File! -->
     <node name="mission_script" pkg="delphin2_mission" type="mission_script_testDryLand.py"  output="screen" required="true" /> 
