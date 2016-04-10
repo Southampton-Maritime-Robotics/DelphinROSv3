@@ -35,8 +35,6 @@ def main(controller):
     # Store Initial Time
     time_zero = time.time()
     
-    time.sleep(20) #Allow critical systems to come online.
-    
     # Read back seat driver Settings from parameter server
     overDepth = rospy.get_param('over-depth')
     str = 'Backseat Driver Parameter: over depth set to %s m' %(overDepth)
@@ -229,4 +227,5 @@ def main(controller):
 if __name__ == '__main__':
     # Define an instance of highlevelcontrollibrary to pass to all action servers
     lib = library_highlevel()
+    time.sleep(20) #Allow critical systems to come online.
     main(lib)
