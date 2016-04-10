@@ -8,18 +8,15 @@ A node to publish a fake compass information that is estimated using mathematica
 from __future__ import division
 import rospy
 import numpy as np
-import math
 import copy
 import time
 
 from hardware_interfaces.msg    import compass
-from hardware_interfaces.msg    import depth
 from std_msgs.msg               import Int8
 from std_msgs.msg               import String
 from hardware_interfaces.msg    import status
 from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
-from hardware_interfaces.msg    import gps
 from delphin2_mission.utilities import uti
 
 class delphin2_AUV(object):
