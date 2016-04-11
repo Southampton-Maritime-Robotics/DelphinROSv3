@@ -239,9 +239,8 @@ def thrust_controller(depth_current, error_depth, der_error_depth, error_pitch, 
             int_error_depth = int_error_depth_lim    
     
     else:
-    
-        DPC.thruster0 = 0.
-        DPC.thruster1 = 0.
+        thruster0 = 0
+        thruster1 = 0
 
     DPC.thruster0 = int(round(thruster0))
     DPC.thruster1 = int(round(thruster1))
