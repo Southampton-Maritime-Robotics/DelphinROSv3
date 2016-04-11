@@ -21,7 +21,6 @@ def main():
         timeRef = time.time()
         pubStatus.publish(nodeID = 1, status = True)
         pubStatus.publish(nodeID = 2, status = True)
-        pubStatus.publish(nodeID = 5, status = True)
         pubStatus.publish(nodeID = 11, status = True)
         pubStatus.publish(nodeID = 12, status = True)
 
