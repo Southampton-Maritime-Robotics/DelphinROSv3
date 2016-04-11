@@ -70,6 +70,13 @@ sonar/BlankDist: 0.6
 # or it is not specified clearly what they do
 #
 
+# Serial Port Settings
+# on delphin2 the port is /dev/ttyS3
+# on a laptop this may vary, e.g. /dev/ttyUSB0
+# the baudrate should not be changed, since it needs to be the same setting on computer and sonar
+sonar/serial/Port: '/dev/ttyUSB0'
+sonar/serial/Baudrate: 115200
+
 # head Type selection
 # 1 for MICRON, 29 for SEAKING
 sonar/serial/HeadType: 1
@@ -107,4 +114,15 @@ sonar/serial/MinorAxis: 1600
 sonar/serial/MajorAxis: 1
 # Extra control parameters, default 0, no further explanation given
 sonar/serial/Ctl2: 0
-
+# ASCII header message '@000C'
+sonar/serial/ASCIIheader: [64,48,48,48,67]
+# Length of block in 3 bit unit
+sonar/serial/HexLength: [12,0]
+# Number of bytes following count byte - excluding LF character
+sonar/serial/Count: 7
+# Message identification number
+sonar/serial/MsgNum: 25
+# Current time for sonar - not required for imaing as signals not time stamped
+sonar/serial/CurrentTime: [0,0,0,0]
+# End of line character
+sonar/serial/LF: 10
