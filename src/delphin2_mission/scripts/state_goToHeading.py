@@ -14,6 +14,7 @@ Keep publishing heading demand until a timeout criteria has been reached.
 @return: preempted: the backSeatErrorFlag has been raised
 @return: succeeded: the heading has been reached withing the timeout
 @return: aborted: the heading has not been reached withing the timeout
+@return: just_exit: if other node that has a higher priority and running in paraller has finished
 
 '''
 
@@ -25,7 +26,7 @@ from std_msgs.msg import String
 
 class GoToHeading(smach.State):
     def __init__(self, lib, myUti, demandHeading, stable_time, timeout):
-        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
+        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted','just_exit'])
         self.__controller       = lib
         self.__uti              = myUti
         self.__demandHeading    = demandHeading%360
@@ -34,7 +35,7 @@ class GoToHeading(smach.State):
         self.__timeout          = timeout           # [sec] abort criteria
         self.__controlRate      = 5                 # [Hz]
         self.__at_heading_time  = None
-
+        
     def execute(self,userdata):
 
         #Set Up Publisher for Mission Control Log
@@ -55,6 +56,13 @@ class GoToHeading(smach.State):
         timeStart = time.time()              # a reference time for state timeout
         
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
+            if self.preempt_requested():
+                str = "Force Exit GoToHeading!!!"
+                pubMissionLog.publish(str)
+                rospy.loginfo(str)
+                self.service_preempt()
+                return 'just_exit'
+                
             at_heading_reached, at_heading_stable = self.check_heading()
             self.__controller.setHeading(self.__demandHeading)
             
