@@ -5,73 +5,74 @@
 import rospy
 import smach
 import smach_ros
+from std_msgs.msg import Empty
 
 ## import simple states
 from delphin2_mission.basic_states import *
-
-##### spiral down to depth
-####    - state required:
-####        - GoToDepth
-####        - GoTurning
-####        - GoForwards
-####    - outcome: depend on depth reaching
-##### GoToXY at depth
-####    - state required:
-####        - GoToXY
-####        - GoToDepth
-####    - outcome: depend on XY reaching, and depth reaching
 
 class construct_stateContainer(object):
     def __init__(self, lib, myUti):
         #constructor method - creates objects of type 'HighLevelController'
         self._lib   = lib
         self._myUti = myUti
-
-    def track_heading_while_going_forward(self,demandProp,demandHeading,timeout):
+    
+    def track_heading_while_going_forward(self, demandProp, demandHeading, time_steady, timeout):
         '''
-        Track heading while moving forward at a constant propeller demand for "timeout" seconds
+        Track heading while moving forward at a constant propeller demand.
         return:
-            - succeeded: when reaching a desired heading within timeout
+            - succeeded: when stablilising at a desired heading within timeout for time_steady second
             - preempted: when backSeatDriver flag is raised
             - aborted: when timeout before reaching a desired heading, or when non of above conditions is satisfied
-        note1: timeout must be as small as 5sec to constantly verify conditions of the AUV
-        note2: when return aborted, the calling state will transit to itself as to repeat this behaviour until retuning succeeded or preempted
+        note1: timeout must be larger than time_steady and also large enough so that the AUV can complete the given task
         '''
+        
+        def child_term_cb(outcome_map):
+            if outcome_map['GoToHeading'] == 'succeeded':
+                return True
+            else:
+                return False
+        
         # Create concurent container with a transition in according to the outcome
         sm_con = smach.Concurrence(outcomes=['succeeded','aborted','preempted'],
                                    default_outcome='aborted',
+                                   child_termination_cb=child_term_cb,
                                    outcome_map={'succeeded':
-                                                   {'GoToHeading':'succeeded',
-                                                    'GoForwards':'succeeded'},
+                                                   {'GoToHeading':'succeeded'},
                                                 'aborted':
                                                    {'GoToHeading':'aborted'},
                                                 'preempted':
                                                    {'GoToHeading':'preempted'}})
+        
         # Open the container
         with sm_con:
             # Add states to the container
-            smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, -1, timeout))
+            smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, time_steady, timeout))
             smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
             
         return sm_con
         
-    def track_heading_and_depth_while_going_forward(self, demandProp, demandHeading, demandDepth, timeout): # TODO: need to verify the code
+    def track_depth_while_keeping_heading_and_going_forward(self, demandProp, demandHeading, demandDepth, time_steady, timeout): # TODO: need to verify the code
         '''
-        Track heading and depth while moving forward at a constant propeller demand for "timeout" seconds
+        Track a depth demand while maintaining at a desired heading and execute a constant propeller demand.
         return:
-            - succeeded: when reaching a desired heading and depth within timeout
+            - succeeded: when stablilising at a desired depth within timeout for time_steady second
             - preempted: when backSeatDriver flag is raised
             - aborted: when timeout before reaching a desired depth, or when non of above conditions is satisfied
-        note1: timeout must be as small as 5sec to constantly verify conditions of the AUV
-        note2: when return aborted, the calling state will transit to itself as to repeat this behaviour until retuning succeeded or preempted
+        note1: timeout must be larger than time_steady and also large enough so that the AUV can complete the given task
         '''
+        
+        def child_term_cb(outcome_map):
+            if outcome_map['GoToDepth'] == 'succeeded':
+                return True
+            else:
+                return False
+        
         # Create concurent container with a transition in according to the outcome
         sm_con = smach.Concurrence(outcomes=['succeeded','aborted','preempted'],
                                    default_outcome='aborted',
+                                   child_termination_cb=child_term_cb,
                                    outcome_map={'succeeded':
-                                                   {'GoToHeading':'succeeded',
-                                                    'GoToDepth':'succeeded',
-                                                    'GoForwards':'succeeded'},
+                                                   {'GoToDepth':'succeeded'},
                                                 'aborted':
                                                    {'GoToDepth':'aborted'},
                                                 'preempted':
@@ -80,26 +81,33 @@ class construct_stateContainer(object):
         with sm_con:
             # Add states to the container
             smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, -1, timeout))
-            smach.Concurrence.add('GoToDepth', GoToDepth(self._lib, demandDepth, -1, timeout))
+            smach.Concurrence.add('GoToDepth', GoToDepth(self._lib, demandDepth, time_steady, timeout))
             smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
         
         return sm_con
         
-    def helical_down_to_depth(self, demandProp, demandDepth, demandRudder, timeout): # TODO: need to verify the code
+    def helicaly_dive_to_depth(self, demandProp, demandDepth, demandRudder, time_steady, timeout): # TODO: need to verify the code
         '''
-        perform a helical manoeuvre at a constant rudder demand and propeller demand while diving down to a desired depth for "timeout" seconds
+        Diving down to a desired depth in with a helical trajectory at a constant rudder demand and propeller demand.
         return:
-            - succeeded: when reaching a desired depth within timeout
+            - succeeded: when stablilising at a desired depth within timeout for time_steady second
             - preempted: when backSeatDriver flag is raised
             - aborted: when timeout before reaching a desired depth, or when non of above conditions is satisfied
+        note1: timeout must be larger than time_steady and also large enough so that the AUV can complete the given task
         '''
+        
+        def child_term_cb(outcome_map):
+            if outcome_map['GoToDepth'] == 'succeeded':
+                return True
+            else:
+                return False
+                
         # Create concurent container with a transition in according to the outcome
         sm_con = smach.Concurrence(outcomes=['succeeded','aborted','preempted'],
                                    default_outcome='aborted',
+                                   child_termination_cb=child_term_cb,
                                    outcome_map={'succeeded':
-                                                   {'GoTurning':'succeeded',
-                                                    'GoToDepth':'succeeded',
-                                                    'GoForwards':'succeeded'},
+                                                   {'GoToDepth':'succeeded'},
                                                 'aborted':
                                                    {'GoToDepth':'aborted'},
                                                 'preempted':
@@ -107,8 +115,8 @@ class construct_stateContainer(object):
         # Open the container
         with sm_con:
             # Add states to the container
-            smach.Concurrence.add('GoTurning', GoToHeading(self._lib, 0, demandRudder, -1, timeout))
-            smach.Concurrence.add('GoToDepth', GoToDepth(self._lib, demandDepth, -1, timeout))
+            smach.Concurrence.add('GoTurning', GoTurning(self._lib, 0, demandRudder, timeout))
+            smach.Concurrence.add('GoToDepth', GoToDepth(self._lib, demandDepth, time_steady, timeout))
             smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
         
         return sm_con
@@ -134,7 +142,7 @@ class construct_stateContainer(object):
         # Open the container
         with sm_con:
             # Add states to the container
-            smach.Concurrence.add('GoTurning', GoToHeading(self._lib, demandThruster, demandRudder, -1, timeout))
+            smach.Concurrence.add('GoTurning', GoTurning(self._lib, demandThruster, demandRudder, timeout))
             smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
         
         return sm_con
