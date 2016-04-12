@@ -7,8 +7,7 @@ If the demand for a particular set of actuators is zero, the demand of this set 
 
 @return: preempted: if the backSeatErrorFlag has been raised
 @return: succeeded: if the timeout criteria has been reached (for other states, timeout will lead to mission aborted)
-@return: aborted: not in use
-@return: just_exit: if other node that has a higher priority and running in paraller has finished
+@return: aborted: if other node that has a higher priority and running in paraller has finished
 
 '''
 
@@ -20,7 +19,7 @@ from std_msgs.msg import String
 
 class GoTurning(smach.State):
     def __init__(self, lib, demand_th_hor, demand_cs_ver, timeout):
-        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted','just_exit'])
+        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller           = lib
         self.__th_hor_frt           = demand_th_hor
         self.__th_hor_aft           = - self.__th_hor_frt
@@ -47,7 +46,7 @@ class GoTurning(smach.State):
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 self.service_preempt()
-                return 'just_exit'
+                return 'aborted'
                 
             if self.__th_hor_frt != 0 or self.__th_hor_aft != 0:
                 self.__controller.setArduinoThrusterHorizontal(self.__th_hor_frt,self.__th_hor_aft) # (FrontVer,RearVer)

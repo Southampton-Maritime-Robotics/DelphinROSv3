@@ -11,8 +11,7 @@ Usage2 - reaching: if stable_time is -1
 Keep publishing depth demand until a timeout criteria has been reached.
 @return: preempted: the backSeatErrorFlag has been raised
 @return: succeeded: the depth has been reached withing the timeout
-@return: aborted: the depth has not been reached withing the timeout
-@return: just_exit: if other node that has a higher priority and running in paraller has finished
+@return: aborted: the depth has not been reached withing the timeout, or if other node that has a higher priority and running in paraller has finished
 
 '''
 
@@ -24,7 +23,7 @@ from std_msgs.msg import String
 
 class GoToDepth(smach.State):
     def __init__(self, lib, demandDepth, stable_time, timeout):
-        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted','just_exit'])
+        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller           = lib
         self.__depth_demand         = demandDepth
         self.__tolerance            = 0.2             # [m] a band that accounts as the AUV is at a desired depth
@@ -45,7 +44,7 @@ class GoToDepth(smach.State):
             
         time_zero = time.time()
         
-        str= 'Execute goToDepth State: Depth demand = %s, stable time = %s.' %(self.__depth_demand, self.__stable_time)
+        str= 'Execute GoToDepth State: Depth demand = %s, stable time = %s.' %(self.__depth_demand, self.__stable_time)
         pubMissionLog.publish(str)
         rospy.loginfo(str)
         
@@ -59,7 +58,7 @@ class GoToDepth(smach.State):
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 self.service_preempt()
-                return 'just_exit'
+                return 'aborted'
                 
             at_depth_reached, at_depth_stable = self.check_depth()
             self.__controller.setDepth(self.__depth_demand)

@@ -5,8 +5,7 @@ Get the AUV moving forward/backward for a given period of time.
 
 @return: preempted: if the backSeatErrorFlag has been raised
 @return: succeeded: if the timeout criteria has been reached (for other states, timeout will lead to mission aborted)
-@return: aborted: not in use
-@return: just_exit: if other node that has a higher priority and running in paraller has finished
+@return: aborted: if other node that has a higher priority and running in paraller has finished
 
 '''
 
@@ -18,7 +17,7 @@ from std_msgs.msg import String
 
 class GoForwards(smach.State):
     def __init__(self, lib, demandProp, timeout):
-        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted','just_exit'])
+        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller           = lib
         self.__propDemand           = demandProp
         self.__timeout              = timeout
@@ -43,7 +42,7 @@ class GoForwards(smach.State):
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 self.service_preempt()
-                return 'just_exit'
+                return 'aborted'
             self.__controller.setRearProp(self.__propDemand)
             r.sleep()
         else:
