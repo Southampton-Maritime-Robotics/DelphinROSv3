@@ -49,12 +49,12 @@ class GoForwards(smach.State):
             self.__controller.setRearProp(0)
 
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'goForwards preempted at time = %s' %(time.time())
+            str= 'goForwards preempted'
             pubMissionLog.publish(str)
             rospy.loginfo(str)
             return 'preempted'
         else: # timeout means succeed in this state
-            str= 'goForwards succeeded at time = %s' %(time.time())
+            str= 'goForwards succeeded'
             pubMissionLog.publish(str)
             rospy.loginfo(str)
             return 'succeeded'

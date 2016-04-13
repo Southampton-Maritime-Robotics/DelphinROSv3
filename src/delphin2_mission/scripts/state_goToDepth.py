@@ -64,7 +64,7 @@ class GoToDepth(smach.State):
             self.__controller.setDepth(self.__depth_demand)
             
             if self.__stable_time != -1 and at_depth_stable:
-                str= 'goToDepth - stabilising: succeeded at time = %s' %(time.time())
+                str= 'goToDepth - stabilising: succeeded'
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 return 'succeeded'
@@ -72,24 +72,24 @@ class GoToDepth(smach.State):
             r.sleep()
             
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'goToDepth preempted at time = %s' %(time.time())    
+            str= 'goToDepth preempted'   
             pubMissionLog.publish(str)
             rospy.loginfo(str)
             return 'preempted'
         else:
             if self.__stable_time == -1: # TODO: add a condition to clarify whether the depth has been reached or not
                 if at_depth_reached:
-                    str= 'goToDepth - reaching: succeeded at time = %s' %(time.time())
+                    str= 'goToDepth - reaching: succeeded'
                     pubMissionLog.publish(str)
                     rospy.loginfo(str)
                     return 'succeeded'
                 else:
-                    str= 'goToDepth - reaching: aborted at time = %s' %(time.time())
+                    str= 'goToDepth - reaching: aborted'
                     pubMissionLog.publish(str)
                     rospy.loginfo(str)
                     return 'aborted'
             else:
-                str= 'goToDepth - stabilising: timed-out at time = %s' %(time.time())
+                str= 'goToDepth - stabilising: timed-out'
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 return 'aborted'

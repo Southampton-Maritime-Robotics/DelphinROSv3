@@ -72,7 +72,7 @@ class actions(smach.State):
         timeStart = time.time()
         while not rospy.is_shutdown() and time.time()-timeStart < self.__actionHold:
             if self.__controller.getBackSeatErrorFlag() == 1:
-                str= 'state_actions preempted at time = %s' %(time.time())    
+                str= 'state_actions preempted'   
                 rospy.loginfo(str)
                 pubMissionLog.publish(str)
                 return 'preempted'
@@ -92,5 +92,8 @@ class actions(smach.State):
                     self.__controller.setRudderAngle(self.__cs_ver)
 
             r.sleep()
-        
+            
+        str= 'state_actions succeeded'  
+        rospy.loginfo(str)
+        pubMissionLog.publish(str)
         return 'succeeded' # exit with a flag of 'succeeded'

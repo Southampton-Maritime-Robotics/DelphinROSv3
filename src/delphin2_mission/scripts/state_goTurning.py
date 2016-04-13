@@ -58,12 +58,12 @@ class GoTurning(smach.State):
             self.__controller.setRudderAngle(0)
             
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'GoTurning preempted at time = %s' %(time.time())
+            str= 'GoTurning preempted'
             pubMissionLog.publish(str)
             rospy.loginfo(str)
             return 'preempted'
         else: # timeout means succeed in this state
-            str= 'GoTurning succeeded at time = %s' %(time.time())
+            str= 'GoTurning succeeded'
             pubMissionLog.publish(str)
             rospy.loginfo(str)
             return 'succeeded'

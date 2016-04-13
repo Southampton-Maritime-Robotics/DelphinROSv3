@@ -41,7 +41,7 @@ class GoToAltitude(smach.State):
             
             time_zero = time.time()
             
-            str= 'Entered goTo Altitude State Initialise, started at time = %s' %(time_zero)
+            str= 'Entered goTo Altitude State Initialise'
             pub.publish(str)
             rospy.loginfo(str)
             
@@ -84,7 +84,7 @@ class GoToAltitude(smach.State):
                 
                 
                 if at_altitude == True:
-                    str= 'goToAltitude succeeded at time = %s' %(time.time())
+                    str= 'goToAltitude succeeded'
                     pub.publish(str)
                     return 'succeeded'
                 
@@ -95,11 +95,11 @@ class GoToAltitude(smach.State):
             pub.publish(str)
             
             if self.__controller.getBackSeatErrorFlag() == 1:
-                str= 'goToAltitude preempted at time = %s' %(time.time())    
+                str= 'goToAltitude preempted'   
                 pub.publish(str)
                 return 'preempted'
             else:
-                str= 'goToAltitude timed-out at time = %s' %(time.time())
+                str= 'goToAltitude timed-out'
                 pub.publish(str)
                 return 'aborted'  
             

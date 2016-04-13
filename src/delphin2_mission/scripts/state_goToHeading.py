@@ -66,7 +66,7 @@ class GoToHeading(smach.State):
             self.__controller.setHeading(self.__demandHeading)
             
             if self.__stable_time != -1 and at_heading_stable:
-                str= 'goToHeading - stabilising: succeeded at time = %s' %(time.time())
+                str= 'goToHeading - stabilising: succeeded'
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 return 'succeeded'
@@ -74,24 +74,24 @@ class GoToHeading(smach.State):
             r.sleep()
 
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'goToHeading preempted at time = %s' %(time.time())
+            str= 'goToHeading preempted'
             pubMissionLog.publish(str)
             rospy.loginfo(str)
             return 'preempted'
         else:
             if self.__stable_time == -1:
                 if at_heading_reached:
-                    str= 'goToHeading - reaching: succeeded at time = %s' %(time.time())
+                    str= 'goToHeading - reaching: succeeded'
                     pubMissionLog.publish(str)
                     rospy.loginfo(str)
                     return 'succeeded'
                 else:
-                    str= 'goToHeading - reaching: aborted at time = %s' %(time.time())
+                    str= 'goToHeading - reaching: aborted'
                     pubMissionLog.publish(str)
                     rospy.loginfo(str)
                     return 'aborted'
             else:
-                str= 'goForwards - stabilising: aborted at time = %s' %(time.time())
+                str= 'goForwards - stabilising: aborted'
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
                 return 'aborted'
