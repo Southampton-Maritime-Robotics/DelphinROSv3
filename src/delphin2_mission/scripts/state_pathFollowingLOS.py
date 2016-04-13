@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
 '''
-A state for horizontal plane path following algorithm based on line-of-sight technique
+A state for horizontal plane path following algorithm based on line-of-sight technique.
 
-Given a path, it will get the AUV follow the path starts from the current location
-Given a point, it will get the AUV to the point starts from the current location
+NB, this node should be called after state_reviseWaypoints.py.
 
 execute:
 @return: preempted: if the backSeatErrorFlag has been raised
-@return: succeeded: when the AUV has arrived to the destination
-@return: aborted: not in use
+@return: succeeded: when the AUV has reached to the final target
+@return: aborted: timeout is raised before reaching the final target
 
 #TODO
 -should also consider the side-slip angle when determine heading error
@@ -20,156 +19,138 @@ execute:
 '''
 
 import rospy
-import numpy
+import numpy as np
 import smach
 import smach_ros
 import time
-from   pylab        import *
-from   math         import *
+import math
 from   std_msgs.msg import String
 
 class pathFollowingLOS(smach.State):
-    def __init__(self, lib, myUti, path):
-        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
+    def __init__(self, lib, myUti, timeout):
+        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'], 
+                                   input_keys=['wp_in'])
+        
         self.__controller           = lib
         self.__uti                  = myUti
-        self.__path                 = path      # a list of waypoints
+        self.__timeout              = timeout
         self.__controlRate          = 5         # [Hz]
-        self.__locationWaitTimeout  = 30        # [sec] timeout to check if the GPS comes online
-        
         try:
             self.__L_los    = rospy.get_param('LOS_distance')
             self.__uMax     = rospy.get_param('max-speed')
             self.__wp_R     = rospy.get_param('radius_of_acceptance')
         except:
-            self.__L_los    = L_los     # line of sight distance
-            self.__uMax     = uMax      # maximum speed
-            self.__wp_R     = wp_R      # circle of acceptance
+            self.__L_los    = 10    # line of sight distance [m]
+            self.__uMax     = 1     # maximum speed [m/s]
+            self.__wp_R     = 3     # circle of acceptance [m]
+        #Set Up Publisher for Mission Control Log
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
+        
+    def getCurrentLocation(self):    
+        # Get a current location of the AUV
+        X_now = self.__controller.getX()
+        Y_now = self.__controller.getY()
+        p = np.array([X_now, Y_now])
+        
+        return p
+                
+    def check_waypoint_switching(self, p, target, idx_wp, verboseFlag):
+        # Determine a range between current location and the targeting waypoint
+        rnge, _ = self.__uti.rangeBearing(p, target)
+        # If the AUV is withing a radius of acceptance of the targeting waypoint, move the index to the next waypoint.
+        if rnge < self.__wp_R:
+            idx_wp += 1
+            verboseFlag = 1
+        # Otherwise, return idx_wp and verboseFlag as they are.
+                        
+        return idx_wp, verboseFlag
+        
+    def compute_LOS_parameters(self, p1, p2, p):
+        ## compute line-of-sight parameters
+        # determine an interception point between current location and the path segment.
+        t, p_inter = self.__uti.interPointLine(p1, p2, p)
+        
+        # determine a cross track error
+        vecCross = p_inter-p
+        ye = math.sqrt( vecCross[0]**2 + vecCross[1]**2 )
+        # determine a range to the targeting waypoint
+        rnge, _ = self.__uti.rangeBearing(p, p2)
+                    
+        # determine line-of-sight position
+        if ye>=self.__L_los: # If the path is not within a ling of sight, ...
+            los_p = p_inter # move toward the interception point first.
+        elif rnge<self.__L_los: # If the targeting waypoint is within a line of sight, ...
+            los_p = p2 # directly move toward the target
+        else: # Otherwise, determine a line-of-sight position.
+            # compute lookahead distance
+            xe = math.sqrt( self.__L_los**2 - ye**2 )
+            vecAlong = p2-p1
+            vecAlongLen = math.sqrt( vecAlong[0]**2 + vecAlong[1]**2 )
+            
+            if t>1: # If the AUV is already beyond the targeting waypoint, ...
+                los_p = p_inter - xe*vecAlong/vecAlongLen
+            else:
+                los_p = p_inter + xe*vecAlong/vecAlongLen
+        
+        # determine line-of-sight angle
+        _, los_a = self.__uti.rangeBearing(p, los_p)
+        
+        return los_p, los_a
         
     def execute(self, userdata):
         
-        #Set Up Publisher for Mission Control Log
-        pubMissionLog = rospy.Publisher('MissionStrings', String)
-
-        # Set Up Loop Timing Control
-        r = rospy.Rate(self.__controlRate)
-
         ####################################################################
         ### Perform actions ################################################
         ####################################################################
+        # Set Up Loop Timing Control
+        r = rospy.Rate(self.__controlRate)
         
-        ##### Wait until GPS signal is available #####
-        timeStartWait = time.time()
-        while True:
-            X = self.__controller.getX()
-            Y = self.__controller.getY()
-            if X!=0 or Y!=0:
-                str = 'got the current location: [%s,%s]' %(X,Y)
-                rospy.loginfo(str)
-                pubMissionLog.publish(str)
-                eta_0 = array([X,Y]) # used when creating the path. Bare in mind that the eta_0 is an array while eta is a list
-                break # succeeded in getting the current location from gps: move on
-            if time.time()-timeStartWait > self.__locationWaitTimeout:
-                str = 'GPS signal will not available: mission aborted'
-                rospy.loginfo(str)
-                pubMissionLog.publish(str)
-                return 'aborted'
-            r.sleep()
-                        
-        wpTarget = 1
-        self.__path = numpy.vstack((eta_0,self.__path.T)).T # include the current location of the AUV as the first waypoint
-        _,pathLen = self.__path.shape
-        
-        str = 'Execute path following algorithm with a following path'
-        rospy.loginfo(str)
-        pubMissionLog.publish(str)
-        str = 'X = %s' %self.__path[0,:]
-        rospy.loginfo(str)
-        pubMissionLog.publish(str)
-        str = 'Y = %s' %self.__path[1,:]
-        rospy.loginfo(str)
-        pubMissionLog.publish(str)
-        
-        flag = 1
+        wp = userdata.wp_in     # get waypoints from userdata input
+        timeStart = time.time() # reference time for state timeout criteria
         
         ##### Main loop #####
-        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
-            
-            X = self.__controller.getX()
-            Y = self.__controller.getY()
+        n = wp.size/2   # number of waypoints
+        idx_wp = 1      # waypoint index (index for the first point in the list is denoted as 0)
+        verboseFlag = 1 # a flag used for displaying a targeting waypoint
+        
+        while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
+            ## Determine AUV state
             heading = self.__controller.getHeading()
-            eta = [X,Y] # state vector denoted following Fossen's convention
-
-            if flag:
-                str = 'target waypoint: %s' %self.__path[:,wpTarget]
-                rospy.loginfo(str)
-                pubMissionLog.publish(str)
-                flag = 0
+            p = self.getCurrentLocation()
             
-            # waypoint switching criteria
-            if (self.__uti.waypointSwitching(self.__path[:,wpTarget],eta,self.__wp_R)):
-                if wpTarget == pathLen-1:
-                    # if arrive to the last waypoint, terminate the mission
-                    
-                    str = 'arrived to within the circle of acceptance of the destination'
-                    rospy.loginfo(str)
-                    pubMissionLog.publish(str)
-                    str = 'current location: %s' %eta
-                    rospy.loginfo(str)
-                    pubMissionLog.publish(str)
-                    
-                    self.__controller.setRearProp(0)
-                    self.__controller.setControlSurfaceAngle(0,0,0,0) # (VerUp,HorRight,VerDown,HorLeft)
-                    self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
+            # Say out loud what is the current targeting waypoint - do this only once for each target.
+            if verboseFlag:
+                str = 'targeting waypoint: %s' %wp[:,idx_wp]
+                rospy.loginfo(str)
+                self.pubMissionLog.publish(str)
+                verboseFlag = 0
+                
+            ## Update the index for the targeting waypoint
+            idx_wp, verboseFlag = self.check_waypoint_switching(p, wp[:,idx_wp], idx_wp, verboseFlag)
 
-                    str= 'pathFollowingLOS succeeded at time = %s' %(time.time())    
-                    rospy.loginfo(str)
-                    pubMissionLog.publish(str)
-                    return 'succeeded'
-                else:
-                    # if reached the current waypoint, move onto the next line segment
-                    wpTarget += 1
-                    flag = 1
-                    
-            # compute line-of-sight parameters
-            t,p_inter = self.__uti.interPointLine(self.__path[:,wpTarget-1],self.__path[:,wpTarget],eta)
-            vecCross = p_inter-eta # cross track error
-            ye = sqrt( vecCross[0]**2 + vecCross[1]**2 )
-            if ye>=self.__L_los: # get the AUV perpendicularly moves toward the path
-                los_p = p_inter
-            else:
-                if t==1: # track p_inter which is the ending point of the line segment
-                    direction = 0. # zero lookahead distance
-                elif t>1: # if the AUV is already beyond the ending point of the line segment, get it moves back to the line segment
-                    direction = -1. # negative lookahead distance
-                else:
-                    direction = 1. # positive lookahead distance
-                xe = sqrt( self.__L_los**2 - ye**2 ) # compute lookahead distance
-                vecAlong = self.__path[:,wpTarget]-self.__path[:,wpTarget-1]
-                vecAlongLen = sqrt( vecAlong[0]**2 + vecAlong[1]**2 )
-                los_p = p_inter + direction*xe*vecAlong/vecAlongLen
-
-            los_vec = los_p-eta
-            los_a = mod(atan2(los_vec[0],los_vec[1])*180/pi,360) # TODO: should also consider the side slip angle
-
-            # determine heading error
-            errHeading = self.__uti.computeHeadingError(los_a,heading)
-            u = self.__uti.surgeVelFromHeadingError(self.__uMax,errHeading)
- 
-            # publish heading demand
-            self.__controller.setHeading(los_a)
-            # turn speedDemand into propeller demand and publish
-            self.__controller.setRearProp(round(u*22.))
+            ## Check if the final target has been reached
+            if idx_wp+1>n: # If arrive to the last waypoint, terminate the mission with outcome succeeded
+                str = 'pathFollowingLOS succeeded \n current location: %s' %(p)
+                rospy.loginfo(str)
+                self.pubMissionLog.publish(str)
+                return 'succeeded'
+            else: # Otherwise, compute line-of-sight parameters and publish a heading and propeller demand.
+                _, los_a = self.compute_LOS_parameters(wp[:,idx_wp-1], wp[:,idx_wp], p)
+                
+                ## publish heading demand
+                self.__controller.setHeading(los_a)
+                ## publish heading demand
+                self.__controller.setRearProp(22)
 
             r.sleep()
-            
+                        
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'pathFollowingLOS preempted at time = %s' %(time.time())    
+            str= 'pathFollowingLOS preempted'    
             rospy.loginfo(str)
-            pubMissionLog.publish(str)
+            self.pubMissionLog.publish(str)
             return 'preempted'
-        else: # not in use
-            str= 'pathFollowingLOS timed-out at time = %s' %(time.time())
-            pub.publish(str)
+        else:
+            str= 'time-out: pathFollowingLOS aborted'
             rospy.loginfo(str)
+            self.pubMissionLog.publish(str)
             return 'aborted'
