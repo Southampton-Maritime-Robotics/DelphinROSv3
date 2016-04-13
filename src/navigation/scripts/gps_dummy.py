@@ -44,7 +44,6 @@ def listenForData(n_sat, valid_gpsFix):
     except:
         dt_status = 2.
         
-    timeZero = time.time()
     while not rospy.is_shutdown():
 
         # to control a timing for status publishing
@@ -57,7 +56,7 @@ def listenForData(n_sat, valid_gpsFix):
         gpsOut.longitude = 666 
         gpsOut.time = 99
         gpsOut.number_of_satelites = n_sat
-        gpsOut.fix = valid_gpsFix
+        gpsOut.fix = int(valid_gpsFix)
         gpsOut.speed = 99
         gpsOut.x = X
         gpsOut.y = Y
@@ -79,8 +78,8 @@ if __name__ == '__main__':
     #Define Publishers
     pub = rospy.Publisher('gps_out', gps)
     pubStatus = rospy.Publisher('status', status)
-    n_sat = 11
-    valid_gpsFix = False
+    n_sat = 1
+    valid_gpsFix = True
     str = "\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n A dummy auv system is being used instead of the actual system. \n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n number of (dummy) satellites being detected: %s \n valid GPS fix: %s \n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" %(n_sat, valid_gpsFix) 
     rospy.logwarn(str)
     
