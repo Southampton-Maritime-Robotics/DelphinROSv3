@@ -5,7 +5,6 @@
 import rospy
 import smach
 import smach_ros
-from std_msgs.msg import Empty
 
 ## import simple states
 from delphin2_mission.basic_states import *
