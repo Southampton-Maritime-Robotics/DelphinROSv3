@@ -11,3 +11,6 @@ from state_goForwards                       import GoForwards
 from state_goTurning                        import GoTurning
 from state_pathFollowingLOS                 import pathFollowingLOS
 from state_verboseLocation                  import verboseLocation
+from state_reviseWaypoints                  import reviseWaypoints
+from state_waitForGPS                       import waitForGPS
+from state_goJibbing                        import GoJibbing
