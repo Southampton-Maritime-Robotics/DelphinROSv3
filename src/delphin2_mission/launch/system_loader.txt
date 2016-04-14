@@ -16,4 +16,8 @@
     <node name="logger" pkg="navigation" type="logger.py" required="true"/>
     <node pkg="rosbag" type="record" name="rosbag_record_all" args="record -a -o boldrewood"/>
     
+    <!-- State-Machine Viewer -->
+    <node name="smach_viewer" pkg="smach_viewer" type="smach_viewer.py"/>
+    
+    
 </launch>
