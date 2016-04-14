@@ -49,12 +49,12 @@ class GoTurning(smach.State):
                 return 'aborted'
                 
             if self.__th_hor_frt != 0 or self.__th_hor_aft != 0:
-                self.__controller.setArduinoThrusterHorizontal(self.__th_hor_frt,self.__th_hor_aft) # (FrontVer,RearVer)
+                self.__controller.setArduinoThrusterHorizontal(self.__th_hor_frt,self.__th_hor_aft) # (FrontHor,RearHor)
             if self.__rudder != 0:
                 self.__controller.setRudderAngle(self.__rudder)
             r.sleep()
         else:
-            self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontVer,RearVer)
+            self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontHor,RearHor)
             self.__controller.setRudderAngle(0)
             
         if self.__controller.getBackSeatErrorFlag() == 1:
