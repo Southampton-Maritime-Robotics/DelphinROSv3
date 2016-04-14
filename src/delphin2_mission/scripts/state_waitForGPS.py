@@ -35,18 +35,18 @@ class waitForGPS(smach.State):
             if not self.__controller.getGPSValidFix(): # If gps fixed is not detected ...
                 r.sleep()
             else:
-                str = 'reviseWaypoints succeeded'
+                str = 'waitForGPS succeeded'
                 rospy.loginfo(str)
                 self.pubMissionLog.publish(str)
                 return 'succeeded'
                 
         if self.__controller.getBackSeatErrorFlag() != 0:
-            str = 'reviseWaypoints preempted'
+            str = 'waitForGPS preempted'
             rospy.loginfo(str)
             self.pubMissionLog.publish(str)
             return 'preempted'
         else:
-            str = 'reviseWaypoints aborted'
+            str = 'waitForGPS aborted'
             rospy.loginfo(str)
             self.pubMissionLog.publish(str)
             return 'aborted'
