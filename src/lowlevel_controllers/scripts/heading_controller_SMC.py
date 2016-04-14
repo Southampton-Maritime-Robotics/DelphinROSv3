@@ -16,15 +16,10 @@ from hardware_interfaces.msg    import compass
 from navigation.msg             import position
 from lowlevel_controllers.msg   import heading_control_SMC
 from std_msgs.msg               import Float32
-from std_msgs.msg               import Int8
-from std_msgs.msg               import Bool
 from std_msgs.msg               import String
 from hardware_interfaces.msg    import status
 
 from delphin2_mission.utilities     import uti
-from delphin2_mission.library_highlevel     import library_highlevel
-
-import math
 
 class controller_SMC(object):
 ################################################################################
@@ -228,7 +223,10 @@ class controller_SMC(object):
                         u_th = 0
                 else:
                     u_th = 0
-                
+                    
+                self.pub_tail.publish(cs0 = u_R, cs1 = u_R)
+                self.pub_tsl.publish(thruster0 = u_th, thruster1 = -u_th)
+            
             else:
                 self.HC.controller_onOff = False
                 s = 0
@@ -237,9 +235,6 @@ class controller_SMC(object):
                 N_sw = 0
                 u_R = 0
                 u_th = 0
-            
-            self.pub_tail.publish(cs0 = u_R, cs1 = u_R)
-            self.pub_tsl.publish(thruster0 = u_th, thruster1 = -u_th)
             
             self.HC.heading_error = heading_error
             self.HC.yawRateDemand = yawRateDemand
