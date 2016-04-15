@@ -40,6 +40,7 @@ from std_msgs.msg import Int8
 from std_msgs.msg import String
 
 from lowlevel_controllers.msg import heading_control_PID
+from lowlevel_controllers.msg import heading_control_PID_ctrlAllo
 from lowlevel_controllers.msg import heading_control_SMC
 from lowlevel_controllers.msg import depth_pitch_control_PID
 from lowlevel_controllers.msg import depthandspeed_MPC
@@ -381,6 +382,31 @@ def heading_PID_callback(data):
         except ValueError:
             print 'writerow error'
             
+def heading_PID_ctrlAllo_callback(data): 
+    stringtime = time.time()-time_zero
+    
+    headingPIDList = [stringtime,
+                      data.heading,
+                      data.yawRate,
+                      data.forwardVel,
+                      data.swayVel,
+                      data.heading_demand,
+                      data.error,
+                      data.N_Pterm,
+                      data.N_Iterm,
+                      data.N_Dterm,
+                      data.CS_demand,
+                      data.thruster0,
+                      data.thruster1,
+                      data.controller_onOff]
+    
+    with open('%s/headingPID_ctrlAllo_Log.csv' %(dirname), "a") as f:
+        try:
+            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            Writer.writerow(headingPIDList)
+        except ValueError:
+            print 'writerow error'
+            
 def heading_SMC_callback(data): 
     stringtime = time.time()-time_zero
     
@@ -665,6 +691,7 @@ if __name__ == '__main__':
     
 ##    rospy.Subscriber('dead_reckoner', dead_reckoner, reckoner_callback)
     rospy.Subscriber('Heading_controller_values_PID', heading_control_PID, heading_PID_callback)
+    rospy.Subscriber('Heading_controller_values_PID_ctrlAllo', heading_control_PID_ctrlAllo, heading_PID_ctrlAllo_callback)
     rospy.Subscriber('Heading_controller_values_SMC', heading_control_SMC, heading_SMC_callback)
     rospy.Subscriber('Depth_pitch_controller_values_PID', depth_pitch_control_PID, depth_pitch_PID_callback)
     rospy.Subscriber('Depth_pitch_controller_values_MPC', depthandspeed_MPC, depth_pitch_MPC_callback)
