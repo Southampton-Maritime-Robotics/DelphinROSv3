@@ -2,6 +2,7 @@
 # construct state machine that combine simple states to form a more complicated state
 #-------------------------
 
+from __future__ import division
 import rospy
 import smach
 import smach_ros
@@ -144,4 +145,101 @@ class construct_stateContainer(object):
             smach.Concurrence.add('GoTurning', GoTurning(self._lib, demandThruster, demandRudder, timeout))
             smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
         
+        return sm_con
+        
+    def LOS_path_following(self, path, timeout):
+        '''
+        Travel along a path using a line-of-signt approach.
+        return:
+            - succeeded: when arrived a final waypoint
+            - preempted: when backSeatDriver flag is raised
+            - aborted: timeout
+        '''
+        # Create the top level state machine
+        sm = smach.StateMachine(outcomes=['succeeded','aborted','preempted'])
+        sm.userdata.wp = []
+        
+        # Open the container, add state and define state transition
+        with sm:
+            smach.StateMachine.add('REVISE_WAYPOINTS', reviseWaypoints(self._lib, path),
+                                                       transitions={'succeeded':'PATH_FOLLOWING', 'aborted':'aborted'},
+                                                       remapping={'wp_out':'wp'})
+            smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(self._lib, self._myUti, timeout=timeout),
+                                                       transitions={'succeeded':'succeeded', 'aborted':'aborted', 'preempted':'preempted'},
+                                                       remapping={'wp_in':'wp'})
+        return sm
+        
+    def LOS_path_following_at_depth(self, path, demandDepth, timeout):
+        '''
+        Travel along a path using a line-of-signt approach at a constant depth.
+        return:
+            - succeeded: when arrived a final waypoint
+            - preempted: when backSeatDriver flag is raised
+            - aborted: timeout
+        '''
+        
+        def child_term_cb(outcome_map):
+            if outcome_map['PATH_FOLLOWING'] == 'succeeded':
+                return True
+            else:
+                return False
+                
+        # Create concurent container with a transition in according to the outcome
+        sm_con = smach.Concurrence(outcomes=['succeeded','aborted','preempted'],
+                                   default_outcome='aborted',
+                                   child_termination_cb=child_term_cb,
+                                   outcome_map={'succeeded':
+                                                   {'PATH_FOLLOWING':'succeeded'},
+                                                'aborted':
+                                                   {'PATH_FOLLOWING':'aborted'},
+                                                'preempted':
+                                                   {'PATH_FOLLOWING':'preempted'}})
+        # Open the container
+        with sm_con:
+            # Add states to the container
+            smach.Concurrence.add('PATH_FOLLOWING', self.LOS_path_following(path, timeout))
+            smach.Concurrence.add('GoToDepth', GoToDepth(self._lib, demandDepth, -1, timeout))
+            
+        return sm_con
+        
+    def manoeuvrint_ZigZag(self, demandProp, headingMean, headingAmp, demand_th_hor, demand_cs_ver, cycleMax, timeout):
+        '''
+        Perform a ZigZag manoeuvre for cycleMax times (one left and one right are counted as two cycles).
+        return:
+            - succeeded: complete operation
+            - preempted: when backSeatDriver flag is raised
+            - aborted: timeout
+        '''
+        
+        sm_jibbing = smach.StateMachine(outcomes=['succeeded','aborted','preempted'])
+        sm_jibbing.userdata.cycleCount = 0  # a counter to count how many time jibbing has been done.
+        sm_jibbing.userdata.dir = 1         # direction of turning
+        # Open the container, add state and define state transition
+        with sm_jibbing:
+            smach.StateMachine.add('GoJibbing', GoJibbing(self._lib, self._myUti, headingMean, headingAmp, demand_th_hor, demand_cs_ver, cycleMax, timeout/cycleMax), 
+                transitions={'succeeded':'succeeded', 'continue':'GoJibbing', 'aborted':'aborted', 'preempted':'preempted'},
+                remapping={'cycleCount_out':'cycleCount','dir_out':'dir','cycleCount_in':'cycleCount','dir_in':'dir'})
+        
+        def child_term_cb(outcome_map):
+            if outcome_map['Jibbing'] == 'succeeded':
+                return True
+            else:
+                return False
+                
+        # Create concurent container with a transition in according to the outcome
+        sm_con = smach.Concurrence(outcomes=['succeeded','aborted','preempted'],
+                                   default_outcome='aborted',
+                                   child_termination_cb=child_term_cb,
+                                   outcome_map={'succeeded':
+                                                   {'Jibbing':'succeeded'},
+                                                'aborted':
+                                                   {'Jibbing':'aborted'},
+                                                'preempted':
+                                                   {'Jibbing':'preempted'}})
+        # Open the container
+        with sm_con:
+            # Add states to the container
+            smach.Concurrence.add('Jibbing', sm_jibbing)
+            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
+            
         return sm_con
