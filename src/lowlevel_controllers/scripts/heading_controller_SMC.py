@@ -31,7 +31,7 @@ class controller_SMC(object):
         self.dt = 1./self.controlRate
         
         ### controller parameter ###
-        self.timelastDemand_heading = 1 # [sec] if there is no new demand available for this many seconds, the controller will be off.
+        self.timelastDemand_max = 1 # [sec] if there is no new demand available for this many seconds, the controller will be off.
         self.yawRateDemand_slope = 0.1  # to control a shape of yaw rate demand [deg/s per deg of heading error]
         self.yawRateDemand_sat = 30     # to control a shape of yaw rate demand [deg/s]
         h1 = 1                          # gain to compute sliding variable
@@ -144,7 +144,7 @@ class controller_SMC(object):
             yawRate     = self.HC.yawRate # [rad/s]
             th_rpm      = self.th_rpm_fh # assumed front and rear thruster are operating at the same speed
             
-            if time.time()-self.timeLastCallback_headingDemand < self.timelastDemand_heading:
+            if time.time()-self.timeLastCallback_headingDemand < self.timelastDemand_max:
                 self.HC.controller_onOff = True
                 
                 ## update controller parameters
