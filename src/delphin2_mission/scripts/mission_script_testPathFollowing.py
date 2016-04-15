@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
 """
-A general purpose mission script that lets the user quickly manages a sequence of tasks for the Delphin2 AUV in a section "MAIN CODE".
+A mission to get the AUV navigating along a predefined path at surface in Eastleigh lake.
+
+A state waitForGPS is necessary to ensure that the AUV gets it position right before starting a path following state.
 
 #Notes
--X is defined as east, Y is defined as north
+-X is defined as +VE east, Y is defined as +VE north
+
 """
 
+from __future__ import division
 import rospy
 import smach
 import smach_ros
@@ -40,34 +44,23 @@ pathBtoA = numpy.vstack((B,A)).T
 pathMtoO = numpy.vstack((M,O)).T
 pathMtoA = numpy.vstack((M,A)).T
 pathOtoM = numpy.vstack((O,M)).T
-pathTest = numpy.vstack((M,A,B,M)).T
+pathTest = numpy.vstack((A,M,O,B,M,O)).T
 
 ################################################################################
 # state container generating section
-def construct_smach_sequence():
-    # creating a sequence state machine
-    sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
-                        connector_outcome = 'succeeded')
-    
-    # define a sequence of tasks
-    with sm_se:
-#        smach.Sequence.add('GoForwards', GoForwards(_lib, demandProp = 22, timeout = 20))
-        smach.Sequence.add('GoToHeading_90_atSpeed_1', _smCon.track_heading_while_going_forward(demandProp = 22, demandHeading = 45, timeout = 25))
-        smach.Sequence.add('GoToHeading_180_atSpeed_1', _smCon.track_heading_while_going_forward(demandProp = 22, demandHeading = 180, timeout = 25))
-        smach.Sequence.add('GoToHeading_90_atSpeed_2', _smCon.track_heading_while_going_forward(demandProp = 22, demandHeading = 90, timeout = 25))
-    
-    return sm_se
-    
 def construct_smach_top():
     # Create the top level state machine
     sm_top = smach.StateMachine(outcomes=['finish'])
+    sm_top.userdata.wp = []
     
     # Open the container, add state and define state transition
     with sm_top:
         smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
-            transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('SEQUENCE', construct_smach_sequence(),
-            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+            transitions={'succeeded':'GPS_FIX', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('GPS_FIX', waitForGPS(_lib, timeout=30),
+            transitions={'succeeded':'FOLLOW_PATH', 'aborted':'STOP', 'preempted':'STOP'})
+        smach.StateMachine.add('FOLLOW_PATH', _smCon.LOS_path_following(path=pathTest, timeout=600),
+            transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
         smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})
 
