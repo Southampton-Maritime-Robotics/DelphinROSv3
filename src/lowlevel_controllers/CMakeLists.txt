@@ -52,7 +52,7 @@ catkin_python_setup()
    heading_control_SMC.msg
    depth_pitch_control_PID.msg
    # heading_MPC.msg
-   # depthandspeed_MPC.msg
+   depthandspeed_MPC.msg
    # depthandpitch_MPC.msg
  )
 
