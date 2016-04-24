@@ -10,7 +10,7 @@
     <param name="lat_orig"               value="50.957024" />            <!-- Origin Latitude -->
     <param name="long_orig"              value="-1.366769" />            <!-- Origin Longitude -->
     <param name="ImportWaypoints"        value="False" />                <!-- Import Waypoints -->
-    <param name="LOS_distance"           value="5" />                    <!-- line-of-sight distance (in m) for path following algorithm -->
+    <param name="LOS_distance"           value="10" />                    <!-- line-of-sight distance (in m) for path following algorithm -->
     <param name="radius_of_acceptance"   value="3" />                    <!-- (in m) for path following algorithm -->
     <param name="max-speed"              value="1" />                    <!-- maximum surge speed (in m/s) of the AUV -->
     
