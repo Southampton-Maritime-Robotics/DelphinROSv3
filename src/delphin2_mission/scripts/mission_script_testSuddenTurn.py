@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
 """
-A mission to get the AUV back to the home location (point O).
+A mission to test the heading control performance in Eastleigh lake.
+The AUV is programed to move forward at a constant propeller demand while maintaining a constant heading.
+It is then suddently turn 90deg left (while executing a constant propeller demand) and hold the heading demand for a while to see how lond does the controller required to get the AUV back to the equilibrium again.
 
-This is designed to used for the tests in Eastleigh lake. However, by modifying point O (in this script) and lat_orig and long_orig (in set_parameters.txt), this mission would serve the purpose for other location as well.
 
 #Notes
--X is defined as +VE east, Y is defined as +VE north
+-X is defined as east, Y is defined as north
 """
 
+from __future__ import division
 import rospy
 import smach
 import smach_ros
@@ -17,6 +19,7 @@ import numpy
 
 from delphin2_mission.library_highlevel     import library_highlevel
 from delphin2_mission.utilities             import uti
+from delphin2_mission.wp_EastleightLake     import wp
 from std_msgs.msg                           import String
 
 ## import simple states
@@ -29,36 +32,32 @@ from delphin2_mission.construct_stateContainer import construct_stateContainer
 _lib = library_highlevel()
 _myUti = uti()
 _smCon = construct_stateContainer(_lib, _myUti)
-
-### define a key waypoints and paths in according to the mission requirement
-# waypoints
-O = numpy.array([4.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
-A = numpy.array([-28.,-20.]) # reference point A
-B = numpy.array([-1.,50.]) # reference point B
-M = numpy.array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
-# reference paths
-pathAtoB = numpy.vstack((A,B)).T
-pathBtoA = numpy.vstack((B,A)).T
-pathMtoO = numpy.vstack((M,O)).T
-pathMtoA = numpy.vstack((M,A)).T
-pathOtoM = numpy.vstack((O,M)).T
-pathTest = numpy.vstack((A,M,O,B,M,O)).T
+_wp = wp()
 
 ################################################################################
 # state container generating section
+def suddenTurn(heading_init, demandProp):
+    # creating a sequence state machine
+    sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
+                        connector_outcome = 'succeeded')
+    
+    # define a sequence of tasks
+    with sm_se:
+        smach.Sequence.add('Accelerate', _smCon.track_heading_while_going_forward(demandProp, demandHeading = heading_init, time_steady = 20, timeout = 60))
+        smach.Sequence.add('SuddenTurn', _smCon.track_heading_while_going_forward(demandProp, demandHeading = heading_init-90, time_steady = -1, timeout = 60))
+    
+    return sm_se
+    
 def construct_smach_top():
     # Create the top level state machine
     sm_top = smach.StateMachine(outcomes=['finish'])
-    sm_top.userdata.wp = []
     
     # Open the container, add state and define state transition
     with sm_top:
         smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
-            transitions={'succeeded':'GPS_FIX', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('GPS_FIX', waitForGPS(_lib, timeout=30),
-            transitions={'succeeded':'FOLLOW_PATH', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('FOLLOW_PATH', _smCon.LOS_path_following(path=O, timeout=600),
-            transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
+            transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('SEQUENCE', suddenTurn(heading_init=280,demandProp=22),
+            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})
 
