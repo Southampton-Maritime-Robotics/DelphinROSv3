@@ -43,7 +43,8 @@ def suddenTurn(heading_init, demandProp):
     
     # define a sequence of tasks
     with sm_se:
-        smach.Sequence.add('Accelerate', _smCon.track_heading_while_going_forward(demandProp, demandHeading = heading_init, time_steady = 20, timeout = 60))
+        smach.Sequence.add('GoToHeading', GoToHeading(_lib, _myUti, demandHeading=heading_init, stable_time=10, timeout=60))
+        smach.Sequence.add('Accelerate', _smCon.track_heading_while_going_forward(demandProp, demandHeading = heading_init, time_steady = -1, timeout = 25))
         smach.Sequence.add('SuddenTurn', _smCon.track_heading_while_going_forward(demandProp, demandHeading = heading_init-90, time_steady = -1, timeout = 60))
     
     return sm_se

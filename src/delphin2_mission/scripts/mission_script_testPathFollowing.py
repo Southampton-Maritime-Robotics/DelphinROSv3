@@ -47,7 +47,9 @@ def construct_smach_top():
             transitions={'succeeded':'GPS_FIX', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('GPS_FIX', waitForGPS(_lib, timeout=30),
             transitions={'succeeded':'FOLLOW_PATH', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('FOLLOW_PATH', _smCon.LOS_path_following(path=_wp.path_S_shaped, timeout=600),
+#        smach.StateMachine.add('FOLLOW_PATH', _smCon.LOS_path_following(path=_wp.path_S_shaped, timeout=600),
+#            transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
+        smach.StateMachine.add('FOLLOW_PATH', _smCon.LOS_path_following(path=_wp.path_lawn_mowing, timeout=600),
             transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
         smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})
