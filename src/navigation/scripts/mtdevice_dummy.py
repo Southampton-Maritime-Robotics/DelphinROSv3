@@ -252,10 +252,7 @@ class delphin2_AUV(object):
             uj_ver = 0.883 # jet velocity through vertical thrusters [m/s]
             ratio_u_uj = _nu[0]/float(uj_ver)
             
-            try:
-                Cd_th_ver = self.a_th_drag*np.exp(self.b_th_drag*ratio_u_uj) + self.c_th_drag*np.exp(self.d_th_drag*ratio_u_uj);
-            except:
-                Cd_th_ver = 0.
+            Cd_th_ver = self.a_th_drag*np.exp(self.b_th_drag*ratio_u_uj) + self.c_th_drag*np.exp(self.d_th_drag*ratio_u_uj);
             X_th_ver = -0.5*self.rho*self.V_AUV**(2./3.)*Cd_th_ver*np.abs(_nu[0])*_nu[0]*2  # time 2 vertical thrusters
             
             # actuator weighting function
@@ -275,11 +272,10 @@ class delphin2_AUV(object):
             _tau_extra_th_hor = -np.array([0, 0, 0])
         else:
             ratio_u_uj = _nu[0]/float(uj_hor)
-            try:
-                Cd_th_hor = self.a_th_drag*np.exp(self.b_th_drag*ratio_u_uj) + self.c_th_drag*np.exp(self.d_th_drag*ratio_u_uj)
-            except:
-                Cd_th_hor = 0.
+            
+            Cd_th_hor = self.a_th_drag*np.exp(self.b_th_drag*ratio_u_uj) + self.c_th_drag*np.exp(self.d_th_drag*ratio_u_uj)
             X_th_hor = -0.5*self.rho*self.V_AUV**(2./3.)*Cd_th_hor*np.abs(_nu[0])*_nu[0]*2 # time 2 horizontal thrusters
+            
             _tau_extra_th_hor = -np.array([X_th_hor, 0, 0])
         
         # compute acceleration based on AUV's current state subjected to the actuating forces and moments
@@ -344,6 +340,8 @@ class delphin2_AUV(object):
             
             delta_nu0 = self.dt/6.*(k1+2*k2+2*k3+k4)
             self.nu = nu0 + delta_nu0
+            if self.nu[0] < 0:
+                self.nu[0] = 0
             
             # update heading: measured from xsens or dummy xsens
             self.headingNow = self.headingNow + self.nu[2]*180/np.pi*self.dt
