@@ -4,6 +4,6 @@
     <include file="$(find delphin2_mission)/launch/system_loader.txt" />
     
     <!-- Mission File! -->    
-    <node name="mission_script" pkg="delphin2_mission" type="mission_script_goHome.py" required="true" output="screen"/> 
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_Eastleigh_pointM.py" required="true" output="screen"/>
     
 </launch>

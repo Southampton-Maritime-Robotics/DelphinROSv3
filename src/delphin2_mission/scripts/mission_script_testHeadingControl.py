@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-A general purpose mission script that lets the user quickly manages a sequence of tasks for the Delphin2 AUV in a section "MAIN CODE".
+A mission script to test AUV heading --- mainly used for zero speed operation.
 
 #Notes
 -X is defined as east, Y is defined as north
@@ -28,20 +28,6 @@ from delphin2_mission.construct_stateContainer import construct_stateContainer
 _lib = library_highlevel()
 _myUti = uti()
 _smCon = construct_stateContainer(_lib, _myUti)
-
-### define a key waypoints and paths in according to the mission requirement
-# waypoints
-O = numpy.array([4.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
-A = numpy.array([-28.,-20.]) # reference point A
-B = numpy.array([-1.,50.]) # reference point B
-M = numpy.array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
-# reference paths
-pathAtoB = numpy.vstack((A,B)).T
-pathBtoA = numpy.vstack((B,A)).T
-pathMtoO = numpy.vstack((M,O)).T
-pathMtoA = numpy.vstack((M,A)).T
-pathOtoM = numpy.vstack((O,M)).T
-pathTest = numpy.vstack((M,A,B,M)).T
 
 ################################################################################
 # state container generating section

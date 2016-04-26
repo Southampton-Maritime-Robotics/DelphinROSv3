@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 """
-A general purpose mission script that lets the user quickly manages a sequence of tasks for the Delphin2 AUV in a section "MAIN CODE".
+A mission to get the AUV to perform a standard manoeuvring trial.
+At a time being, only ZigZag manoeuvre is used.
 
 #Notes
 -X is defined as east, Y is defined as north
@@ -15,6 +16,7 @@ import numpy
 
 from delphin2_mission.library_highlevel     import library_highlevel
 from delphin2_mission.utilities             import uti
+from delphin2_mission.wp_EastleightLake     import wp
 from std_msgs.msg                           import String
 
 ## import simple states
@@ -27,20 +29,7 @@ from delphin2_mission.construct_stateContainer import construct_stateContainer
 _lib = library_highlevel()
 _myUti = uti()
 _smCon = construct_stateContainer(_lib, _myUti)
-
-### define a key waypoints and paths in according to the mission requirement
-# waypoints
-O = numpy.array([4.,0.]) # home: shifted from the origin a little to make sure it will not collide with the pier
-A = numpy.array([-28.,-20.]) # reference point A
-B = numpy.array([-1.,50.]) # reference point B
-M = numpy.array([(A[0]+B[0])/2., (A[1]+B[1])/2.]) # mid-point between A and B
-# reference paths
-pathAtoB = numpy.vstack((A,B)).T
-pathBtoA = numpy.vstack((B,A)).T
-pathMtoO = numpy.vstack((M,O)).T
-pathMtoA = numpy.vstack((M,A)).T
-pathOtoM = numpy.vstack((O,M)).T
-pathTest = numpy.vstack((M,A,B,M)).T
+_wp = wp()
 
 ################################################################################
 # state container generating section
@@ -51,11 +40,15 @@ def ToStart_and_ZigZag(startLocation, demandProp, headingMean, headingAmp, deman
     with sm:
         smach.StateMachine.add('ToStart', _smCon.LOS_path_following(path=startLocation, timeout=300),
             transitions={'succeeded':'AdjustHeading', 'aborted':'aborted', 'preempted':'preempted'})
-        smach.StateMachine.add('AdjustHeading', GoToHeading(_lib, _myUti, headingMean, stable_time=5, timeout=60),
+        smach.StateMachine.add('AdjustHeading', GoToHeading(_lib, _myUti, headingMean, stable_time=10, timeout=60),
+            transitions={'succeeded':'Accelerate', 'aborted':'aborted', 'preempted':'preempted'})
+        smach.StateMachine.add('Accelerate', _smCon.track_heading_while_going_forward(demandProp, demandHeading=headingMean, time_steady=-1, timeout=10),
             transitions={'succeeded':'ZigZag', 'aborted':'aborted', 'preempted':'preempted'})
         smach.StateMachine.add('ZigZag', _smCon.manoeuvrint_ZigZag(demandProp, headingMean, headingAmp, demand_th_hor, demand_cs_ver, cycleMax, timeout), 
             transitions={'succeeded':'succeeded', 'aborted':'aborted', 'preempted':'preempted'})
     return sm
+    
+    track_heading_while_going_forward(self, demandProp, demandHeading, time_steady, timeout)
     
 def construct_smach_top():
     # Create the top level state machine
@@ -68,7 +61,7 @@ def construct_smach_top():
             transitions={'succeeded':'GPS_FIX', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('GPS_FIX', waitForGPS(_lib, timeout=30),
             transitions={'succeeded':'Test_ZigZagManoeuvre', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('Test_ZigZagManoeuvre', ToStart_and_ZigZag(startLocation=B, demandProp=22, headingMean=190, headingAmp=30, demand_th_hor=0, demand_cs_ver=30, cycleMax=10, timeout=600),
+        smach.StateMachine.add('Test_ZigZagManoeuvre', ToStart_and_ZigZag(startLocation=_wp.B, demandProp=22, headingMean=190, headingAmp=30, demand_th_hor=0, demand_cs_ver=30, cycleMax=10, timeout=600),
             transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
         smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})

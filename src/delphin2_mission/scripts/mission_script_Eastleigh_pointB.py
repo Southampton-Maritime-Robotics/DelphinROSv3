@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 
 """
-A mission to get the AUV navigating along a predefined path at surface in Eastleigh lake.
-
-A state waitForGPS is necessary to ensure that the AUV gets it position right before starting a path following state.
+A mission to get the AUV back to point B.
 
 #Notes
 -X is defined as +VE east, Y is defined as +VE north
-
 """
 
-from __future__ import division
 import rospy
 import smach
 import smach_ros
@@ -46,10 +42,8 @@ def construct_smach_top():
         smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
             transitions={'succeeded':'GPS_FIX', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('GPS_FIX', waitForGPS(_lib, timeout=30),
-            transitions={'succeeded':'FOLLOW_PATH', 'aborted':'STOP', 'preempted':'STOP'})
-#        smach.StateMachine.add('FOLLOW_PATH', _smCon.LOS_path_following(path=_wp.path_S_shaped, timeout=600),
-#            transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('FOLLOW_PATH', _smCon.LOS_path_following(path=_wp.path_lawn_mowing, timeout=600),
+            transitions={'succeeded':'GO_POINT_B', 'aborted':'STOP', 'preempted':'STOP'})
+        smach.StateMachine.add('GO_POINT_B', _smCon.LOS_path_following(path=_wp.B, timeout=600),
             transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
         smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})

@@ -19,11 +19,9 @@ def main():
     controlPeriod = 1./controlRate
     while not rospy.is_shutdown():
         timeRef = time.time()
-        pubStatus.publish(nodeID = 1, status = True)
-        pubStatus.publish(nodeID = 2, status = True)
         pubStatus.publish(nodeID = 11, status = True)
         pubStatus.publish(nodeID = 12, status = True)
-
+        
         pubOutput.publish(batteryVol = 99999, 
                           thruster_0 = 0, 
                           thruster_1 = 0, 

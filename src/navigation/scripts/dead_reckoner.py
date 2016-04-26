@@ -292,7 +292,6 @@ class delphin2_AUV(object):
             _tau_extra_th_hor = -np.array([0, 0, 0])
         else:
             ratio_u_uj = _nu[0]/float(uj_hor)
-
             Cd_th_hor = self.a_th_drag*np.exp(self.b_th_drag*ratio_u_uj) + self.c_th_drag*np.exp(self.d_th_drag*ratio_u_uj)
             X_th_hor = -0.5*self.rho*self.V_AUV**(2./3.)*Cd_th_hor*np.abs(_nu[0])*_nu[0]*2 # time 2 horizontal thrusters
             _tau_extra_th_hor = -np.array([X_th_hor, 0, 0])
@@ -366,9 +365,11 @@ class delphin2_AUV(object):
             k2 = self.rigidbodyDynamics(nu0+self.dt/2.*k1,tau)
             k3 = self.rigidbodyDynamics(nu0+self.dt/2.*k2,tau)
             k4 = self.rigidbodyDynamics(nu0+self.dt*k3,tau)
-                            
+            
             delta_nu0 = self.dt/6.*(k1+2*k2+2*k3+k4)
             self.nu = nu0 + delta_nu0
+            if self.nu[0] < 0:
+                self.nu[0] = 0
             
             # update heading: measured from xsens or dummy xsens
             self.headingNow = self.comInfo.heading

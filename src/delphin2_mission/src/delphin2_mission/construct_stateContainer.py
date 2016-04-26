@@ -86,6 +86,40 @@ class construct_stateContainer(object):
         
         return sm_con
         
+    def track_altitude_while_keeping_heading_and_going_forward(self, demandProp, demandHeading, demandAltitude, timeout): # TODO: need to verify the code
+        '''
+        Track a altitude while maintaining at a desired heading and execute a constant propeller demand.
+        return:
+            - succeeded: when time-out is reached
+            - preempted: when backSeatDriver flag is raised
+            - aborted: not in used
+        '''
+        
+        def child_term_cb(outcome_map):
+            if outcome_map['GoToAltitude'] == 'succeeded':
+                return True
+            else:
+                return False
+        
+        # Create concurent container with a transition in according to the outcome
+        sm_con = smach.Concurrence(outcomes=['succeeded','aborted','preempted'],
+                                   default_outcome='aborted',
+                                   child_termination_cb=child_term_cb,
+                                   outcome_map={'succeeded':
+                                                   {'GoToAltitude':'succeeded'},
+                                                'aborted':
+                                                   {'GoToAltitude':'aborted'},
+                                                'preempted':
+                                                   {'GoToAltitude':'preempted'}})
+        # Open the container
+        with sm_con:
+            # Add states to the container
+            smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, -1, timeout))
+            smach.Concurrence.add('GoToAltitude', GoToAltitude(self._lib, demandAltitude, 1, 1, timeout, 1, 1)) # FIXME: GoToAltitude is not ready yet
+            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
+        
+        return sm_con
+        
     def helicaly_dive_to_depth(self, demandProp, demandDepth, demandRudder, time_steady, timeout): # TODO: need to verify the code
         '''
         Diving down to a desired depth in with a helical trajectory at a constant rudder demand and propeller demand.
