@@ -1,5 +1,5 @@
 # Parameters for the MICRON and SEAKING sonar
-#
+# used for running the sonar on the vehicle
 
 #
 # Sonar Settings
@@ -7,11 +7,11 @@
 
 # Right limit for Heading
 # in [1/16th gradian]
-sonar/RLim: 95.0
+sonar/RLim: 95
 
 # Left limit for Heading
 # in [1/16th gradian]
-sonar/LLim: 85.0
+sonar/LLim: 85
 
 # Number of sample bins over scan-line
 # Max for SeaKing/SeaPrince/MiniKing/Micron: 800
@@ -49,20 +49,6 @@ sonar/Step: 64
 
 
 #
-# Evaluation Configurations
-#
-
-# Number of repeated returns (+1 from SonarPing.m) to remove glitches
-sonar/GlitchCount: 1
-
-# Power level (0 to 250) above which sonar 'sees' a target
-sonar/Threshold: 10
-
-# Blanking distance to remove returns from the sonar mount
-# probably in [metres]
-sonar/BlankDist: 0.6
-
-#
 # Communication protocol
 # 
 # these settings are needed for use in the serial protocol,
@@ -76,6 +62,9 @@ sonar/BlankDist: 0.6
 # the baudrate should not be changed, since it needs to be the same setting on computer and sonar
 sonar/serial/Port: '/dev/ttyUSB0'
 sonar/serial/Baudrate: 115200
+
+# Timeout for reading sonar data after sonar ping message
+sonar/serial/ReadTimeout: 2
 
 # head Type selection
 # 1 for MICRON, 29 for SEAKING
@@ -114,8 +103,11 @@ sonar/serial/MinorAxis: 1600
 sonar/serial/MajorAxis: 1
 # Extra control parameters, default 0, no further explanation given
 sonar/serial/Ctl2: 0
-# ASCII header message '@000C'
-sonar/serial/ASCIIheader: [64,48,48,48,67]
+# ASCII headers for different message types
+# mtSendData message header '@000C'
+sonar/serial/HeaderMtSendData: [64,48,48,48,67]
+# mtHeadCommand message header '@003C'
+sonar/serial/HeaderMtHeadCommand: [64,48,48,51,67]
 # Length of block in 3 bit unit
 sonar/serial/HexLength: [12,0]
 # Number of bytes following count byte - excluding LF character
