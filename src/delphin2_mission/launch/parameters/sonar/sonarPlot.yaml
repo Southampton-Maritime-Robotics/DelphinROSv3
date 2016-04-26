@@ -1,0 +1,7 @@
+# Parameters for sonar plotting 
+#
+
+
+# number of pixels in the sonar spherical plot
+/sonar/plot/Resolution: 500
+
