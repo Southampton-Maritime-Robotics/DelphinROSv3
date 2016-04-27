@@ -228,6 +228,8 @@ class controller_SMC(object):
                 self.pub_tsl.publish(thruster0 = u_th, thruster1 = -u_th)
             
             else:
+                heading_error = 0
+                yawRateDemand = 0
                 self.HC.controller_onOff = False
                 s = 0
                 s_dot = 0
@@ -275,4 +277,5 @@ if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     rospy.init_node('Heading_controller')
     controller = controller_SMC()
+    time.sleep(2) #Allow the heading demand flag to be set off
     controller.spin()

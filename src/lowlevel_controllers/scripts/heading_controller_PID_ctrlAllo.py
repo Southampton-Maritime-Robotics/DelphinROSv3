@@ -31,7 +31,7 @@ from delphin2_mission.utilities     import uti
 class controller_PID(object):
     def __init__(self):
         ### loop timing control ###
-        self.controlRate = 20. # [Hz]
+        self.controlRate = 5. # [Hz]
         self.dt = 1./self.controlRate
         
         ## controller parameters
@@ -205,4 +205,5 @@ if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     rospy.init_node('Heading_controller')
     controller = controller_PID()
+#    time.sleep(2) #Allow the heading demand flag to be set off
     controller.spin()
