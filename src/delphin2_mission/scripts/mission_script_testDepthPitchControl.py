@@ -49,40 +49,6 @@ def main():
     #Set Up Publisher for Mission Control Log
     pub = rospy.Publisher('MissionStrings', String)
     
-    # Allow the topic to come online
-    time.sleep(10)
-    
-    #Read back seat driver Settings
-    overDepth = rospy.get_param('over-depth')
-    str = 'Backseat Driver Parameter: over depth set to %s m' %(overDepth)
-    pub.publish(str)
-    rospy.loginfo(str)
-    time.sleep(0.1)
-    overPitch = rospy.get_param('over-pitch')    
-    str = 'Backseat Driver Parameter: over pitch set to %s deg' %(overPitch)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    time.sleep(0.1)    
-    overRoll = rospy.get_param('over-roll')
-    str = 'Backseat Driver Parameter: over roll set to %s deg' %(overRoll)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    time.sleep(0.1)         
-    maxInternalTemp = rospy.get_param('max-internal-temp')  
-    str = 'Backseat Driver Parameter: max internal temperature %s deg' %(maxInternalTemp)
-    pub.publish(str)
-    rospy.loginfo(str)
-    time.sleep(0.1)
-    minMotorVoltage = rospy.get_param('min-motor-voltage')
-    str = 'Backseat Driver Parameter: min motor voltage %s V' %(minMotorVoltage)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    time.sleep(0.1) 
-    missionTimeout = rospy.get_param('mission-timeout') 
-    str = 'Backseat Driver Parameter: mission-timeout %s min' %(missionTimeout)
-    pub.publish(str) 
-    rospy.loginfo(str)
-    
     # Create a SMACH state machine - with outcome 'finish'
     sm = smach.StateMachine(outcomes=['finish'])
 

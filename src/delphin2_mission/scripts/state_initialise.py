@@ -45,9 +45,7 @@ class Initialise(smach.State):
         all_online = False
         str= 'Entered State Initialise'
         pub.publish(str)
-        
-        time.sleep(10) # give enought time for the system to come online (extra time that is start counting after mission script)
-        
+
         r = rospy.Rate(2) # [Hz] for controlling the loop timing
         while (time.time()-time_zero < self.__timeout) and not(all_online) and not rospy.is_shutdown():
            all_online = (self.__controller.getThrusterStatus() 

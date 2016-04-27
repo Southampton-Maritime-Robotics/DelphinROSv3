@@ -43,7 +43,7 @@ def construct_smach_sequence():
                                                 demand_th_hor = [0, 0], 
                                                 demand_cs_ver = 0, 
                                                 demand_cs_hor = 0, 
-                                                actionHold = 20))
+                                                actionHold = 60))
         
     return sm_se
     
@@ -53,8 +53,8 @@ def construct_smach_top():
     
     # Open the container, add state and define state transition
     with sm_top:
-#        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
-#            transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
+            transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('SEQUENCE', construct_smach_sequence(),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('STOP', Stop(_lib), 
