@@ -28,7 +28,7 @@ def main(controller):
     pubStatus = rospy.Publisher('status', status)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
 
-    controlRate = 5. # [Hz]
+    controlRate = 1. # [Hz]
     controlPeriod = 1./controlRate
     r = rospy.Rate(controlRate)
     
@@ -76,6 +76,20 @@ def main(controller):
     #Initialise BackSeatFlag to zero
     BackSeatFlag=0
     
+    # Wait until the system comes online
+    all_online = False
+    while not rospy.is_shutdown() and not all_online:
+        all_online = (controller.getXsensStatus()
+            and controller.getThrusterStatus()
+            and controller.getTailStatus()
+            and controller.getHeadingCtrlStatus()
+            and controller.getDepthCtrlStatus()
+            and controller.getDeadreckonerStatus()
+            and controller.getLoggerStatus())
+        if not all_online:
+            pubStatus.publish(nodeID = 11, status = False)
+            time.sleep(1)
+        
     # to control a timing for status publishing
     timeZero_status = time.time()
     try:
@@ -91,6 +105,66 @@ def main(controller):
         timeRef = time.time()
         
         #Poll System For Any Potential Errors or Status Warnings
+
+        #Identify OverDepth?
+        current_depth=controller.getDepth()
+        if current_depth > overDepth:
+            BackSeatFlag=1
+            str = "Current depth %sm > Depth limit of %sm" %(current_depth, overDepth)
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+        
+        #Identify OverPitch?
+        current_pitch=controller.getPitch()
+        if abs(current_pitch) > overPitch:
+            BackSeatFlag=1
+            str = "Current pitch %sdeg > Pitch limit of %sdeg" %(current_pitch, overPitch)
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+        
+        #Identify OverRoll?
+        current_roll=controller.getRoll()
+        if abs(current_roll) > overRoll:
+            BackSeatFlag=1
+            str = "Current roll %sdeg > Roll limit of %sdeg" %(current_roll, overRoll)
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+
+        #Check Internal Pressure Vessel Temperature
+        current_temperature=controller.getTemperature()
+        if current_temperature>maxInternalTemp:
+            BackSeatFlag=1
+            str = "Current temperature %sdeg > Temperature limit of %sdeg" %(current_temperature, maxInternalTemp)
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+        
+        #Check Motor Voltage
+        current_voltage=controller.getVoltage()
+        if current_voltage<minMotorVoltage:
+            BackSeatFlag=1
+            str = "Current voltage %smV < Motor voltage limit of %smV" %(current_voltage, minMotorVoltage)
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
+        
+        #Check Mission Duration
+        current_time=time.time()-time_zero
+        if current_time>missionTimeout:
+            BackSeatFlag=1
+            str = "Current mission time %ss > Mission time limit of %ss" %(current_time, missionTimeout)
+            rospy.logerr(str)
+            pub.publish(BackSeatFlag)
+            pubMissionLog.publish(str)
+            return
 
         #Identify OverDepth?
         current_depth=controller.getDepth()
@@ -226,6 +300,6 @@ def main(controller):
             
 if __name__ == '__main__':
     # Define an instance of highlevelcontrollibrary to pass to all action servers
-    lib = library_highlevel()
-    time.sleep(20) #Allow critical systems to come online.
-    main(lib)
+    controller = library_highlevel()
+    controller.wakeUp(2) # wakeup the backseat driver system
+    main(controller)
