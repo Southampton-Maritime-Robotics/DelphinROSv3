@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
 """
-The gps device works at 1Hz by default. Within one cycle, it provices an information via a number of message type (see variable named "identifier" in this file). The driver is written in a way that it will publish only once in one cycle when the getAll flag is raise.
+A driver for GPS.
+
+The gps device works at 1Hz by default. Within one cycle, it provices an information via a number of message type (see a variable named "identifier" in this file). The driver is written in a way that it will publish only once in one cycle when the getAll flag is raise.
 
 #######################################################
 #Modifications to code
@@ -29,6 +31,7 @@ import string
 from pylab import *
 from hardware_interfaces.msg import gps
 from hardware_interfaces.msg import status
+from std_msgs.msg import String
 
 ################### GLOBAL VARIABLES ################### 
 
@@ -178,6 +181,13 @@ def listenForData(status):
 
     first_reading = True
     mean_earth_radius = 6370973.27862					#metres
+
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
     
     while not rospy.is_shutdown():
 
@@ -188,15 +198,18 @@ def listenForData(status):
             getAll = False
             
             while serialPort.inWaiting() > 0 and serialPort.read(1) == '$': #while there is data to be read - read the line...
-            
+                # to control a timing for status publishing
+                if time.time()-timeZero_status > dt_status:
+                    timeZero_status = time.time()
+                    pubStatus.publish(nodeID = 4, status = True)
+
                 serialPort.flushInput()
                 
                 timeRef = time.time()
                 
-                pubStatus.publish(nodeID = 4, status = status)
                 data = serialPort.readline() 		#Read in line of data
                 split_data = string.split(data,',')				#Split message by comma separator
-                print 'Data: ', data
+####                print 'Data: ', data
 
                 message_identifier = split_data[0]				#Message identifier is the first part of the message and defines message format
                 identifier[message_identifier](split_data)			#Process message according to indentifier type
@@ -238,7 +251,6 @@ def listenForData(status):
                     gpsOut.x = X
                     gpsOut.y = Y
                     pub.publish(gpsOut)
-                    print "========= get all =========="
                     
                     timeElapse = time.time()-timeRef
                     if timeElapse < controlPeriod:
@@ -246,6 +258,7 @@ def listenForData(status):
                     else:
                         str = "GPS rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
                         rospy.logwarn(str)
+                        pubMissionLog.publish(str)
 
         except:
             print 'read error'
@@ -287,8 +300,10 @@ def shutdown():
 
 if __name__ == '__main__':
     time.sleep(4) #Allow System to come Online    
-    global identifier
-    global pub    
+
+    global identifier    
+    global serialPort
+    
     rospy.init_node('gps_sensor')
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
        
@@ -300,7 +315,8 @@ if __name__ == '__main__':
   
     #Define Publishers
     pubStatus = rospy.Publisher('status', status)
-    pub = rospy.Publisher('gps_out', gps) 
+    pub = rospy.Publisher('gps_out', gps)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     time.sleep(1)
     #Setup serial port and check its status
     port_status = setUpSerial()    

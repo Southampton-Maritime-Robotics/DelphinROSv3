@@ -1,4 +1,16 @@
 int32 nodeID
 bool status
 
-# nodeID: tsl_customer = 1, tailsection = 2, altimeter = 3, GPS = 4, compass = 5, SMS_modem = 6
+# nodeID: 
+# thruster = 1,
+# tail = 2, 
+# altimeter = 3, 
+# gps = 4, 
+# depth_transducer = 5, 
+# xsens = 6,
+# heading_controller = 7,
+# depth_controller = 8,
+# deadreckoner = 9,
+# logger = 10,
+# backSeatDriver = 11,
+# energyMonitor = 12,

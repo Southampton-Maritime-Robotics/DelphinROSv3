@@ -1,37 +1,37 @@
 #!/usr/bin/python
 
 """
-A PID-based controller to control the heading for the AUV when moving on a horizontal plane.
+A heading controller for the AUV when moving on a horizontal plane based-on PI-D strategy
+
+# Notes
+-control surface may not functioning correctly as the gains has not been tested yet
 
 ######################################
 #Modifications
 2/2/2015: implement PI-D strategy instead of PID to avoid the spike in derivative term when change the demand. In correspond to this, D_gain has to be negative.
 5/4/2015: makesure CS and thruster demands are Integer32
+21/9/2015: added speed observer
 
-# TODO - make the "CS_controller" less agressive at high forward speeds
-# TODO - check if the sway force distribution have been done correctly
+# TODO 
+- check if the sway force distribution have been done correctly
+- include actuator transition in according to surge speed
+- moved speed observer to dead_reckoner
 
 """
 
 import rospy
-import serial
 import time
 import numpy
 from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_setpoints
-from hardware_interfaces.msg    import position
 from hardware_interfaces.msg    import compass
-from lowlevel_controllers.msg   import heading_control
+from lowlevel_controllers.msg   import heading_control_PID
 from std_msgs.msg               import Float32
-from std_msgs.msg               import Bool
+from std_msgs.msg               import Int8
+from std_msgs.msg               import String
+from hardware_interfaces.msg    import status
 
-#### from kantapon's folder
-import sys
-import os.path
-basepath = os.path.dirname(__file__)
-filepath = os.path.abspath(os.path.join(basepath, '..', '..', 'delphin2_mission/scripts/kantapon'))
-sys.path.append(filepath)
-from utilities                      import uti
+from delphin2_mission.utilities     import uti
 
 ################################################################################
 #### CONTROLLER PARAMETERS #####################################################
@@ -44,25 +44,28 @@ def set_params():
     global myUti
     global timeLastDemandMax
     global timeLastCallback
+    global timeLastDemandProp
+    global timeLastDemandProp_lim
     
     timeLastDemandMax = 1 # [sec] if there is no onOff flag updated within this many seconds, controller will be turnned off
     timeLastCallback = time.time()
+    timeLastDemandProp = time.time()
+    timeLastDemandProp_lim = 1 # [sec] if there is no propeller demand update within this many seconds, the demand will be set to zero
 
     ### General ###
-    HC.deadzone   = 1   # deadzone of the heading error [degree]
+    HC.deadzone   = 0   # deadzone of the heading error [degree]
     
     ### CS Controller ###
-    HC.CS_Pgain       = 0.5 # FIXME: tune me kantapon
+    HC.CS_Pgain       = 8. # FIXME: tune me kantapon
     HC.CS_Igain       = 0
-    HC.CS_Dgain       = -0.3 # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
+    HC.CS_Dgain       = -13. # D gain has to be negative (c.f. PI-D), FIXME: tune me kantapon
     HC.CS_Smax         = 30
-#    HC.CS_min         = -HC.CS_max
     
     ### Thrust Controller ###
-    HC.Thrust_Pgain = 30000.00
+    HC.Thrust_Pgain = 40000.00
     HC.Thrust_Igain = 0.00
     HC.Thrust_Dgain = -100000.0 # -30000.00 # D gain has to be negative (c.f. PI-D)
-    HC.Thrust_Smax  = 800 # 1000 # maximum thruster setpoint, FIXME: unleash me kantapon
+    HC.Thrust_Smax  = 2500 # 1000 # maximum thruster setpoint
 
     ### Utility Object ###
     myUti = uti()
@@ -81,14 +84,12 @@ def set_params():
 def CS_controller(error, int_error, der_error):
     global HC
     HC.CS_Pterm      = error*HC.CS_Pgain
-    HC.CS_Iterm      = 0 # TODO int_error*HC.CS_Igain
-    HC.CS_Dterm      = 0 # TODO der_err*HC.CS_Dgain
-# TODO may incorporate a forward speed into a consideration using gain schedualing
-# TODO other option: divide the gains by u^2. If the speed is less than a threshold, all gain will be set to zero
+    HC.CS_Iterm      = int_error*HC.CS_Igain
+    HC.CS_Dterm      = der_error*HC.CS_Dgain
 
     CS_demand = HC.CS_Pterm + HC.CS_Iterm + HC.CS_Dterm
     CS_demand  = myUti.limits(CS_demand,-HC.CS_Smax,HC.CS_Smax)
-    
+        
     HC.CS_demand = int(round(CS_demand))
 
     return HC.CS_demand
@@ -128,6 +129,8 @@ def thrust_controller(error, int_error, der_error):
             thruster1 = thruster1*scale_factor
 
     else:
+        HC.Thrust_Pterm = 0.
+        HC.Thrust_Dterm = 0.
         thruster0 = 0.
         thruster1 = 0.
         
@@ -143,68 +146,83 @@ def thrust_controller(error, int_error, der_error):
 def main_control_loop():
 
     #### SETUP ####
-        global controller_onOff
-        global speed
-        global HC
+    global controller_onOff
+    global speed
+    global HC
+    global propDemand
 
-        speed            = 0
-        controller_onOff = Bool()
-        set_params()
+    propDemand       = 0
+    speed            = 0
+    controller_onOff = False
+    set_params()
 
-        controlRate = 5. # [Hz]
-        r = rospy.Rate(controlRate)
-        controlPeriod = 1/controlRate # [sec]
+    controlRate = 5. # [Hz]
+    r = rospy.Rate(controlRate)
+    controlPeriod = 1/controlRate # [sec]
+    
+    [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360) # On first loop, initialize relevant parameters
+    
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
+    
+    while not rospy.is_shutdown():
+        # to control a timing for status publishing
+        if time.time()-timeZero_status > dt_status:
+            timeZero_status = time.time()
+            pubStatus.publish(nodeID = 7, status = True)
+            
+        timeRef = time.time()                
         
-        [error, int_error, der_error] = system_state(-1,HC.heading,(HC.heading_demand)%360) # On first loop, initialize relevant parameters
-        
-        while not rospy.is_shutdown():
+        if time.time()-timeLastDemandProp > timeLastDemandProp_lim:
+            propDemand = 0
+        try:
+            speed_current = speedObserver(propDemand, speed, controlPeriod)
+            speed = speed_current
+            HC.speed = speed
+        except:
+            speed_current = 0
+            speed = speed_current
+            HC.speed = speed
 
-            if controller_onOff == True:
+        if controller_onOff == True:
+            # get sampling
+            heading_current = HC.heading
+            heading_demand = (HC.heading_demand)%360
+            
+            # Get system state #
+            [error, int_error, der_error] = system_state(controlPeriod,heading_current,heading_demand)
 
-                timeRef = time.time()                
-
-                # get sampling
-                heading_current = HC.heading
-                heading_demand = (HC.heading_demand)%360
-                
-                # Get system state #
-                [error, int_error, der_error] = system_state(controlPeriod,heading_current,heading_demand)
-
-                # Control Surface Controller # Nb CSp = Sternplane port, CSt = Rudder top
-                CS_demand = CS_controller(error, int_error, der_error)
-                # Thruster controller # 
-                [thruster0, thruster1] = thrust_controller(error, int_error, der_error)
-                
-                # update the heading_control.msg, and this will be subscribed by the logger.py
-                pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
-                pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
-                pub_HC.publish(HC)
-                
-                # verbose activity in thrust_controller
-#                str = ">>>>>>>>>>>>>>>>Heading demand is %.2fdeg" %(heading_demand) 
-#                rospy.loginfo(str)  
-#                str = ">>>>>>>>>>>>>>>>Current heading is %.2fdeg" %(heading_current) 
-#                rospy.loginfo(str)
-#                str = ">>>>>>>>>>>>>>>>Heading error is %.2fdeg" %(error) 
-#                rospy.loginfo(str)
-#                str = ">>>>>>>>>>>>>>>>Control surface demand is %d" %(CS_demand) 
-#                rospy.loginfo(str)
-#                str = ">>>>>>>>>>>>>>>>Thruster0 setpoint demand is %d" %(thruster0) 
-#                rospy.loginfo(str)
-#                str = ">>>>>>>>>>>>>>>>Thruster1 setpoint demand is %d" %(thruster1) 
-#                rospy.loginfo(str)
-#                print ''
-
-                if time.time()-timeLastCallback > timeLastDemandMax:
-                    controller_onOff = False
-                    
-                timeElapse = time.time()-timeRef
-                
-                if timeElapse < controlPeriod:
-                    r.sleep()
-                else:
-                    str = "Heading control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
-                    rospy.logwarn(str)
+            # Control Surface Controller # Nb CSp = Sternplane port, CSt = Rudder top
+            CS_demand = CS_controller(error, int_error, der_error)
+            # Thruster controller # 
+            [thruster0, thruster1] = thrust_controller(error, int_error, der_error)
+            
+            # update the heading_control_PID.msg, and this will be subscribed by the logger.py
+            pub_tail.publish(cs0 =CS_demand, cs1 = CS_demand)
+            pub_tsl.publish(thruster0 = thruster0, thruster1 = thruster1)
+            pub_HC.publish(HC)
+            
+            # watch to inactivate the controller when there is no demand specified
+            if time.time()-timeLastCallback > timeLastDemandMax:
+                controller_onOff = False
+        else:
+            HC.CS_demand = 0
+            HC.thruster0 = 0
+            HC.thruster1 = 0
+            pub_HC.publish(HC)
+            
+        # verify and maintain the control rate
+        timeElapse = time.time()-timeRef        
+        if timeElapse < controlPeriod:
+            r.sleep()
+        else:
+            str = "Heading control rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rospy.logwarn(str)
+            pubMissionLog.publish(str)
 
 ################################################################################
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
@@ -246,7 +264,11 @@ def system_state(dt,heading_current,heading_demand):
 
 def heading_demand_cb(headingd):
     global HC
+    global controller_onOff
+    global timeLastCallback
     HC.heading_demand = headingd.data
+    controller_onOff = True
+    timeLastCallback = time.time()
     
 def sway_demand_cb(swaydemand):
     global HC
@@ -255,18 +277,60 @@ def sway_demand_cb(swaydemand):
 def compass_cb(compass):
     global HC
     HC.heading = compass.heading
-
-def onOff_cb(onOff):
-    global controller_onOff
-    global timeLastCallback
-    controller_onOff=onOff.data
-    timeLastCallback = time.time()
     
-def speed_callback(data):
-    global speed
-    global HC
-    speed = data.forward_vel
-    HC.speed = speed
+################################################################################
+######## SPEED OBSERVER ########################################################
+################################################################################
+
+def prop_demand_callback(propd):
+    global propDemand
+    global timeLastDemandProp
+    propDemand = propd.data
+    timeLastDemandProp = time.time()
+
+def propeller_model(u_prop,_speed):
+    if numpy.abs(u_prop)<10:   # deadband
+        F_prop = 0
+    else:
+        # propeller model based on Turnock2010 e.q. 16.19
+        Kt0 = 0.1003
+        a = 0.6952
+        b = 1.6143
+        w_t = 0.36 # wake fraction
+        t = 0.11 # thrust deduction
+        D = 0.305 # peopeller diameter [m]
+        rho = 1000 # water density [kg/m^3]
+                
+        rps = 0.2748*u_prop - 0.1657 # infer propeller rotation speed from the propeller demand [rps]
+                    
+        J = _speed *(1-w_t)/rps/D;
+        Kt = Kt0*(1 - (J/a)**b );
+        F_prop = rho*rps**2*D**4*Kt*(1-t);
+
+    return F_prop
+
+def rigidbodyDynamics(_speed,F_prop):
+    m = 79.2 # mass of the AUV [kg]
+    X_u_dot = -3.46873716858361 # added mass of the AUV [kg]
+    X_u = -16.2208 # linear damping coefficient [kg/s]
+    X_uu = -1.2088 # quadratic damping coefficient [kg/m]
+    
+    acc = (X_u*_speed + X_uu*abs(_speed)*_speed + F_prop)/(m-X_u_dot)
+    
+    return acc
+    
+def speedObserver(u_prop,_speed,dt):
+    # compute force from a propeller demand
+    F_prop = propeller_model(u_prop,_speed)
+    # implement Runge-Kutta 4th order to update the AUV speed
+    k1 = rigidbodyDynamics(_speed,F_prop)
+    k2 = rigidbodyDynamics(_speed+dt/2.*k1,F_prop)
+    k3 = rigidbodyDynamics(_speed+dt/2.*k2,F_prop)
+    k4 = rigidbodyDynamics(_speed+dt*k3,F_prop)
+
+    speed_change = dt/6.*(k1+2*k2+2*k3+k4)
+    _speed = _speed + speed_change
+    return _speed
     
 ################################################################################
 ######## INITIALISATION ########################################################
@@ -276,17 +340,18 @@ if __name__ == '__main__':
     rospy.init_node('Heading_controller')
     
     global HC
-    HC = heading_control()
+    HC = heading_control_PID()
    
     rospy.Subscriber('heading_demand', Float32, heading_demand_cb)
     rospy.Subscriber('sway_demand', Float32, sway_demand_cb)
     rospy.Subscriber('compass_out', compass, compass_cb)
-    rospy.Subscriber('position_dead', position, speed_callback)
-    rospy.Subscriber('Heading_onOFF', Bool, onOff_cb)
+    rospy.Subscriber('prop_demand', Int8, prop_demand_callback)
     
     pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
     pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
-    pub_HC   = rospy.Publisher('Heading_controller_values', heading_control)
+    pub_HC   = rospy.Publisher('Heading_controller_values_PID', heading_control_PID)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pubStatus = rospy.Publisher('status', status)
     
     rospy.loginfo("Heading controller online")
 

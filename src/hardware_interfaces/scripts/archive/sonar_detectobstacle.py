@@ -27,7 +27,7 @@ def callback(msgData):
     msgData = numpy.fromstring(msgData.data, dtype=numpy.uint8)                 # Convert from string to UINT8 numpy array
    
     pingPwr = msgData[44:-1]                                                    # Extract sonar return data, ignoring message header
-    print pingPwr
+####    print pingPwr
     
 #    ADInterval     = rospy.get_param("/ADInterval")                             # Not currently in use, see manual for more info
 #    GlitchCount    = rospy.get_param("/GlitchCount")                            # Not currently in use, see manual for more info
@@ -56,10 +56,10 @@ def callback(msgData):
         
     meanIntinsity = numpy.mean(pingPwr[StartBin:-1])                            # Calculate the mean intensity of returns beyond the blanking distance. May be of interest in identifying areas of interest
 
-    print 'bearing:',transBearing
-    print 'range:',TargetRange
-    print 'current time:', time.time()
-    print '_____________'
+####    print 'bearing:',transBearing
+####    print 'range:',TargetRange
+####    print 'current time:', time.time()
+####    print '_____________'
     
     pub.publish(transBearing = transBearing, pitch = pitch, TargetRange = TargetRange, meanIntinsity = meanIntinsity, rawData = rawData)
 

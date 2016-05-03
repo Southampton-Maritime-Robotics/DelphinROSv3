@@ -1,7 +1,4 @@
 <launch>
-    <!-- Parameters
-    -->
-
     <rosparam file="$(find delphin2_mission)/launch/parameters/sonar.yaml" command="load"/>
     <rosparam file="$(find delphin2_mission)/launch/parameters/sonar/sonarPlot.yaml" command="load"/>
     <rosparam file="$(find delphin2_mission)/launch/parameters/sonar/sonarAnalyse.yaml" command="load"/>
@@ -12,7 +9,7 @@
     -->
 
     <node name="sonar_node" pkg="hardware_interfaces" type="sonar_node" />
-   <!--
+    <!--
     <node name="sonar_detectobstacle" pkg="hardware_interfaces" type="sonar_detectobstacle.py" />
     <node name="logger" pkg="hardware_interfaces" type="logger.py" output="screen"/> 
     -->

@@ -1,9 +1,9 @@
 <launch>
 
-	<!-- <node pkg="xsens_driver" type="xsens_logger.py" name="xsens_logger" output="screen" /> -->
+	<!-- <node pkg="xsens_driver" type="xsens_logger.py" name="xsens_logger"/> -->
 	
-	<!-- <node pkg="hardware_interfaces" type="compass_oceanserver.py" name="ocean_server" /> -->
+	<!-- <node pkg="hardware_interfaces" type="depth_transducer.py" name="depth_transducer" /> -->
 	
-	<node pkg="xsens_driver" type="mtdevice.py" name="xsens_driver" output="screen" respawn="true" />
+	<node pkg="xsens_driver" type="mtdevice.py" name="xsens_driver" respawn="true" />
 	
 </launch>

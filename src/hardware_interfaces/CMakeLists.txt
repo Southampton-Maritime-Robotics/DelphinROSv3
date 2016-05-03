@@ -48,7 +48,6 @@ catkin_python_setup()
  add_message_files(
    FILES
    compass.msg
-   position.msg
    status.msg
    gps.msg
    tail_setpoints.msg
@@ -66,6 +65,8 @@ catkin_python_setup()
    SMS.msg
    gyro.msg
    ForcesAndMoments.msg
+   depth.msg
+   energy_consumed.msg
  )
 
 ## Generate services in the 'srv' folder

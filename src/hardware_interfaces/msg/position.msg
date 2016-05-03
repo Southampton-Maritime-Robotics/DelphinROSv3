@@ -1,9 +1,0 @@
-float32 X
-float32 Y
-float32 Z
-float32 forward_vel
-float32 sway_vel
-float64 lat
-float64 long
-float32 altitude
-int8 ValidGPSfix

@@ -1,14 +1,16 @@
 #!/usr/bin/python
 
 """
-This node is a driver for a altertude measurement w.r.t. to the sea bottom.
-Note that, the pitch angle of the AUV affects the measured altitude.
+A driver for an altertude w.r.t. to the sea bottom.
 
-The sensor is very noisy, therefore, filterred by the Polynomial-Type filtering technique.
+The sensor is very noisy, therefore, filterred by the Polynomial-Type (PT) filtering technique.
 
 #######################################################
 # Modifications to code
 4/4/2015: control rate by rospy.Rate()
+
+# TODO
+- must include a pitch angle of the AUV into the altitude measurement.
 
 """
 
@@ -16,6 +18,7 @@ import rospy
 import serial
 import time
 import numpy
+from std_msgs.msg import String
 from hardware_interfaces.msg import altitude
 from hardware_interfaces.msg import status
 
@@ -26,9 +29,8 @@ def setUpSerial(): # set up the serial port
     serialPort.bytesize = serial.EIGHTBITS
     serialPort.stopbits = serial.STOPBITS_ONE
     serialPort.parity = serial.PARITY_NONE
-    print "Initialised EchoSounder serial."
-    print serialPort.portstr
-    print serialPort.isOpen()
+####    print serialPort.portstr
+####    print serialPort.isOpen()
     return serialPort.isOpen()
 
 ################################################################
@@ -85,11 +87,20 @@ def listenForData(status):
     controlPeriod = 1/controlRate
     r = rospy.Rate(controlRate)
     
+    # to control a timing for status publishing
+    timeZero_status = time.time()
+    try:
+        dt_status = rospy.get_param('status_timing')
+    except:
+        dt_status = 2.
+        
     while not rospy.is_shutdown():
     
-        while serialPort.inWaiting() > 8:    
-            
-            pubStatus.publish(nodeID = 3, status = status)
+        while serialPort.inWaiting() > 8:
+            # to control a timing for status publishing
+            if time.time()-timeZero_status > dt_status:
+                timeZero_status = time.time()
+                pubStatus.publish(nodeID = 3, status = True)
             
             try:                       # while there is data to be read - read the line
                 data = serialPort.readline()
@@ -116,6 +127,7 @@ def listenForData(status):
         else:
             str = "Altimeter_micron rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
             rospy.logwarn(str)
+            pubMissionLog.publish(str)
         
 ################################################################
 def shutdown():
@@ -128,11 +140,14 @@ def shutdown():
 #     INITIALISE     ###########################################
 ################################################################
 if __name__ == '__main__':
+    
     time.sleep(1) #Allow System to come Online    
     rospy.init_node('MicronEchoSounder')
+    rospy.on_shutdown(shutdown)         #Defining shutdown behaviour
+    
     pub = rospy.Publisher('altimeter_out', altitude)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     pubStatus = rospy.Publisher('status', status)
-    rospy.on_shutdown(shutdown)         #Defining shutdown behaviour  
     
     global array_length
     global Dx

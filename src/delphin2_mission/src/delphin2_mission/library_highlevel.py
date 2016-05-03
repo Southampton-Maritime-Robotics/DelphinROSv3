@@ -14,7 +14,8 @@ from std_msgs.msg import String
 
 #import message types for subscribing:
 from hardware_interfaces.msg    import compass
-from hardware_interfaces.msg    import position
+from hardware_interfaces.msg    import depth
+from navigation.msg             import position
 from hardware_interfaces.msg    import tail_setpoints
 from hardware_interfaces.msg    import tsl_setpoints
 from hardware_interfaces.msg    import tail_feedback
@@ -22,11 +23,10 @@ from hardware_interfaces.msg    import tsl_feedback
 from hardware_interfaces.msg    import altitude
 from hardware_interfaces.msg    import status
 from hardware_interfaces.msg    import camera
-from lowlevel_controllers.msg   import heading_control
 from hardware_interfaces.msg    import sonar_data
-from lowlevel_controllers.msg   import depthandpitch_MPC
+from hardware_interfaces.msg    import energy_consumed
 
-class library_highlevel:
+class library_highlevel(object):
 # library class for high-level controller.  Defines the inputs, output and basic functionality that
 # all high-level controllers should inherit.
 
@@ -37,34 +37,30 @@ class library_highlevel:
         self.pub_sway_demand               = rospy.Publisher('sway_demand', Float32)
         self.pub_prop_demand               = rospy.Publisher('prop_demand',Int8)                #tail_section.py currently expecting uint8
         self.pub_heading_demand            = rospy.Publisher('heading_demand', Float32)
-        self.pub_depth_demand              = rospy.Publisher('depth_demand', Float32) 
+        self.pub_depth_demand              = rospy.Publisher('depth_demand', Float32)
         self.pub_speed                     = rospy.Publisher('speed_demand', Float32)
-        self.pub_pitch_demand              = rospy.Publisher('pitch_demand', Float32) 
-        self.pub_tsl_onOff_horizontal      = rospy.Publisher('TSL_onOff_horizontal', Bool)      #turns thrusters on and off 
-        self.pub_tsl_onOff_vertical        = rospy.Publisher('TSL_onOff_vertical', Bool)        #turns thrusters on and off
+        self.pub_pitch_demand              = rospy.Publisher('pitch_demand', Float32)
         self.pub_tail_setpoints_vertical   = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
         self.pub_tail_setpoints_horizontal = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
         self.pub_tsl_heading               = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
         self.pub_tsl_depth                 = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
-        self.pub_heading_control_onOff     = rospy.Publisher('Heading_onOFF', Bool)             #turns heading controller on and off
-        self.pub_depth_control_onOff       = rospy.Publisher('Depth_onOFF', Bool)               #turns depth controller on and off
         self.pub_camera                    = rospy.Publisher('Camera', camera)
-        self.pub_pitch_control_onOff       = rospy.Publisher('Pitch_onOFF', Bool)
         self.Mission_pub                   = rospy.Publisher('MissionStrings', String)
         self.pub_SMS                       = rospy.Publisher('SMS_message', String)
         self.pub_light                     = rospy.Publisher('light_onOff', Bool)
         
         #set up subscribers
         rospy.Subscriber('compass_out', compass, self.callback_compass)                         #compass data
+        rospy.Subscriber('depth_out', depth, self.callback_depth)                         #compass data
         rospy.Subscriber('position_dead', position, self.callback_position)                     #position (dead reckoning)
         rospy.Subscriber('altimeter_out', altitude, self.callback_altitude)
         rospy.Subscriber('back_seat_flag', Int8, self.callback_back_seat_flag)
         rospy.Subscriber('TSL_feedback', tsl_feedback, self.callback_tsl_feedback)
         rospy.Subscriber('status', status, self.callback_status)
         rospy.Subscriber('tail_output', tail_feedback, self.callback_tail_feedback)
-        rospy.Subscriber('Heading_controller_values', heading_control, self.callback_heading_control)      
-        rospy.Subscriber('sonar_processed', sonar_data, self.callback_sonar_range)       
-        rospy.Subscriber('DepthandPitch_MPC_values', depthandpitch_MPC, self.callback_depthandpitchMPC)
+        rospy.Subscriber('sonar_processed', sonar_data, self.callback_sonar_range)
+        rospy.Subscriber('EnergyConsumed', energy_consumed, self.EnergyConsumed_callback)
+        
         
         #gets parameters from server ####Don't Need to be Here ????????
         self.__maxDepthDemand = rospy.get_param('max-depth-demand')
@@ -74,22 +70,28 @@ class library_highlevel:
         #initilise empty object variables to hold latest data from subscribers
         ######### might need to set default values in message files
         self.__compass = compass()
+        self.__depth = depth()
         self.__position = position()
         self.__altitude = altitude()
         self.__sonar_range = 0
         self.__back_seat_flag = 0 #back_seat_flag is 0 when no errors are present
-        self.__motor_voltage = 0
         
         self.__TSL_status = 0 #initisliased to indicate presence of errors - this will be set to 1 once node has been tested during vehicle initialisation
         self.__tail_status = 0
         self.__altimeter_status = 0
         self.__gps_status = 0
-        self.__compass_status = 0
+        self.__depth_transducer_status = 0
+        self.__xsens_status = 0
+        self.__heading_ctrl_status = 0
+        self.__depth_ctrl_status = 0
+        self.__deadreckoner_status = 0
+        self.__logger_status = 0
+        self.__backSeatDriver_status = 0
+        self.__energyMonitor_status = 0
         
-        self.__heading_error=0.0
         self.__altitude=0.0
    
-        self.__motor_voltage = 0.0
+        self.__motor_voltage = 10.0
         self.__T0rpm = 0.0
         self.__T1rpm = 0.0
         self.__T2rpm = 0.0
@@ -98,8 +100,13 @@ class library_highlevel:
         self.__CS_c = 0.0
         self.__CS_d = 0.0
         self.__CS_e = 0.0
-        self.__PropRPM = 0.0
+        self.__PropRPS = 0.0
    
+    def wakeUp(self,_timeDelay):
+        # Called in the mission script, just after creating the libraly object, as to let the object starts working
+        # Without this the callback mechanism will not yet start.
+        time.sleep(_timeDelay)
+        
     # stops vehicle and shuts down ROS
     # may be better as an action....
     def stop(self):
@@ -107,11 +114,10 @@ class library_highlevel:
         rospy.logfatal(str)
         self.Mission_pub.publish(str)
         self.setArduinoThrusterHorizontal(0, 0)
-        self.switchHorizontalThrusters(0)
         self.setArduinoThrusterVertical(0, 0)
-        self.switchVerticalThrusters(0)
         self.setRearProp(0)
-        self.setControlSurfaceAngle(0, 0, 0, 0)
+        self.setRudderAngle(0)
+        self.setSternPlaneAngle(0)
         time.sleep(5)
         rospy.logfatal("Shutting down")
         self.Mission_pub.publish('Shutting Down')
@@ -125,124 +131,86 @@ class library_highlevel:
     
     # sets sway 'demand' (tsl_setpoints ~500-1000)
     def sway(self, demand):
-#        str = "Swaying %s (positive to starboard)" %demand
-#        rospy.loginfo(str)
         # keep current heading (not current heading demand!)
         self.changeHeadingBy(0)
         self.pub_sway_demand.publish(demand)
-        self.switchHorizontalThrusters(1)
-        self.switchHeadingOnOff(1)
     
     # sets a 'demand' for the rear prop (between 0 and 22ish)
     def setRearProp(self, demand):
-        #publish rear prop_demand
-#        print 'Rear prop to', demand
-#        str = "Setting rear prop demand %s" %demand
-#        rospy.loginfo(str)
-        self.pub_prop_demand.publish(demand)
+        self.pub_prop_demand.publish(round(demand))
         
     # set a 'demand' (in degrees) for the rudder angle
     def setRudderAngle(self, demand):
         vertical=tail_setpoints()
+        demand = round(demand)
         vertical.cs0 = demand
         vertical.cs1 = demand
-        str = "Ruddder demand %.3f deg" %demand
-        rospy.loginfo(str)
-        #publish rear rudder_demand
         self.pub_tail_setpoints_vertical.publish(vertical)
+
+    # set a 'demand' (in degrees) for the stenplane angle
+    def setSternPlaneAngle(self, demand):
+        horizontal=tail_setpoints()
+        demand = round(demand)
+        horizontal.cs0 = demand
+        horizontal.cs1 = demand
+        self.pub_tail_setpoints_horizontal.publish(horizontal)
 
     # set a 'demand' (in degrees) for the rudder angle
     def setControlSurfaceAngle(self, b,c,d,e): # (VerUp,HorRight,VerDown,HorLeft)
         vertical   = tail_setpoints()
         horizontal = tail_setpoints()
-        vertical.cs0 = b
-        vertical.cs1 = d
-        horizontal.cs0 = c
-        horizontal.cs1 = e
-#        str = "Control surface demands - top: %s, sb: %s, bottom: %s, p: %s deg" %(b,c,d,e)
-#        rospy.loginfo(str)
+        vertical.cs0 = round(b)
+        vertical.cs1 = round(d)
+        horizontal.cs0 = round(c)
+        horizontal.cs1 = round(e)
         self.pub_tail_setpoints_vertical.publish(vertical)
         self.pub_tail_setpoints_horizontal.publish(horizontal)
 
     # manually send tsl setpoint values for horizontal thrusters
     def setArduinoThrusterHorizontal(self, thruster2, thruster3):
         output=tsl_setpoints()
-        output.thruster0=thruster2
-        output.thruster1=thruster3
-#        str = "Horizontal Thruster Setpoints %s %s" %(thruster2,thruster3)
-#        rospy.loginfo(str)
-        self.switchHorizontalThrusters(1)
-        self.switchHeadingOnOff(0)
-#        time.sleep(0.5)
+        output.thruster0 = round(thruster2)
+        output.thruster1 = round(thruster3)
         self.pub_tsl_heading.publish(output)
 
     # manually send tsl setpoint values for vertical thrusters
     def setArduinoThrusterVertical(self, thruster0, thruster1):
         output=tsl_setpoints()
-        output.thruster0=thruster0
-        output.thruster1=thruster1
-        
-        #print statement might not work! hasn't been tested!
-#        str = "Vertical Thruster Setpoints %s %s" %(thruster0,thruster1)
-#        rospy.loginfo(str)
-        self.switchVerticalThrusters(1)
-        self.switchDepthOnOff(0)
-#        time.sleep(0.5)
+        output.thruster0 = round(thruster0)
+        output.thruster1 = round(thruster1)
+        #publish demand
         self.pub_tsl_depth.publish(output)
 
     # move to depth 'demand' (metres)
     def setDepth(self, demand):
-        #publish depthDemand
-        #print 'Setting depth demand: ', demand, 'm'
-        self.switchDepthOnOff(1)
-        self.switchVerticalThrusters(1)
-#        print demand
-        if (demand < self.__maxDepthDemand and demand > 0):
-            self.pub_depth_demand.publish(demand)
-#            str = "Setting depth demand %sm" %demand
-#            rospy.loginfo(str)
-######        elif demand <= 0.2: # TODO this case will never be in use
-######            str = "Requested depth demand %sm <=0m, turning vertical thrusters Off. " %	demand
-######            self.pub_depth_demand.publish(demand)
-######            rospy.logwarn(str)   
-######            #self.switchDepthOnOff(0)
-######            self.switchVerticalThrusters(0)           
+        if (demand < 0):
+            # if demand is zero or less than zero
+            str = "Improper depth demand (%sm), turn off depth controller" %(demand)
+            rospy.logwarn(str)
         else:
-            self.pub_depth_demand.publish(self.__maxDepthDemand)
-            str = "Requested depth %sm > maxDepthDemand (%sm)" %(demand, self.__maxDepthDemand)
-            rospy.logwarn(str)
-            str = "Setting depth demand %sm" %self.__maxDepthDemand
-            rospy.logwarn(str)
+            if demand > self.__maxDepthDemand: # apply a saturation to the demand
+                str = "Requested depth %sm > maxDepthDemand (%sm)" %(demand, self.__maxDepthDemand)
+                rospy.logwarn(str)
+                str = "Setting depth demand %sm" %self.__maxDepthDemand
+                rospy.logwarn(str)
+                self.pub_depth_demand.publish(self.__maxDepthDemand)
+            else:
+                self.pub_depth_demand.publish(demand)
             
     def setSpeed(self, demand):
         self.pub_speed.publish(demand)
-#        str = "Setting speed demand %s m/s" %demand
-#        rospy.loginfo(str)
     
     def setPitch(self, demand):
-        self.switchPitchOnOff(1)
-        self.switchVerticalThrusters(1)
-        
         if (abs(demand) < self.overpitch):
             self.pub_pitch_demand.publish(demand)
-#            str = "Setting pitch demand %sdeg" %demand
-#            rospy.loginfo(str)
-        else:
+        else: # apply a saturation to the demand
             demand_mod = numpy.sign(demand)*self.overpitch
             self.pub_pitch_demand.publish(demand_mod)
-#            str = "Magnitude of requested pitch %sdeg > maxPitchDemand (%sdeg)" %(demand, self.overpitch)
-#            rospy.logwarn(str)
-#            str = "Setting pitch demand %sdeg" %demand_mod
-#            rospy.logwarn(str)
 
     # move to heading 'demand' (degrees)
     def setHeading(self, demand):
         #publish headingDemand
         cur_heading=self.getHeading()
-#        str = "Setting heading demand %.3f deg, current heading %.3f deg" %(demand, cur_heading)
-#        rospy.loginfo(str)
-        self.switchHorizontalThrusters(1)
-        self.switchHeadingOnOff(1)
         self.pub_heading_demand.publish(demand)
 
     # change heading by 'headingChange' (degrees)
@@ -255,66 +223,11 @@ class library_highlevel:
         #change depth by an amount (depthChange)
         self.setDepth(self.__compass.depth + depthChange)
     
-    # switch horizontal thrusters on or off {1,0}
-    def switchHorizontalThrusters(self, onOff):
-        if onOff == 1:
-            self.pub_tsl_onOff_horizontal.publish(1)
-            str = "Switch Horizontal Thruster ON"
-            rospy.logdebug(str)	
-        else: 
-            self.pub_tsl_onOff_horizontal.publish(0) 
-            str = "Switch Horizontal Thruster OFF"
-            rospy.logdebug(str)	
-            
-    # switch vertical thrusters on or off {1,0}
-    def switchVerticalThrusters(self, onOff):
-        if onOff == 1:
-            self.pub_tsl_onOff_vertical.publish(1) 
-            str = "Switch Vertical Thruster ON"
-            rospy.logdebug(str)	        
-        else:
-            self.pub_tsl_onOff_vertical.publish(0) 
-            str = "Switch Vertical Thruster OFF"
-            rospy.logdebug(str)	 
-
-    # switch heading controller on or off {1,0}
-    def switchHeadingOnOff(self,onOff):
-        if onOff ==1:
-            self.pub_heading_control_onOff.publish(1)
-            str = "Switch Heading Control ON"
-            rospy.logdebug(str)	 
-        else:
-            self.pub_heading_control_onOff.publish(0)
-            str = "Switch Heading Control OFF"
-            rospy.logdebug(str)	 
-
-    # switch depth controller on or off {1,0}
-    def switchDepthOnOff(self,onOff):
-        if onOff ==1:
-            self.pub_depth_control_onOff.publish(1)
-            str = "Switch Depth Control ON"
-            rospy.logdebug(str)
-        else:
-            self.pub_depth_control_onOff.publish(0)
-            str = "Switch Depth Control OFF"
-            rospy.logdebug(str)
-            
-    def switchPitchOnOff(self,onOff):
-        if onOff ==1:
-            self.pub_pitch_control_onOff.publish(1)
-            str = "Switch Pitch Control ON"
-            rospy.logdebug(str)
-        else:
-            self.pub_pitch_control_onOff.publish(0)
-            str = "Switch Pitch Control OFF"
-            rospy.logdebug(str)
     #################################################
     # Getter methods    
     ############# these might change depending on which compass is being used...
     ############# could I create PNI compass class? etc that could be instantiated in constructor of this class?
-    ############# or is that getting too complicated...?    
-    def getDepthandpitchMPC(self):
-        return self.__depthandpitchMPC
+    ############# or is that getting too complicated...?
     
     def getHeading(self):
         return self.__compass.heading
@@ -329,7 +242,7 @@ class library_highlevel:
         return self.__compass.temperature
     
     def getDepth(self):
-        return self.__compass.depth_filt
+        return self.__depth.depth_filt
     
     # magnetometer
     def getM(self):
@@ -356,17 +269,17 @@ class library_highlevel:
     
     def getAz(self):
         return self.__compass.az
-
+    
     # get position values
     def getX(self):
         return self.__position.X
-
+    
     def getY(self):
         return self.__position.Y
     
     def getGPSValidFix(self):
-        return self.__position.ValidGPSfix    
-               
+        return self.__position.ValidGPSfix
+    
     def getAltitude(self):
         return self.__altitude
     
@@ -396,15 +309,36 @@ class library_highlevel:
     
     def getTailStatus(self):
         return self.__tail_status
-        
+    
     def getAltimeterStatus(self):
         return self.__altimeter_status
     
     def getGPSStatus(self):
         return self.__gps_status
     
-    def getCompassStatus(self):
-        return self.__compass_status
+    def getDepthTransducerStatus(self):
+        return self.__depth_transducer_status
+    
+    def getXsensStatus(self):
+        return self.__xsens_status
+    
+    def getHeadingCtrlStatus(self):
+        return self.__heading_ctrl_status
+    
+    def getDepthCtrlStatus(self):
+        return self.__depth_ctrl_status
+    
+    def getDeadreckonerStatus(self):
+        return self.__deadreckoner_status
+    
+    def getLoggerStatus(self):
+        return self.__logger_status
+    
+    def getBackSeatDriverStatus(self):
+        return self.__backSeatDriver_status
+        
+    def getEnergyMonitorStatus(self):
+        return self.__energyMonitor_status
     
     def getCS_b(self):
         return self.__CS_b
@@ -418,12 +352,9 @@ class library_highlevel:
     def getCS_e(self):
         return self.__CS_e
     
-    def getPropRPM(self):
-        return self.__PropRPM
+    def getPropRPS(self):
+        return self.__PropRPS
     
-    def getHeadingError(self):
-        return self.__heading_error     
-
     #################################################
     #Navigation commands
     #################################################
@@ -451,31 +382,28 @@ class library_highlevel:
                 if l!=None:
                     EndLine=i-1
 
-
-
             waypoints=lines[StartLine]
 
             NosWaypoints=len(waypoints)
 
-            p = re.compile('[-]*\d+.\d+')    
+            p = re.compile('[-]*\d+.\d+')
             data=p.findall(waypoints)
             NosWaypoints=len(data)/2
 
             longitude=numpy.zeros(NosWaypoints)
             latitude=numpy.zeros(NosWaypoints)
 
-
-
             for i in xrange (0,NosWaypoints):
                 longitude[i]=float(data[2*i]) # east west
                 latitude[i]=float(data[2*i+1]) #north south
 
             Load=1
+            
         except IOError as e:
             Load=0
             longitude=0
-            latitude=0      
-            rospy.logerr("Waypoint File Not Found") 
+            latitude=0
+            rospy.logerr("Waypoint File Not Found")
             
         return longitude, latitude, Load
 
@@ -516,61 +444,64 @@ class library_highlevel:
     #################################################
     # Callbacks
     #################################################
-    def callback_depthandpitchMPC(self, data):
-        self.__depthandpitchMPC = data
 
     def callback_compass(self, compass_data):
-#           if compass_data.depth > 15:
-#                str = "Depth exceeded 15m - aborting mission"
-#                rospy.logfatal(str)
-#                self.stop()
         self.__compass = compass_data
+
+    def callback_depth(self, depth_data):
+        self.__depth = depth_data
     
     def callback_position(self, position):
-        self.__position = position   
+        self.__position = position
 
     def callback_altitude(self, altitude):
         self.__altitude = altitude.altitude_filt
            
     def callback_sonar_range(self, sonar):
         self.__sonar_range = sonar.TargetRange
+        
+    def EnergyConsumed_callback(self, energy):
+        self.__motor_voltage = energy.batteryVol
            
     def callback_back_seat_flag(self, back_seat_flag):
         self.__back_seat_flag = back_seat_flag.data
            
     def callback_tsl_feedback(self, tsl):
-        self.__motor_voltage = tsl.voltage
         self.__T0rpm = tsl.speed0
         self.__T1rpm = tsl.speed1
         self.__T2rpm = tsl.speed2
         self.__T3rpm = tsl.speed3
            
     def callback_tail_feedback(self, tail_feedback):
-        self.__CS_b = tail_feedback.b
-        self.__CS_c = tail_feedback.c
-        self.__CS_d = tail_feedback.d
-        self.__CS_e = tail_feedback.e
-        self.__PropRPM = tail_feedback.rpm
-           
-    def callback_heading_control(self, heading_control):
-        self.__heading_error = heading_control.error
-              
-           
+        self.__CS_b = tail_feedback.b_fb
+        self.__CS_c = tail_feedback.c_fb
+        self.__CS_d = tail_feedback.d_fb
+        self.__CS_e = tail_feedback.e_fb
+        self.__PropRPS = tail_feedback.prop_rps
+        
     def callback_status(self, status):
         if status.nodeID == 1:
-            #TSL_board:
             self.__TSL_status = status.status
-            return
         elif status.nodeID == 2:
             self.__tail_status = status.status
-            return
         elif status.nodeID == 3:
             self.__altimeter_status = status.status
-            return
         elif status.nodeID == 4:
             self.__gps_status = status.status
-            return
         elif status.nodeID == 5:
-            self.__compass_status = status.status
-            return
-
+            self.__depth_transducer_status = status.status
+        elif status.nodeID == 6:
+            self.__xsens_status = status.status
+        elif status.nodeID == 7:
+            self.__heading_ctrl_status = status.status
+        elif status.nodeID == 8:
+            self.__depth_ctrl_status = status.status
+        elif status.nodeID == 9:
+            self.__deadreckoner_status = status.status
+        elif status.nodeID == 10:
+            self.__logger_status = status.status
+        elif status.nodeID == 11:
+            self.__backSeatDriver_status = status.status
+        elif status.nodeID == 12:
+            self.__energyMonitor_status = status.status
+        return

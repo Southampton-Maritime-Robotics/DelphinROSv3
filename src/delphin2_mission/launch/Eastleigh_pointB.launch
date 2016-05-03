@@ -1,0 +1,9 @@
+<launch>
+    
+    <!-- Load AUV System! -->
+    <include file="$(find delphin2_mission)/launch/system_loader.txt" />
+    
+    <!-- Mission File! -->    
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_Eastleigh_pointB.py" required="true" output="screen"/>
+    
+</launch>
