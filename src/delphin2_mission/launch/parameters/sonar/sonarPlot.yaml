@@ -5,5 +5,5 @@
 /sonar/plot/Memory: 200
 
 # specific angle for which target range should be plotted
-/sonar/plot/AngleOfInterest: 180
+/sonar/plot/AngleOfInterest: 100
 

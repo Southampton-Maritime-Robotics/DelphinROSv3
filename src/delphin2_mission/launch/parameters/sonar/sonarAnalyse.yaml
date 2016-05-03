@@ -7,7 +7,7 @@ sonar/analyse/GlitchCount: 1
 
 # Power level (0 to 250) above which sonar 'sees' a target
 # Value above which somethign is considered an object of interest
-sonar/analyse/Threshold: 10
+sonar/analyse/Threshold: 100
 
 # Blanking distance to remove returns from the sonar mount
 # Distance from sonar head withing which returns are ignored
