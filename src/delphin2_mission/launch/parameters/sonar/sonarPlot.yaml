@@ -1,7 +1,9 @@
 # Parameters for sonar plotting 
 #
 
+# maximum number of measurements that are considered/shown in a plot
+/sonar/plot/Memory: 200
 
-# number of pixels in the sonar spherical plot
-/sonar/plot/Resolution: 500
+# specific angle for which target range should be plotted
+/sonar/plot/AngleOfInterest: 180
 

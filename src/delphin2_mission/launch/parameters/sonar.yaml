@@ -5,19 +5,22 @@
 # Sonar Settings
 #
 
-# Right limit for Heading
-# in [1/16th gradian]
-sonar/RLim: 95
-
 # Left limit for Heading
 # in [1/16th gradian]
-sonar/LLim: 85
+sonar/LLim: 130
+
+
+
+# Right limit for Heading
+# in [1/16th gradian]
+sonar/RLim: 150
 
 # Number of sample bins over scan-line
 # Max for SeaKing/SeaPrince/MiniKing/Micron: 800
 # New digital DST sonar products: 1500
 # see delphin2_sonar_micron_*.pdf in the datasheets
-sonar/NBins: 200
+# more bins = more resolution, more noise
+sonar/NBins: 800
 
 # Samping interval of each range bin
 # usually not used, since Range is used to calculate this 
@@ -65,6 +68,10 @@ sonar/serial/Baudrate: 115200
 
 # Timeout for reading sonar data after sonar ping message
 sonar/serial/ReadTimeout: 2
+
+# Receive error count from which the sonar communication is considererd as failed
+# and the serial communication is reset
+sonar/serial/CriticalErrorCount: 5
 
 # head Type selection
 # 1 for MICRON, 29 for SEAKING
