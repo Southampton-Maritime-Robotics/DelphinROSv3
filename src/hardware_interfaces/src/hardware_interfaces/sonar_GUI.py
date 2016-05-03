@@ -14,13 +14,13 @@ from hardware_interfaces.msg import sonar_setting
 
 
 class Settings(QtGui.QWidget):
-""" 
-Graphical interface for manually updating 
-various sonar parameters
+    """ 
+    Graphical interface for manually updating 
+    various sonar parameters
 
-gets input from graphical interface,
-regularly publishes the values set in the interface
-"""
+    gets input from graphical interface,
+    regularly publishes the values set in the interface
+    """
 
 
  
