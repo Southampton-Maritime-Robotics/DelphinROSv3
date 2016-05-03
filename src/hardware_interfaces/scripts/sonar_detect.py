@@ -1,7 +1,8 @@
 #!/usr/bin/python
 ###########
 #  VERSION AS OF 19/06/2015
-#  Analysis of sonar data for obstacles
+#  Analysis of sonar data 
+#  for wall following, obstacle detection etc.
 
 ###########
 

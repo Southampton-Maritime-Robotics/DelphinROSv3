@@ -23,13 +23,18 @@ from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import sonar	
 
 from hardware_interfaces import sonar_analyse
+from hardware_interfaces import sonar_plot
 
 ################################################################
 
 def get_sonar(msgData):
     """ add sonar data to sonar object as it comes in from ROS messages as *msgData*
     """
-    sonar.add_message(msgData)
+    ping = sonar_analyse.SonarPing(msgData)
+    plotData.add_data(ping)
+    # update obstacle detection
+    targetDetection = analyseData.detect_obstacle(ping)
+    plotData.targetRange.append(targetDetection[2])
 
 
 def draw_figures():
@@ -67,7 +72,7 @@ def draw_figures():
 
     # detected distance
     obstacle_detection = pg.PlotWidget()
-    obstacle_detection.plot(sonar.targetRange[-150:])
+    obstacle_detection.plot(plotData.targetRange[-150:])
     grid.addWidget(obstacle_detection, w+3, 1, w, w)
     grid.addWidget(QtGui.QLabel('Obstacle range for all angles'), w+2, 1, 1, w)
 
@@ -80,23 +85,18 @@ def draw_figures():
 
 
 
-    # minimum altitude
-    # TODO
-    # distance of minimum altitude
-    # TODO
-
 
     def update_figures():
         #TODO make the figure zoom/drag etc. work again
-        bins_vs_time.setImage(numpy.array(sonar.bins[-150:]))
-        polar_bins.setImage(sonar.polarImage)
-        # update obstacle detection
-        sonar.detect_obstacle(0)
+        #TODO make the figure set the plots new when NBINS/range get changed
+        datarange = min(len(plotData.bins), plotData.memory)
+        bins_vs_time.setImage(numpy.array(plotData.bins[-datarange:]))
+        polar_bins.setImage(plotData.polarImage)
         obstacle_detection.clear()
-        obstacle_detection.plot(sonar.targetRange[-150:])
+        obstacle_detection.plot(plotData.targetRange[-datarange:])
         obstacle_angle.clear()
         obstacle_angle.setYRange(0,15)
-        obstacle_angle.plot(sonar.fixedAngleTarget[-150:])
+        obstacle_angle.plot(plotData.fixedAngleTarget[-datarange:])
  
 
 
@@ -116,7 +116,8 @@ if __name__ == '__main__':
 
     rospy.init_node('plot_sonar', log_level=rospy.DEBUG)
     rospy.Subscriber('sonar_output', String, get_sonar)
-    sonar = sonar_analyse.sonar()
+    plotData = sonar_plot.SonarPlot()
+    analyseData = sonar_analyse.SonarEvaluate()
     time.sleep(1)
     draw_figures()
     
