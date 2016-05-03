@@ -26,6 +26,7 @@ class SonarPlot():
         self.fixedAngleTarget = []
         self.bins = []
         self.polarResolution = 1
+        self.angleStep = 0.1
 
     def add_data(self, sonarPing):
         """
@@ -41,6 +42,7 @@ class SonarPlot():
             self.polarImage = np.zeros((self.polarResolution * 2, self.polarResolution * 2))
 
         self.update_polar()
+        self.update_angleOfInterest()
 
 
     def update_polar(self):
@@ -51,15 +53,13 @@ class SonarPlot():
         
         # determine how much the sonar transducer moved since last measurement
         if len(self.bins)>1:
-            angleStep = self.transducerBearing[-1] - self.transducerBearing[-2]  
-        else:
-            angleStep = 0.1 # random value, this is only the first measurement
+            self.angleStep = self.transducerBearing[-1] - self.transducerBearing[-2]  
 
         for idx, amplitude in enumerate(new_bins):
             # for each bin, get an list of pixels for plotting, 
             # increasing the entries in the list based on the distance from the centre
             angleCoverage = [
-                self.transducerBearing[-1] - angleStep/2. + angleStep * n/np.sqrt(idx)
+                self.transducerBearing[-1] - self.angleStep/2. + self.angleStep * n/np.sqrt(idx)
                 for n in range(int(np.sqrt(idx)))
                 ]
             for theta in angleCoverage:
@@ -78,7 +78,11 @@ class SonarPlot():
         if a measurement at that angle was made, update plot
         TODO surely this can be done more flexible to different angles
         """
-        if self.transducerBearing[-1] == self.angleOfInterest:
+        if ((self.transducerBearing[-1] - abs(self.angleStep/2.) < self.angleOfInterest) and 
+           (self.angleOfInterest < self.transducerBearing[-1] + abs(self.angleStep/2.))):
             self.fixedAngleTarget.append(self.targetRange[-1])
         else:
-            self.fixedAngleTarget.append(self.fixedAngleTarget[-1])
+            if len(self.fixedAngleTarget) > 1:
+                self.fixedAngleTarget.append(self.fixedAngleTarget[-1])
+            else:
+                self.fixedAngleTarget.append(-1)
