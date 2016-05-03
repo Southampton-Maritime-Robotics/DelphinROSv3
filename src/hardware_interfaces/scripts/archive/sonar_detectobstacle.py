@@ -1,12 +1,12 @@
 #!/usr/bin/python
+###########
 
-'''
-Possibly, a part of the sonar driver.
+# smaria moved to archive 19/06/2015
+# The funcitoning part of this was moved into the sonar_analyse.py library in src
 
-This node may not functioning!
-
-'''
-
+#  VERSION AS OF 2/4/2012 
+###########
+import roslib; roslib.load_manifest('hardware_interfaces')
 import rospy
 import time
 import numpy
