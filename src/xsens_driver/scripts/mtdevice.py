@@ -44,7 +44,7 @@ from hardware_interfaces.msg import compass # compass is a message that is origi
 try: 
     scenario_id = rospy.get_param('xsens_filter_profile')
 except:
-    scenario_id = 43
+    scenario_id = 41
 
 ## reference location (for a good heading measurement)
 # available options {Boldrewood_Campus, Common_Park, Eastleight_Lake}
@@ -722,8 +722,6 @@ if __name__=='__main__':
     _r = rospy.Rate(5.) # Hz
     for _nTry in range(20):
         if not rospy.is_shutdown():
-            _portReady = driver.setupSerial()
-            _setConfig = driver.applyConfiguration()
             try:
                 _portReady = driver.setupSerial()
                 _setConfig = driver.applyConfiguration()
