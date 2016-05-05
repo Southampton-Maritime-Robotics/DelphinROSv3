@@ -47,7 +47,7 @@ class construct_stateContainer(object):
         with sm_con:
             # Add states to the container
             smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, time_steady, timeout))
-            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
+            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout+2))
             
         return sm_con
         
@@ -80,9 +80,9 @@ class construct_stateContainer(object):
         # Open the container
         with sm_con:
             # Add states to the container
-            smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, -1, timeout))
+            smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, -1, timeout+2))
             smach.Concurrence.add('GoToDepth', GoToDepth(self._lib, demandDepth, time_steady, timeout))
-            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
+            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout+2))
         
         return sm_con
         
@@ -115,8 +115,8 @@ class construct_stateContainer(object):
         with sm_con:
             # Add states to the container
             smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, -1, timeout))
-            smach.Concurrence.add('GoToAltitude', GoToAltitude(self._lib, demandAltitude, 1, 1, timeout, 1, 1)) # FIXME: GoToAltitude is not ready yet
-            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
+            smach.Concurrence.add('GoToAltitude', GoToAltitude(self._lib, demandAltitude, 1, 1, timeout+2, 1, 1)) # FIXME: GoToAltitude is not ready yet
+            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout+2))
         
         return sm_con
         
@@ -149,9 +149,9 @@ class construct_stateContainer(object):
         # Open the container
         with sm_con:
             # Add states to the container
-            smach.Concurrence.add('GoTurning', GoTurning(self._lib, 0, demandRudder, timeout))
+            smach.Concurrence.add('GoTurning', GoTurning(self._lib, 0, demandRudder, timeout+2))
             smach.Concurrence.add('GoToDepth', GoToDepth(self._lib, demandDepth, time_steady, timeout))
-            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout))
+            smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout+2))
         
         return sm_con
         
