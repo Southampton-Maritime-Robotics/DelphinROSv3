@@ -188,7 +188,7 @@ def tail_section_loop(status):
         
         message = '$S%d@%d@%d@%d@%d@#' %(b_setpoint, c_setpoint, d_setpoint , e_setpoint, prop_setpoint)
         try:
-            serialPort.write(message)   #POSSIBLE ISSUE STILL FAILS EVEN THOUGH IN TRY!
+            serialPort.write(message)
             timeLastWrite = time.time()
         except:
             print 'Write error'
