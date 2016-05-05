@@ -1,0 +1,5 @@
+# General Paramters when running delphin2
+#
+
+# maximum ROS rate at which the fastest nodes are run
+maxRate: 20 

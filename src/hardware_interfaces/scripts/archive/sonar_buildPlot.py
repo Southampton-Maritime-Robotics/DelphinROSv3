@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
-'''
-USED TO BUILD PLOT FROM SONAR DATA.
-NOT IN USE.
+# 18/06/2015 smaria:
+# moved to deprecated: the sonar polar range publisher
+# this node subscribes to doesn't exist anywhere in this repository
 
-Possibly, this node may not working!
+# NOT IN USE
+# USED TO BUILD PLOT FROM SONAR DATA
 
-'''
 import rospy
 import sys
 import serial
