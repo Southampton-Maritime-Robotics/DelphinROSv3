@@ -37,8 +37,8 @@ class controller_SMC(object):
         h1 = 1                          # gain to compute sliding variable
         h2 = 0.01*h1                    # gain to compute sliding variable
         self.h = np.array([h1,h2])      # gain to compute sliding variable
-        self.k_s_1 = 0.5                # gain for a sliding term
-        self.k_s_2 = 0.1                # gain for an integral sliding term
+        self.k_s_1 = 0.2                # gain for a sliding term
+        self.k_s_2 = 0.01                # gain for an integral sliding term TODO: unleash me
         self.bound_int = 0.35*self.dt   # bound on the integral sliding term
         self.sw_bl = 0.2                # boundary layer thicknerr for tanh function
         
