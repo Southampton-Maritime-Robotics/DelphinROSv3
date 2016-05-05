@@ -37,7 +37,7 @@ class controller_PID(object):
         ## controller parameters
         self.P_gain = 0.4 # TODO: tune me
         self.I_gain = 0 # This must always be set to zero as to avoid an integral windup phenomenon.
-        self.D_gain = -0.8 # TODO: tune me
+        self.D_gain = -0.8 # TODO: tune me 0.4 take some time to settle - 0.8 is the good one
         self.I_term_lim = 10 # TODO tume me [N.m]
         
         ## actuator parameter
@@ -205,5 +205,5 @@ if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     rospy.init_node('Heading_controller')
     controller = controller_PID()
-#    time.sleep(2) #Allow the heading demand flag to be set off
+    time.sleep(2) #Allow the heading demand flag to be set off
     controller.spin()
