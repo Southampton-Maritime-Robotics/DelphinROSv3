@@ -28,7 +28,7 @@ class GoToHeading(smach.State):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller       = lib
         self.__uti              = myUti
-        self.__demandHeading    = demandHeading%360
+        self.__demandHeading    = demandHeading
         self.__tolerance        = 3                 # [deg] a band that accounts as the AUV is at a desired heading
         self.__stable_time      = stable_time       # AUV must stay at a desired heading for this many seconds
         self.__timeout          = timeout           # [sec] abort criteria
@@ -46,6 +46,9 @@ class GoToHeading(smach.State):
         # If the heading demand is not specified, use the current heading instead.
         if self.__demandHeading == None: # tracking a current heading
             self.__demandHeading = self.__controller.getHeading()
+        # Otherwise ensure that the demand is within [0,360)
+        else:
+            self.__demandHeading = self.__demandHeading%360
 
         str='Execute GoToHeading State: heading demand = %.3f deg, stable time = %s.' %(self.__demandHeading, self.__stable_time)
         pubMissionLog.publish(str)
