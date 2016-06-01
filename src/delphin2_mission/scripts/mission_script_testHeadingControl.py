@@ -41,7 +41,7 @@ def construct_smach_sequence():
 #        smach.Sequence.add('GoForwards', GoForwards(_lib, demandProp = 22, timeout = 20))
 #        smach.Sequence.add('GoToDepth_atSpeed_atHeading', _smCon.track_depth_while_keeping_heading_and_going_forward(demandProp = 22, demandHeading = 180, demandDepth = 2.5, time_steady = -1, timeout = 60))
         smach.Sequence.add('GoToHeading_atSpeed_1', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = 45, time_steady = -1, timeout = 30))
-        smach.Sequence.add('GoToHeading_atSpeed_2', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = 180, time_steady = -1, timeout = 30))
+        smach.Sequence.add('GoToHeading_atSpeed_2', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = 105, time_steady = -1, timeout = 30))
         smach.Sequence.add('GoToHeading_atSpeed_3', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = 45, time_steady = -1, timeout = 30))
     
     return sm_se

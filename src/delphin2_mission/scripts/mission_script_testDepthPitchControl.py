@@ -2,103 +2,82 @@
 
 '''
 A mission script to test the PID-based depth-pitch controller(see depthPitchPID.py).
-There are two state:
-- depthPitchControl is used when testing at zero speed
-- depthPitchControlAtSpeed is used when testing at forward speeds
 
 '''
 
+from __future__ import division
 import rospy
 import smach
 import smach_ros
 import time
+import numpy
 
-from delphin2_mission.library_highlevel             import library_highlevel
-from state_initialise             import Initialise
-from state_stop                   import Stop
-from state_goToDepth              import GoToDepth
-from state_goToHeading            import GoToHeading
-from state_trackFollow            import TrackFollow
-from state_trackAltitude          import trackAltitude
-from state_surface                import Surface
-from hardware_interfaces.msg      import compass
-from std_msgs.msg import String
-import matplotlib.pyplot as plt;
+from delphin2_mission.library_highlevel     import library_highlevel
+from delphin2_mission.utilities             import uti
+from std_msgs.msg                           import String
 
-from state_testDepthPitchControl             import testDepthPitchControl
-from state_testDepthPitchControlAtSpeed      import testDepthPitchControlAtSpeed
-from state_manoeuvreYaw_in_tank              import manoeuvreYaw
+## import simple states
+from delphin2_mission.basic_states          import *
+## import a comples state cconstructor
+from delphin2_mission.construct_stateContainer import construct_stateContainer
 
 ################################################################################
-           
-def main():
+### create functionality objects
+_lib = library_highlevel()
+_myUti = uti()
+_smCon = construct_stateContainer(_lib, _myUti)
 
-    global WPlongitude 
-    global WPlatitude
-    global Blongitude 
-    global Blatitude
-    global NosWayPoints		
-    global longOrigin
-    global latOrigin
-
-    rospy.init_node('smach_example_state_machine')
+################################################################################
+# state container generating section
+def construct_smach_sequence():
+    # creating a sequence state machine
+    sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
+                        connector_outcome = 'succeeded')
     
-    # Define an instance of highlevelcontrollibrary to pass to all action servers
-    lib = library_highlevel()
+    # define a sequence of tasks
+    with sm_se:
+        smach.Sequence.add('GoToDepth', _smCon.track_depth_while_keeping_heading_and_going_forward(
+                                        demandProp=0,
+                                        demandHeading=None,
+                                        demandDepth=0.4,
+                                        time_steady=-1,
+                                        timeout=300))
     
-    #Set Up Publisher for Mission Control Log
-    pub = rospy.Publisher('MissionStrings', String)
+    return sm_se
     
-    # Create a SMACH state machine - with outcome 'finish'
-    sm = smach.StateMachine(outcomes=['finish'])
-
-    # Open the container
-    with sm:
-        # Add states to the container
-        # generic state
-
-################################################################################
-########### MAIN CODE ##########################################################
-################################################################################
-
-################################################################################
-        # [1/3] Initialise State (Must Be Run First!)
-        smach.StateMachine.add('INITIALISE', Initialise(lib,15), #15 = timeout for initialisation state
+def construct_smach_top():
+    # Create the top level state machine
+    sm_top = smach.StateMachine(outcomes=['finish'])
+    
+    # Open the container, add state and define state transition
+    with sm_top:
+        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
             transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
-
-################################################################################
-        # [2/3] Added States
-        # creating the sequence state machine
-        se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
-                            connector_outcome = 'succeeded')
-        with se:
-#            smach.Sequence.add('depthPitchControl', testDepthPitchControl(lib))
-            smach.Sequence.add('depthPitchControl', testDepthPitchControlAtSpeed(lib))
-        
-        smach.StateMachine.add('SEQUENCE', se, transitions={'succeeded':'STOP',
-                                                            'aborted':'STOP',
-                                                            'preempted':'STOP'})
-
-################################################################################
-        # [3/3] Generic States (Come to this state just before terminating the mission)
-        smach.StateMachine.add('STOP', Stop(lib), 
+        smach.StateMachine.add('SEQUENCE', construct_smach_sequence(),
+            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+        smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})
 
+    return sm_top
+
 ################################################################################
-########### EXECUTE STATE MACHINE AND STOP #####################################
-################################################################################
+# main code section
+def main():
+    # create state machine
+    sm_top = construct_smach_top()
 
     # Create and start the introspection server - for visualisation
-    sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
+    sis = smach_ros.IntrospectionServer('server_name', sm_top, '/SM_ROOT')
     sis.start()
     
     # Execute the state machine
-    outcome = sm.execute()
-    print 'finished executing state machine'
-
+    outcome = sm_top.execute()
+    
     # Wait for ctrl-c to stop the application
     rospy.spin()
     sis.stop()
 
 if __name__ == '__main__':
+    rospy.init_node('smach_state_machine')
+    _lib.wakeUp(5)
     main()

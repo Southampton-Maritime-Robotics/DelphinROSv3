@@ -93,7 +93,7 @@ def listenForData(status):
                                 
                 data = numpy.array((findall('[-]*\d+.\d+',dataRaw)), numpy.float)
                 try:
-                    depth       = (data[4]*42.045) - 0.55   #Convert ADC value to depth value: the last term is for calibration
+                    depth       = (data[4]*42.045) - 0.95   #Convert ADC value to depth value: the last term is for calibration
                     
                     depth_calib = depth - L_shift*math.sin(pitch_callback*math.pi/180.)# depth that takes into account the pitch angle of the AUV
 
