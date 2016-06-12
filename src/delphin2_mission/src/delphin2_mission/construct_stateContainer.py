@@ -181,7 +181,7 @@ class construct_stateContainer(object):
         
         return sm_con
         
-    def LOS_path_following(self, path, timeout):
+    def LOS_path_following(self, path, demandProp, timeout):
         '''
         Travel along a path using a line-of-signt approach.
         return:
@@ -198,12 +198,12 @@ class construct_stateContainer(object):
             smach.StateMachine.add('REVISE_WAYPOINTS', reviseWaypoints(self._lib, path),
                                                        transitions={'succeeded':'PATH_FOLLOWING', 'aborted':'aborted'},
                                                        remapping={'wp_out':'wp'})
-            smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(self._lib, self._myUti, timeout=timeout),
+            smach.StateMachine.add('PATH_FOLLOWING', pathFollowingLOS(self._lib, self._myUti, timeout=timeout, demandProp=demandProp),
                                                        transitions={'succeeded':'succeeded', 'aborted':'aborted', 'preempted':'preempted'},
                                                        remapping={'wp_in':'wp'})
         return sm
         
-    def LOS_path_following_at_depth(self, path, demandDepth, timeout):
+    def LOS_path_following_at_depth(self, path, demandProp, demandDepth, timeout): # TODO: need to check this state
         '''
         Travel along a path using a line-of-signt approach at a constant depth.
         return:
@@ -231,7 +231,7 @@ class construct_stateContainer(object):
         # Open the container
         with sm_con:
             # Add states to the container
-            smach.Concurrence.add('PATH_FOLLOWING', self.LOS_path_following(path, timeout))
+            smach.Concurrence.add('PATH_FOLLOWING', self.LOS_path_following(path, demandProp, timeout))
             smach.Concurrence.add('GoToDepth', GoToDepth(self._lib, demandDepth, -1, timeout))
             
         return sm_con

@@ -27,7 +27,7 @@ import math
 from   std_msgs.msg import String
 
 class pathFollowingLOS(smach.State):
-    def __init__(self, lib, myUti, timeout):
+    def __init__(self, lib, myUti, timeout, demandProp):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'], 
                                    input_keys=['wp_in'])
         
@@ -35,6 +35,7 @@ class pathFollowingLOS(smach.State):
         self.__uti                  = myUti
         self.__timeout              = timeout
         self.__controlRate          = 5         # [Hz]
+        self.__propDemand           = demandProp
         try:
             self.__L_los    = rospy.get_param('LOS_distance')
             self.__uMax     = rospy.get_param('max-speed')
@@ -112,6 +113,10 @@ class pathFollowingLOS(smach.State):
         n = wp.size/2   # number of waypoints
         idx_wp = 1      # waypoint index (index for the first point in the list is denoted as 0)
         verboseFlag = 1 # a flag used for displaying a targeting waypoint
+
+        str = 'Executing pathFollowingLOS state with demandProp = %s' %self.__propDemand
+        rospy.loginfo(str)
+        self.pubMissionLog.publish(str)
         
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
             ## Determine AUV state
@@ -140,7 +145,7 @@ class pathFollowingLOS(smach.State):
                 ## publish heading demand
                 self.__controller.setHeading(los_a)
                 ## publish heading demand
-                self.__controller.setRearProp(22)
+                self.__controller.setRearProp(self.__propDemand)
 
             r.sleep()
                         

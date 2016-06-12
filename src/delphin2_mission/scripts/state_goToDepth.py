@@ -44,7 +44,7 @@ class GoToDepth(smach.State):
             
         time_zero = time.time()
         
-        str= 'Execute GoToDepth State: Depth demand = %s, stable time = %s.' %(self.__depth_demand, self.__stable_time)
+        str= 'Execute GoToDepth State: Depth demand = %s, stable time = %s, timeout = %s.' %(self.__depth_demand, self.__stable_time, self.__timeout)
         pubMissionLog.publish(str)
         rospy.loginfo(str)
         

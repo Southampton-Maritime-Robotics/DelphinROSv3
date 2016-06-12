@@ -35,20 +35,47 @@ _wp = wp()
 # state container generating section
 def ToStart_and_ZigZag(startLocation, demandProp, headingMean, headingAmp, demand_th_hor, demand_cs_ver, cycleMax, timeout):
     # Create the top level state machine
-    sm = smach.StateMachine(outcomes=['succeeded','aborted','preempted'])
-    # Open the container, add state and define state transition
-    with sm:
-        smach.StateMachine.add('ToStart', _smCon.LOS_path_following(path=startLocation, timeout=300),
-            transitions={'succeeded':'AdjustHeading', 'aborted':'aborted', 'preempted':'preempted'})
-        smach.StateMachine.add('AdjustHeading', GoToHeading(_lib, _myUti, headingMean, stable_time=10, timeout=60),
-            transitions={'succeeded':'Accelerate', 'aborted':'aborted', 'preempted':'preempted'})
-        smach.StateMachine.add('Accelerate', _smCon.track_heading_while_going_forward(demandProp, demandHeading=headingMean, time_steady=-1, timeout=10),
-            transitions={'succeeded':'ZigZag', 'aborted':'aborted', 'preempted':'preempted'})
-        smach.StateMachine.add('ZigZag', _smCon.manoeuvrint_ZigZag(demandProp, headingMean, headingAmp, demand_th_hor, demand_cs_ver, cycleMax, timeout), 
-            transitions={'succeeded':'succeeded', 'aborted':'aborted', 'preempted':'preempted'})
-    return sm
-    
-    track_heading_while_going_forward(self, demandProp, demandHeading, time_steady, timeout)
+    sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
+                        connector_outcome = 'succeeded')
+                        
+    # define a sequence of tasks
+    with sm_se:
+        smach.Sequence.add('ToStart', 
+            _smCon.LOS_path_following(
+                    path=startLocation,
+                    demandProp=22,
+                    timeout=300))
+            
+        smach.Sequence.add('AdjustHeading', 
+            GoToHeading(_lib, _myUti, 
+                    headingMean, 
+                    stable_time=10, 
+                    timeout=60))
+            
+        smach.Sequence.add('Accelerate', 
+            _smCon.track_heading_while_going_forward(
+                    demandProp, 
+                    demandHeading=headingMean, 
+                    time_steady=-1, 
+                    timeout=10))
+            
+        smach.Sequence.add('ZigZag', 
+            _smCon.manoeuvrint_ZigZag(
+                    demandProp, 
+                    headingMean, 
+                    headingAmp, 
+                    demand_th_hor, 
+                    demand_cs_ver, 
+                    cycleMax, 
+                    timeout))
+            
+        smach.Sequence.add('GoHome',
+            _smCon.LOS_path_following(
+                    path=_wp.pathMtoO,
+                    demandProp=22,
+                    timeout=600))
+                        
+    return sm_se
     
 def construct_smach_top():
     # Create the top level state machine
@@ -57,13 +84,28 @@ def construct_smach_top():
     
     # Open the container, add state and define state transition
     with sm_top:
-        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
+        smach.StateMachine.add('INITIALISE', 
+            Initialise(_lib,15),
             transitions={'succeeded':'GPS_FIX', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('GPS_FIX', waitForGPS(_lib, timeout=30),
+
+        smach.StateMachine.add('GPS_FIX', 
+            waitForGPS(_lib, timeout=30),
             transitions={'succeeded':'Test_ZigZagManoeuvre', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('Test_ZigZagManoeuvre', ToStart_and_ZigZag(startLocation=_wp.B, demandProp=22, headingMean=190, headingAmp=30, demand_th_hor=0, demand_cs_ver=30, cycleMax=10, timeout=600),
+
+        smach.StateMachine.add('Test_ZigZagManoeuvre', 
+            ToStart_and_ZigZag(
+                    startLocation=_wp.B, 
+                    demandProp=16, 
+                    headingMean=190, 
+                    headingAmp=30,
+                    demand_th_hor=2500, 
+                    demand_cs_ver=0, 
+                    cycleMax=10, 
+                    timeout=600),
             transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('STOP', Stop(_lib), 
+
+        smach.StateMachine.add('STOP', 
+            Stop(_lib), 
             transitions={'succeeded':'finish'})
 
     return sm_top

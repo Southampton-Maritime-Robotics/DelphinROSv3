@@ -6,7 +6,7 @@
     <!-- AUV system! -->
     <!-- set_auv_system.txt: loading the nodes that connects to a physical system on the AUV -->
     <!-- set_auv_system_dummy.txt: loading the nodes publish a fake (but useful) information about the AUV - it is mainly used for testing the system in the lab -->
-    <include file="$(find delphin2_mission)/launch/set_auv_system.txt" />
+    <include file="$(find delphin2_mission)/launch/set_auv_system_dummy.txt" />
 
     <!-- Controllers! -->
     <node name="heading_controller" pkg="lowlevel_controllers" type="heading_controller_SMC.py" required="true" output="screen"/>

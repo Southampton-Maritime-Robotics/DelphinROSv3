@@ -5,7 +5,6 @@ A mission to test the heading control performance in Eastleigh lake.
 The AUV is programed to move forward at a constant propeller demand while maintaining a constant heading.
 It is then suddently turn 90deg left (while executing a constant propeller demand) and hold the heading demand for a while to see how lond does the controller required to get the AUV back to the equilibrium again.
 
-
 #Notes
 -X is defined as east, Y is defined as north
 """
@@ -43,9 +42,31 @@ def suddenTurn(heading_init, demandProp):
     
     # define a sequence of tasks
     with sm_se:
-        smach.Sequence.add('GoToHeading', GoToHeading(_lib, _myUti, demandHeading=heading_init, stable_time=10, timeout=60))
-        smach.Sequence.add('Accelerate', _smCon.track_heading_while_going_forward(demandProp, demandHeading = heading_init, time_steady = -1, timeout = 25))
-        smach.Sequence.add('SuddenTurn', _smCon.track_heading_while_going_forward(demandProp, demandHeading = heading_init-90, time_steady = -1, timeout = 60))
+        smach.Sequence.add('GoToHeading',
+            GoToHeading(_lib, _myUti, 
+                    demandHeading=heading_init, 
+                    stable_time=20,
+                    timeout=60)) # adjust stable_time not timeout
+                        
+        smach.Sequence.add('Accelerate',
+            _smCon.track_heading_while_going_forward(
+                    demandProp, 
+                    demandHeading = heading_init, 
+                    time_steady = -1, 
+                    timeout = 20))
+                        
+        smach.Sequence.add('SuddenTurn',
+            _smCon.track_heading_while_going_forward(
+                    demandProp, 
+                    demandHeading = heading_init-90, 
+                    time_steady = -1, 
+                    timeout = 60))
+                        
+        smach.Sequence.add('GoHome',
+            _smCon.LOS_path_following(
+                    path=_wp.pathMtoO,
+                    demandProp=22,
+                    timeout=600))
     
     return sm_se
     
@@ -55,11 +76,16 @@ def construct_smach_top():
     
     # Open the container, add state and define state transition
     with sm_top:
-        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
+        smach.StateMachine.add('INITIALISE', 
+            Initialise(_lib,15),
             transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('SEQUENCE', suddenTurn(heading_init=280,demandProp=22),
+            
+        smach.StateMachine.add('SEQUENCE', 
+            suddenTurn(heading_init=280, demandProp=16),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('STOP', Stop(_lib), 
+            
+        smach.StateMachine.add('STOP', 
+            Stop(_lib), 
             transitions={'succeeded':'finish'})
 
     return sm_top

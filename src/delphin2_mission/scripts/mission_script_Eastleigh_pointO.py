@@ -41,13 +41,20 @@ def construct_smach_top():
     
     # Open the container, add state and define state transition
     with sm_top:
-        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
+        smach.StateMachine.add('INITIALISE', 
+            Initialise(_lib,15),
             transitions={'succeeded':'GPS_FIX', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('GPS_FIX', waitForGPS(_lib, timeout=30),
+            
+        smach.StateMachine.add('GPS_FIX', 
+            waitForGPS(_lib, timeout=30),
             transitions={'succeeded':'GO_POINT_O', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('GO_POINT_O', _smCon.LOS_path_following(path=_wp.O, timeout=600),
+            
+        smach.StateMachine.add('GO_POINT_O', 
+            _smCon.LOS_path_following(path=_wp.O, demandProp=22, timeout=600),
             transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('STOP', Stop(_lib), 
+            
+        smach.StateMachine.add('STOP', 
+            Stop(_lib), 
             transitions={'succeeded':'finish'})
 
     return sm_top

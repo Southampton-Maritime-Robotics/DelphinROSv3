@@ -50,7 +50,7 @@ class GoToHeading(smach.State):
         else:
             self.__demandHeading = self.__demandHeading%360
 
-        str='Execute GoToHeading State: heading demand = %.3f deg, stable time = %s.' %(self.__demandHeading, self.__stable_time)
+        str='Execute GoToHeading State: heading demand = %.3f deg, stable time = %s, timeout = %s.' %(self.__demandHeading, self.__stable_time, self.__timeout)
         pubMissionLog.publish(str)
         rospy.loginfo(str)
         

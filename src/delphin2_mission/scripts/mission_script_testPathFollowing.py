@@ -36,6 +36,28 @@ _wp = wp()
 
 ################################################################################
 # state container generating section
+def test_follow_path():
+    # Create the top level state machine
+    sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
+                        connector_outcome = 'succeeded')
+                        
+    # define a sequence of tasks
+    with sm_se:
+
+        smach.Sequence.add('FOLLOW_PATH', 
+            _smCon.LOS_path_following(
+                    path=_wp.path_lawn_mowing, 
+                    demandProp = 10,
+                    timeout=1200))
+            
+        smach.Sequence.add('GoHome',
+            _smCon.LOS_path_following(
+                    path=_wp.pathMtoO, 
+                    demandProp = 22,
+                    timeout=600))
+                        
+    return sm_se
+    
 def construct_smach_top():
     # Create the top level state machine
     sm_top = smach.StateMachine(outcomes=['finish'])
@@ -43,17 +65,18 @@ def construct_smach_top():
     
     # Open the container, add state and define state transition
     with sm_top:
-        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
-            transitions={'succeeded':'GPS_FIX', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('GPS_FIX', waitForGPS(_lib, timeout=30),
-            transitions={'succeeded':'FOLLOW_PATH', 'aborted':'STOP', 'preempted':'STOP'})
-#        smach.StateMachine.add('FOLLOW_PATH', _smCon.LOS_path_following(path=_wp.path_S_shaped, timeout=600),
-#            transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('FOLLOW_PATH', _smCon.LOS_path_following(path=_wp.path_lawn_mowing, timeout=600),
-            transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
-        smach.StateMachine.add('STOP', Stop(_lib), 
+        smach.StateMachine.add('INITIALISE', 
+            Initialise(_lib,15),
+            transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
+            
+        smach.StateMachine.add('SEQUENCE', 
+            test_follow_path(),
+            transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+            
+        smach.StateMachine.add('STOP', 
+            Stop(_lib), 
             transitions={'succeeded':'finish'})
-
+            
     return sm_top
 
 ################################################################################
