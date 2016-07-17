@@ -58,7 +58,7 @@ def construct_smach_sequence(demandHeading, demandProp, demandDepth):
                     demandHeading=demandHeading,
                     demandDepth=demandDepth,
                     time_steady=-1,
-                    timeout=30))
+                    timeout=40))
                     
         smach.Sequence.add('MaintainAtDepth',
             _smCon.track_depth_while_keeping_heading_and_going_forward(
@@ -91,7 +91,7 @@ def construct_smach_top():
             transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
             
         smach.StateMachine.add('SEQUENCE', 
-            construct_smach_sequence(demandHeading=190, demandProp=10, demandDepth=0.4),
+            construct_smach_sequence(demandHeading=220, demandProp=10, demandDepth=0.4),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
             
         smach.StateMachine.add('STOP', 

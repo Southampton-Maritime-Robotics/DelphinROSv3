@@ -33,24 +33,28 @@ _wp = wp()
 
 ################################################################################
 # state container generating section
-def ToStart_and_ZigZag(startLocation, demandProp, headingMean, headingAmp, demand_th_hor, demand_cs_ver, cycleMax, timeout):
+def ZigZag(demandProp, headingMean, headingAmp, demand_th_hor, demand_cs_ver, cycleMax, timeout):
     # Create the top level state machine
     sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
                         connector_outcome = 'succeeded')
                         
     # define a sequence of tasks
     with sm_se:
-        smach.Sequence.add('ToStart', 
-            _smCon.LOS_path_following(
-                    path=startLocation,
-                    demandProp=22,
-                    timeout=300))
-            
+
+####        smach.Sequence.add('GPS_FIX', 
+####            waitForGPS(_lib, timeout=30))
+####            
+####        smach.Sequence.add('ToStart', 
+####            _smCon.LOS_path_following(
+####                    path=startLocation,
+####                    demandProp=22,
+####                    timeout=300))
+####            
         smach.Sequence.add('AdjustHeading', 
             GoToHeading(_lib, _myUti, 
                     headingMean, 
-                    stable_time=10, 
-                    timeout=60))
+                    stable_time=-1, 
+                    timeout=20))
             
         smach.Sequence.add('Accelerate', 
             _smCon.track_heading_while_going_forward(
@@ -69,11 +73,11 @@ def ToStart_and_ZigZag(startLocation, demandProp, headingMean, headingAmp, deman
                     cycleMax, 
                     timeout))
             
-        smach.Sequence.add('GoHome',
-            _smCon.LOS_path_following(
-                    path=_wp.pathMtoO,
-                    demandProp=22,
-                    timeout=600))
+####        smach.Sequence.add('GoHome',
+####            _smCon.LOS_path_following(
+####                    path=_wp.pathMtoO,
+####                    demandProp=22,
+####                    timeout=600))
                         
     return sm_se
     
@@ -86,21 +90,15 @@ def construct_smach_top():
     with sm_top:
         smach.StateMachine.add('INITIALISE', 
             Initialise(_lib,15),
-            transitions={'succeeded':'GPS_FIX', 'aborted':'STOP','preempted':'STOP'})
-
-        smach.StateMachine.add('GPS_FIX', 
-            waitForGPS(_lib, timeout=30),
-            transitions={'succeeded':'Test_ZigZagManoeuvre', 'aborted':'STOP', 'preempted':'STOP'})
-
+            transitions={'succeeded':'Test_ZigZagManoeuvre', 'aborted':'STOP','preempted':'STOP'})
+        
         smach.StateMachine.add('Test_ZigZagManoeuvre', 
-            ToStart_and_ZigZag(
-                    startLocation=_wp.B, 
-                    demandProp=16, 
-                    headingMean=190, 
+            ZigZag( demandProp=22, 
+                    headingMean=225, 
                     headingAmp=30,
-                    demand_th_hor=2500, 
+                    demand_th_hor=1800, 
                     demand_cs_ver=0, 
-                    cycleMax=10, 
+                    cycleMax=8, 
                     timeout=600),
             transitions={'succeeded':'STOP', 'aborted':'STOP', 'preempted':'STOP'})
 

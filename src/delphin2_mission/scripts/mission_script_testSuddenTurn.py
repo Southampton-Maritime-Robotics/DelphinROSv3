@@ -60,13 +60,13 @@ def suddenTurn(heading_init, demandProp):
                     demandProp, 
                     demandHeading = heading_init-90, 
                     time_steady = -1, 
-                    timeout = 60))
+                    timeout = 70))
                         
-        smach.Sequence.add('GoHome',
-            _smCon.LOS_path_following(
-                    path=_wp.pathMtoO,
-                    demandProp=22,
-                    timeout=600))
+####        smach.Sequence.add('GoHome',
+####            _smCon.LOS_path_following(
+####                    path=_wp.pathMtoO,
+####                    demandProp=22,
+####                    timeout=600))
     
     return sm_se
     
@@ -81,7 +81,7 @@ def construct_smach_top():
             transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
             
         smach.StateMachine.add('SEQUENCE', 
-            suddenTurn(heading_init=280, demandProp=16),
+            suddenTurn(heading_init=300, demandProp=0),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
             
         smach.StateMachine.add('STOP', 

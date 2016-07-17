@@ -29,20 +29,34 @@ _smCon = construct_stateContainer(_lib, _myUti)
 
 ################################################################################
 # state container generating section
-def construct_smach_sequence():
+def construct_smach_sequence(demandHeading, demandDepth, demandProp):
     # creating a sequence state machine
     sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
                         connector_outcome = 'succeeded')
     
     # define a sequence of tasks
     with sm_se:
-        smach.Sequence.add('GoToDepth', _smCon.track_depth_while_keeping_heading_and_going_forward(
+
+        smach.Sequence.add('GoToDepth_start', _smCon.track_depth_while_keeping_heading_and_going_forward(
                                         demandProp=0,
-                                        demandHeading=None,
-                                        demandDepth=0.4,
+                                        demandHeading=demandHeading,
+                                        demandDepth=demandDepth,
                                         time_steady=-1,
-                                        timeout=300))
-    
+                                        timeout=35))
+
+        smach.Sequence.add('GoToDepth_atSpeed', _smCon.track_depth_while_keeping_heading_and_going_forward(
+                                        demandProp,
+                                        demandHeading=demandHeading,
+                                        demandDepth=demandDepth,
+                                        time_steady=-1,
+                                        timeout=70))
+                                        
+        smach.Sequence.add('GoToDepth_end', _smCon.track_depth_while_keeping_heading_and_going_forward(
+                                        demandProp=0,
+                                        demandHeading=demandHeading,
+                                        demandDepth=demandDepth,
+                                        time_steady=-1,
+                                        timeout=35))
     return sm_se
     
 def construct_smach_top():
@@ -53,7 +67,7 @@ def construct_smach_top():
     with sm_top:
         smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
             transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('SEQUENCE', construct_smach_sequence(),
+        smach.StateMachine.add('SEQUENCE', construct_smach_sequence(demandHeading=270, demandDepth=1, demandProp = 10),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})

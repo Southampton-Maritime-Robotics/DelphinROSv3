@@ -28,7 +28,7 @@ from delphin2_mission.construct_stateContainer import construct_stateContainer
 _lib = library_highlevel()
 _myUti = uti()
 _smCon = construct_stateContainer(_lib, _myUti)
-
+_headingInit =215
 ################################################################################
 # state container generating section
 def construct_smach_sequence():
@@ -40,9 +40,11 @@ def construct_smach_sequence():
     with sm_se:
 #        smach.Sequence.add('GoForwards', GoForwards(_lib, demandProp = 22, timeout = 20))
 #        smach.Sequence.add('GoToDepth_atSpeed_atHeading', _smCon.track_depth_while_keeping_heading_and_going_forward(demandProp = 22, demandHeading = 180, demandDepth = 2.5, time_steady = -1, timeout = 60))
-        smach.Sequence.add('GoToHeading_atSpeed_1', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = 45, time_steady = -1, timeout = 30))
-        smach.Sequence.add('GoToHeading_atSpeed_2', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = 105, time_steady = -1, timeout = 30))
-        smach.Sequence.add('GoToHeading_atSpeed_3', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = 45, time_steady = -1, timeout = 30))
+        smach.Sequence.add('GoToHeading_atSpeed_1', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = _headingInit, time_steady = -1, timeout = 40))
+        smach.Sequence.add('GoToHeading_atSpeed_2', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = _headingInit+30, time_steady = -1, timeout = 40))
+        smach.Sequence.add('GoToHeading_atSpeed_3', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = _headingInit, time_steady = -1, timeout = 40))
+        smach.Sequence.add('GoToHeading_atSpeed_4', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = _headingInit+90, time_steady = -1, timeout = 40))
+        smach.Sequence.add('GoToHeading_atSpeed_5', _smCon.track_heading_while_going_forward(demandProp = 0, demandHeading = _headingInit, time_steady = -1, timeout = 40))
     
     return sm_se
     

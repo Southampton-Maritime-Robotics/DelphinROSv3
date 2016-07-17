@@ -43,18 +43,21 @@ def test_follow_path():
                         
     # define a sequence of tasks
     with sm_se:
-
+        smach.Sequence.add('GPS_FIX', 
+            waitForGPS(_lib, timeout=50))
+        
+        # path_lawn_mowing, path_S_shaped, pathTest
         smach.Sequence.add('FOLLOW_PATH', 
             _smCon.LOS_path_following(
-                    path=_wp.path_lawn_mowing, 
-                    demandProp = 10,
-                    timeout=1200))
-            
-        smach.Sequence.add('GoHome',
-            _smCon.LOS_path_following(
-                    path=_wp.pathMtoO, 
+                    path=_wp.pathTest,
                     demandProp = 22,
-                    timeout=600))
+                    timeout=1800))
+            
+####        smach.Sequence.add('GoHome',
+####            _smCon.LOS_path_following(
+####                    path=_wp.O, 
+####                    demandProp = 22,
+####                    timeout=600))
                         
     return sm_se
     

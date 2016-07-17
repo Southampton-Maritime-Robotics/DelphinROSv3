@@ -43,7 +43,7 @@ def construct_smach_sequence():
                                                 demand_th_hor = [0, 0], 
                                                 demand_cs_ver = 0, 
                                                 demand_cs_hor = 0, 
-                                                actionHold = 60))
+                                                actionHold = 180))
         
     return sm_se
     
