@@ -43,7 +43,7 @@ class pathFollowingLOS(smach.State):
         except:
             self.__L_los    = 10    # line of sight distance [m]
             self.__uMax     = 1     # maximum speed [m/s]
-            self.__wp_R     = 3     # circle of acceptance [m]
+            self.__wp_R     = 5     # circle of acceptance [m]
         #Set Up Publisher for Mission Control Log
         self.pubMissionLog = rospy.Publisher('MissionStrings', String)
         
