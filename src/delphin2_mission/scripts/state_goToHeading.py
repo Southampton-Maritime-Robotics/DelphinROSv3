@@ -29,7 +29,7 @@ class GoToHeading(smach.State):
         self.__controller       = lib
         self.__uti              = myUti
         self.__demandHeading    = demandHeading
-        self.__tolerance        = 3                 # [deg] a band that accounts as the AUV is at a desired heading
+        self.__tolerance        = 20                 # [deg] a band that accounts as the AUV is at a desired heading
         self.__stable_time      = stable_time       # AUV must stay at a desired heading for this many seconds
         self.__timeout          = timeout           # [sec] abort criteria
         self.__controlRate      = 5                 # [Hz]
