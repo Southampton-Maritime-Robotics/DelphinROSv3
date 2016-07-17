@@ -31,14 +31,18 @@ class waitForGPS(smach.State):
         r = rospy.Rate(self.__controlRate)
         
         timeStartWait = time.time()
+        timeStartReceive = time.time()
         while time.time()-timeStartWait < self.__timeout and not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0:
-            if not self.__controller.getGPSValidFix(): # If gps fixed is not detected ...
-                r.sleep()
+            if not self.__controller.getGPSValidFix() == 0: # If gps fixed is not detected ...
+                # ensure that the valid gps fix is available for this many seconds
+                if time.time()-timeStartReceive > 10:
+                    str = 'waitForGPS succeeded'
+                    rospy.loginfo(str)
+                    self.pubMissionLog.publish(str)
+                    return 'succeeded'
             else:
-                str = 'waitForGPS succeeded'
-                rospy.loginfo(str)
-                self.pubMissionLog.publish(str)
-                return 'succeeded'
+                timeStartReceive = time.time()
+                r.sleep()
                 
         if self.__controller.getBackSeatErrorFlag() != 0:
             str = 'waitForGPS preempted'
