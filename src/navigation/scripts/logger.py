@@ -424,7 +424,8 @@ def heading_SMC_callback(data):
                         data.N_eq,
                         data.N_sw,
                         data.u_R,
-                        data.u_th]
+                        data.u_th,
+                        data.sw_int]
     
     with open('%s/headingSMCLog.csv' %(dirname), "a") as f:
         try:
