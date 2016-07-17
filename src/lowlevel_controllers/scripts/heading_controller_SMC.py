@@ -32,15 +32,15 @@ class controller_SMC(object):
         
         ### controller parameter ###
         self.timelastDemand_max = 1 # [sec] if there is no new demand available for this many seconds, the controller will be off.
-        self.yawRateDemand_slope = 0.1  # to control a shape of yaw rate demand [deg/s per deg of heading error]
+        self.yawRateDemand_slope = 0.1*0  # to control a shape of yaw rate demand [deg/s per deg of heading error]
         self.yawRateDemand_sat = 30     # to control a shape of yaw rate demand [deg/s]
         h1 = 1                          # gain to compute sliding variable
         h2 = 0.01*h1                    # gain to compute sliding variable
         self.h = np.array([h1,h2])      # gain to compute sliding variable
-        self.k_s_1 = 0.2                # gain for a sliding term
-        self.k_s_2 = 0.01                # gain for an integral sliding term TODO: unleash me
-        self.bound_int = 0.35*self.dt   # bound on the integral sliding term
-        self.sw_bl = 0.2                # boundary layer thicknerr for tanh function
+        self.k_s_1 = 0.5                # gain for a sliding term
+        self.k_s_2 = 0.015               # gain for an integral sliding term
+        self.bound_int = 1.2*self.dt   # bound on the integral sliding term
+        self.sw_bl = 0.2            # boundary layer thickness for tanh function
         
         ### AUV model parameters ###
         ## rigid-gody parameter
@@ -228,6 +228,7 @@ class controller_SMC(object):
                 self.pub_tsl.publish(thruster0 = u_th, thruster1 = -u_th)
             
             else:
+                sw_int = 0
                 heading_error = 0
                 yawRateDemand = 0
                 self.HC.controller_onOff = False
@@ -240,12 +241,13 @@ class controller_SMC(object):
             
             self.HC.heading_error = heading_error
             self.HC.yawRateDemand = yawRateDemand
-            self.HC.s = s
-            self.HC.s_dot = s_dot
-            self.HC.N_eq = N_eq
-            self.HC.N_sw = N_sw
-            self.HC.u_R = u_R
-            self.HC.u_th = u_th
+            self.HC.s       = s
+            self.HC.s_dot   = s_dot
+            self.HC.N_eq    = N_eq
+            self.HC.N_sw    = N_sw
+            self.HC.u_R     = u_R
+            self.HC.u_th    = u_th
+            self.HC.sw_int     = sw_int
             self.pub_HC.publish(self.HC)
             
             ## Verify and maintain loop timing

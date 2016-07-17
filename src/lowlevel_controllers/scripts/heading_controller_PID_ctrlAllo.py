@@ -35,9 +35,9 @@ class controller_PID(object):
         self.dt = 1./self.controlRate
         
         ## controller parameters
-        self.P_gain = 0.4 # TODO: tune me
+        self.P_gain = 0.8 # TODO: tune me
         self.I_gain = 0 # This must always be set to zero as to avoid an integral windup phenomenon.
-        self.D_gain = -0.8 # TODO: tune me 0.4 take some time to settle - 0.8 is the good one
+        self.D_gain = -1.2 # TODO: tune me 0.4 take some time to settle - 0.8 is the good one
         self.I_term_lim = 10 # TODO tume me [N.m]
         
         ## actuator parameter
