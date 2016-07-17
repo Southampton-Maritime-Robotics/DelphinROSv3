@@ -16,3 +16,5 @@ float32 N_sw
 
 int32 u_R
 int32 u_th
+
+float32 sw_int
