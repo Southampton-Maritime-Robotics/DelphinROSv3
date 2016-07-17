@@ -78,6 +78,8 @@ def listenForData(status):
         dt_status = rospy.get_param('status_timing')
     except:
         dt_status = 2.
+        
+    depth_base = None # for calibrating the depth sensor: ensuring zero depth when launch at surface
     
     while not rospy.is_shutdown():    
         timeRef = time.time()
@@ -93,7 +95,13 @@ def listenForData(status):
                                 
                 data = numpy.array((findall('[-]*\d+.\d+',dataRaw)), numpy.float)
                 try:
-                    depth       = (data[4]*42.045) - 0.95   #Convert ADC value to depth value: the last term is for calibration
+                    if depth_base == None:
+                        #Convert ADC value to depth value: the last term is for calibration
+                        depth_base = (data[4]*42.045) - 0.15 # assume that the auv is already submerge by 0.15m
+                        depth = 0
+                    else:
+                        #Convert ADC value to depth value: the last term is for calibration
+                        depth = (data[4]*42.045) - depth_base
                     
                     depth_calib = depth - L_shift*math.sin(pitch_callback*math.pi/180.)# depth that takes into account the pitch angle of the AUV
 
