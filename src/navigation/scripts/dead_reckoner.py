@@ -376,7 +376,7 @@ class delphin2_AUV(object):
             self.headingNow = np.mod(self.headingNow,360)
             
             ## update position with either gps or dead reckoning
-            if self.gpsInfo.fix == 1 and self.gpsInfo.number_of_satelites >= 5:
+            if not self.gpsInfo.fix == 0 and self.gpsInfo.number_of_satelites >= 5:
                 X_pos = self.gpsInfo.x
                 Y_pos = self.gpsInfo.y
                 latitude  = np.float64(self.gpsInfo.latitude)
