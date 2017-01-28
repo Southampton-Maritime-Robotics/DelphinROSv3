@@ -1,0 +1,18 @@
+#!/usr/bin/python
+############
+# VERSION AS OF 28/01/2017
+
+import rospy
+from sensor_msgs import PointCloud2
+
+#TODO: Put something in data!
+
+def publishLoop()
+    pub = rospy.Publisher('cloud_in', PointCloud2, queue_size=10)
+    rospy.init_node('sonar_mapping', anonymous=True)
+    rate = rospy.Rate(1)
+    x = 0
+    whie not rospy.is_shutdown():
+        x += 1
+        pub.publish(data)
+        rate.sleep()
