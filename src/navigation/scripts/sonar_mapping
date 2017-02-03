@@ -3,16 +3,45 @@
 # VERSION AS OF 28/01/2017
 
 import rospy
-from sensor_msgs import PointCloud2
+from sensor_msgs.msg import PointCloud2
+from geometry_msgs.msg import Point32
 
-#TODO: Put something in data!
-
-def publishLoop()
+def publishLoop():
+    myPoint = Point32(1.0, 1.0, 1.0)
     pub = rospy.Publisher('cloud_in', PointCloud2, queue_size=10)
     rospy.init_node('sonar_mapping', anonymous=True)
     rate = rospy.Rate(1)
     x = 0
-    whie not rospy.is_shutdown():
-        x += 1
-        pub.publish(data)
+    while not rospy.is_shutdown():
+        cloud = PointCloud2()
+        rospy.logwarn(type(cloud.data))
+
+
+        x += 1.
+
+        myPoint1 = Point32(1.0, x, 1.0)
+        myPoint2 = Point32(1.0, x, x)
+        cloud.is_dense = True
+        cloud.header.stamp = rospy.Time.now()
+        cloud.height = 1 # unstructured data
+        cloud.width = 2
+        cloud.point_step = 0.2
+        cloud.row_step = 0.2
+        cloud.is_bigendian = True
+        #cloud.fields.append(
+        rospy.logwarn(type(cloud.data))
+        rospy.logwarn(type(cloud.fields))
+
+
+        cloud.data.append(myPoint1)
+        cloud.data.append(myPoint2)
+        pub.publish(cloud)
+        #cloud.data = []
+        #cloud.fields = []
         rate.sleep()
+
+if __name__ == '__main__':
+    try:
+        publishLoop()
+    except rospy.ROSInterruptException:
+        pass
