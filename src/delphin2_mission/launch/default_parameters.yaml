@@ -20,6 +20,21 @@ mission-timeout: 5              # Mission timeout (minutes)
 ####### CONFIGURATION
 status_timing: 2.               # To control publishing timing interval of node status (sec)
 
+horizontal/thruster/Pgain: 40000.0
+horizontal/thruster/Igain: 0.0
+horizontal/thruster/Dgain: -100000.0
+horizontal/thruster/Smax: 2500.0
+
+vertical/thruster/depth/Pgain: 3500000.0
+vertical/thruster/depth/Igain: 250000.0
+vertical/thruster/depth/Dgain: -9500000.0 
+vertical/thruster/pitch/Pgain: 0.02
+vertical/thruster/pitch/Igain: 0.002
+vertical/thruster/pitch/Dgain: -0.1
+verticl/thruster/Smax: 2500
+
+
+
 vertical/PID/weight/thruster/U_star: 0.9        # speed at which thruster weight is 0.5, in [m/s]
 vertical/PID/weight/thruster/delta: 0.03        # width of the transition
 vertical/PID/weight/controlsurface/U_star: 0.5  # speed at which control surface weight is 0.5

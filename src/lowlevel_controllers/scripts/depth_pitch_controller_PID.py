@@ -83,15 +83,15 @@ def set_params():
     DPC.CS_Smax = 30 # [degree] maximum hydroplane angle
     
     # thruster
-    DPC.Depth_Pgain = 3500000.00
-    DPC.Depth_Igain = 250000.00
-    DPC.Depth_Dgain = -9500000.00
+    DPC.Depth_Pgain = rospy.get_param("vertical/thruster/depth/Pgain")
+    DPC.Depth_Igain = rospy.get_param("vertical/thruster/depth/Igain")
+    DPC.Depth_Dgain = rospy.get_param("vertical/thruster/depth/Dgain")
     
-    DPC.Pitch_Pgain = 0.02
-    DPC.Pitch_Igain = 0.002
-    DPC.Pitch_Dgain = -0.1 # D gain has to be negative (c.f. PI-D)
+    DPC.Pitch_Pgain = rospy.get_param("vertical/thruster/pitch/Pgain")
+    DPC.Pitch_Igain = rospy.get_param("vertical/thruster/pitch/Igain")
+    DPC.Pitch_Dgain = rospy.get_param("vertical/thruster/pitch/Dgain") # D gain has to be negative (c.f. PI-D)
     
-    DPC.Thrust_Smax = 2500 # maximum thruster setpoint
+    DPC.Thrust_Smax = rospy.get_param("vertical/thruster/Smax") # maximum thruster setpoint
 
     DPC.pitchBiasMax = 10. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
     DPC.pitchBiasGain_P = 8. # p gain to compute pitch bias
