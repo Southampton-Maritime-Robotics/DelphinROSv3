@@ -1,8 +1,18 @@
 <launch>
-    
+  
+    <!-- System Parameters! -->
+    <rosparam file="$(find delphin2_mission)/launch/default_parameters.yaml" command ="load"/>
+    <rosparam file="$(find delphin2_mission)/launch/parameters/default_sonar.yaml" command ="load"/>
+
+    <!-- Custom set PID parameters -->
+    <!-- for modifying previously set parameters to change DepthPitch Control specific parameters />
+    <param name="sonar/serial/Port" value="/dev/ttyS3" />
+
+
     <!-- Load AUV System! -->
     <include file="$(find delphin2_mission)/launch/system_loader.txt" />
     
+
     <!-- Mission File! -->
     <node name="mission_script" pkg="delphin2_mission" type="mission_script_testDepthPitchControl.py"  output="screen" required="true" />
 
