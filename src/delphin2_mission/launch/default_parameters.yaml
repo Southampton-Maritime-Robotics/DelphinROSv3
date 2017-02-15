@@ -1,0 +1,50 @@
+####### LIMITS
+maxRate: 20                     # maximum ROS rate at which the fastest nodes are run
+max-depth-demand: 2.5           # Maximum depth demand (m)
+
+thruster/setpointMax: 2500      # Max thruster setpoint
+                                # in water: 2500
+                                # on land: 145
+
+
+### LIMITS CAUSING ABORT
+over-depth: 3                   # Maximum depth (m)
+over-pitch: 45                  # Maximum pitch (deg) 
+over-roll: 20                   # Maximum roll (deg) 
+max-internal-temp: 45           # Maximum internal pressure vessel temp (deg)
+min-motor-voltage: 19000        # Minimum Motor voltage (mV) 
+mission-timeout: 5              # Mission timeout (minutes) 
+
+
+
+####### CONFIGURATION
+status_timing: 2.               # To control publishing timing interval of node status (sec)
+
+vertical/PID/weight/thruster/U_star: 0.9        # speed at which thruster weight is 0.5, in [m/s]
+vertical/PID/weight/thruster/delta: 0.03        # width of the transition
+vertical/PID/weight/controlsurface/U_star: 0.5  # speed at which control surface weight is 0.5
+vertical/PID/weight/controlsurface/delta: 0.04  # width of the transition
+# to use only thrusters, set U_star at forwards velocity higher than possible
+# to use only control surfaces, set U_star to 0
+# caution: delta cannot be zero (otherwise division by zero)
+
+
+
+####### MISSION SPECIFIC
+lat_orig: 50.957024             # Origin Latitude
+long_orig: -1.366769            # Origin Longitude
+  # useful positions
+  # Eastleigh North Pier: (50.957024,-1.366769)
+  # Eastleigh South Pier: (50.956473,-1.366835)
+ 
+
+ImportWaypoints: False          # Import Waypoints
+LOS_distance: 10                # line-of-sight distance (in m) for path following algorithm
+radius_of_acceptance: 3         # (in m) for path following algorithm
+max-speed: 1                    # maximum surge speed (in m/s) of the AUV
+
+xsens_filter_profile: 42     
+  # available xsens filter options {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
+  # use dynamic for most cases
+  # use vru_general when the magnetic reading can not be thrusted at all.
+  # for more information see delphin2_xsens datasheet
