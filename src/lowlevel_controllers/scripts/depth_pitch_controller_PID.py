@@ -91,7 +91,7 @@ def set_params():
     DPC.Pitch_Igain = rospy.get_param("vertical/thruster/pitch/Igain")
     DPC.Pitch_Dgain = rospy.get_param("vertical/thruster/pitch/Dgain") # D gain has to be negative (c.f. PI-D)
     
-    DPC.Thrust_Smax = rospy.get_param("vertical/thruster/Smax") # maximum thruster setpoint
+    DPC.Thrust_Smax = rospy.get_param("/thruster/SetpointMax") # maximum thruster setpoint
 
     DPC.pitchBiasMax = 10. # bias in pitch angle, use to indirectly control depth vis control surfaces [degree]
     DPC.pitchBiasGain_P = 8. # p gain to compute pitch bias
