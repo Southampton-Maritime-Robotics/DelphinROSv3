@@ -2,7 +2,7 @@
 maxRate: 20                     # maximum ROS rate at which the fastest nodes are run
 max-depth-demand: 2.5           # Maximum depth demand (m)
 
-thruster/setpointMax: 2500      # Max thruster setpoint
+thruster/SetpointMax: 2500      # Max thruster setpoint
                                 # in water: 2500
                                 # on land: 145
 
@@ -23,7 +23,6 @@ status_timing: 2.               # To control publishing timing interval of node 
 horizontal/thruster/Pgain: 40000.0
 horizontal/thruster/Igain: 0.0
 horizontal/thruster/Dgain: -100000.0
-horizontal/thruster/Smax: 2500.0
 
 vertical/thruster/depth/Pgain: 3500000.0
 vertical/thruster/depth/Igain: 250000.0
@@ -31,7 +30,6 @@ vertical/thruster/depth/Dgain: -9500000.0
 vertical/thruster/pitch/Pgain: 0.02
 vertical/thruster/pitch/Igain: 0.002
 vertical/thruster/pitch/Dgain: -0.1
-vertical/thruster/Smax: 2500
 
 
 
