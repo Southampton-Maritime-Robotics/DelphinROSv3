@@ -31,7 +31,7 @@ vertical/thruster/depth/Dgain: -9500000.0
 vertical/thruster/pitch/Pgain: 0.02
 vertical/thruster/pitch/Igain: 0.002
 vertical/thruster/pitch/Dgain: -0.1
-verticl/thruster/Smax: 2500
+vertical/thruster/Smax: 2500
 
 
 
