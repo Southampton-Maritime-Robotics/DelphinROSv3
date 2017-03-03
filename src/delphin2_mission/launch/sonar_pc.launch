@@ -1,0 +1,25 @@
+<launch>
+    <!-- Test sonar on a PC:
+        * don't try to launch any delphin2 nodes
+        * launch the sonar system and the plotter
+        * set sonar port to USB port
+    -->
+
+    <rosparam file="$(find delphin2_mission)/launch/default_parameters.yaml" command="load"/>
+    <rosparam file="$(find delphin2_mission)/launch/parameters/default_sonar.yaml" command="load"/>
+
+
+    <param name="sonar/serial/Port" value="/dev/ttyUSB0" />
+
+    <!-- NODES 
+    -->
+
+    <include file="$(find xsens_driver)/launch/xsens_driver.launch"/>
+
+    <node name="sonar_node" pkg="hardware_interfaces" type="sonar_node" />
+    <node name="sonar_detect" pkg="hardware_interfaces" type="sonar_detect" />
+    <node name="sonar_plot" pkg="hardware_interfaces" type="sonar_plot" />
+
+
+ 
+</launch>

@@ -1,0 +1,13 @@
+<launch>
+    <rosparam file="$(find delphin2_mission)/launch/default_parameters.yaml" command="load"/>
+    <rosparam file="$(find delphin2_mission)/launch/parameters/default_sonar.yaml" command="load"/>
+
+
+    <!-- NODES 
+    -->
+
+    <node name="sonar_plot" pkg="hardware_interfaces" type="sonar_plot" />
+
+
+ 
+</launch>
