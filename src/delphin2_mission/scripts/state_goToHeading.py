@@ -29,10 +29,10 @@ class GoToHeading(smach.State):
         self.__controller       = lib
         self.__uti              = myUti
         self.__demandHeading    = demandHeading
-        self.__tolerance        = 5                 # [deg] a band that accounts as the AUV is at a desired heading
+        self.__tolerance        = rospy.get_param("heading/Tolerance")                 # [deg] a band that accounts as the AUV is at a desired heading
         self.__time_steady      = time_steady       # AUV must stay at a desired heading for this many seconds
         self.__timeout          = timeout           # [sec] abort criteria
-        self.__controlRate      = 5                 # [Hz]
+        self.__controlRate      = rospy.get_param*"heading/ControlRate")                 # [Hz]
         self.__at_heading_time  = None
         
     def execute(self,userdata):
