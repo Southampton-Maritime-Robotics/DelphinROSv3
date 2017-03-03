@@ -5,7 +5,11 @@ max-depth-demand: 2.5           # Maximum depth demand (m)
 thruster/SetpointMax: 2500      # Max thruster setpoint
                                 # in water: 2500
                                 # on land: 145
+heading/Tolerance: 5            # acceptable error for the heading (in degrees)
+heading/ControlRate: 5          # rate of heading control in [Hz]
 
+depth/Tolerance: 0.2            # acceptable error for the depth (inn m)
+depth/ControlRate: 5            # rate of heading control in [Hz]
 
 ### LIMITS CAUSING ABORT
 over-depth: 3                   # Maximum depth (m)
