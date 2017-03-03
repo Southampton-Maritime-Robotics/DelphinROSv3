@@ -26,10 +26,10 @@ class GoToDepth(smach.State):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller           = lib
         self.__depth_demand         = demandDepth
-        self.__tolerance            = 0.2             # [m] a band that accounts as the AUV is at a desired depth
+        self.__tolerance            = rospy.get_param("depth/Tolerance")             # [m] a band that accounts as the AUV is at a desired depth
         self.__stable_time          = stable_time     # [sec] AUV must stay at a desired depth for this many seconds
         self.__timeout              = timeout         # [sec] abort criteria
-        self.__controlRate          = 5               # [Hz]
+        self.__controlRate          = rospy.get_param("depth/ControlRate")               # [Hz]
         self.__at_depth_time        = None
             
     def execute(self,userdata):
