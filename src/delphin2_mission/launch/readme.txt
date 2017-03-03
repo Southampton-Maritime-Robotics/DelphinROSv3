@@ -6,4 +6,6 @@ myMission.launch
 - system_loader.txt
 -- set_auv_system.txt (interchangable with 2)
 -- set_auv_system_dummy.txt (interchangable with 1)
--- set_parameters.txt
+-- default_parameters.yaml
+
+
