@@ -36,7 +36,8 @@ from std_msgs.msg               import Bool
 from std_msgs.msg               import String
 from hardware_interfaces.msg import status
 
-from delphin2_mission.utilities     import uti
+from delphin2_mission.utilities import uti
+from lowlevel_controllers.depth_pitch_controller_PID import DepthPitchPID
 
 ################################################################################
 #### CONTROLLER PARAMETERS #####################################################
@@ -310,7 +311,7 @@ def main_control_loop():
             error_depth = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
             DPC.pitchBias = determinePitchBias(error_depth,der_error_depth,controlPeriod)
             [error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
-            [w_th,w_cs] = determineActuatorWeight(speed_current,depth_current)
+            [w_th,w_cs] = state.determineActuatorWeight(speed_current,depth_current)
             
             # determine actuator demands
             CS_demand = CS_controller(error_pitch, 
@@ -353,6 +354,13 @@ def main_control_loop():
 ################################################################################
 
 def determineActuatorWeight(_speed,_depth):
+    # DDD
+    # has been moved to src
+    """
+    Calculate Thruster and control surface weight based on forwards speed.
+    both values lie between 0 and 1
+    thruster weight decreases with speed, control surface weight increases with speed
+    """
 
     U_star_th = 0.9;
     w_delta_th = 0.03;
@@ -521,8 +529,9 @@ def speedObserver(u_prop,_speed,dt):
 if __name__ == '__main__':
     rospy.init_node('Heading_controller')
     
-    global DPC # Depth-Pitch Control
+    global DPC # Depth-Pitch Control    # QUESTION SOPHIA: Why is this global? It is an object so it should be available throughout
     DPC = depth_pitch_control_PID()
+    state = DepthPitchPID()
     
     rospy.Subscriber('depth_demand', Float32, depth_demand_callback)
     DPC.pitch_demand = 0 # rospy.Subscriber('pitch_demand', Float32, pitch_demand_callback)

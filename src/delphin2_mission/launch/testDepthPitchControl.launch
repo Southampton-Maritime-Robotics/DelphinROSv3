@@ -5,8 +5,8 @@
     <rosparam file="$(find delphin2_mission)/launch/parameters/default_sonar.yaml" command ="load"/>
 
     <!-- Custom set PID parameters -->
-    <!-- for modifying previously set parameters to change Integral gain term />
-    <param name="vertical/thruster/depth/Igain" value="250000.0" />
+    <!-- for modifying previously set parameters to change Integral gain term /> -->
+    <!-- <param name="vertical/thruster/depth/Igain" value="250000.0" /> -->
 
 
     <!-- Load AUV System! -->

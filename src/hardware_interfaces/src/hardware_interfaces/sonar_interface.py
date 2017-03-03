@@ -1,3 +1,9 @@
+"""
+VERSION AS OF 2016-04-08
+Library for interfacing with the tritech sonar via the serial protocol
+for details on the protocol, see datasheets
+"""
+
 import numpy
 import rospy
 import time
@@ -35,6 +41,8 @@ class SonarTritech:
         self.SerialParam = rospy.get_param("sonar/serial") # A dictionary of the various serial components
         self.receiveErrorCount = 0 # sometimes the communication with the sonar gets out of sync, this is for catching that case
         self.serial_setup()
+        self.update_sonar_head_setting()
+        rospy.logwarn("Updated sonar setting")
 
 
 
@@ -175,7 +183,7 @@ class SonarTritech:
             time.sleep(0.001)
             if startTime + self.SerialParam['ReadTimeout'] < time.time():
                 self.Serial.flushInput()
-                rospy.loginfo("Sonar serial: read header timeout")
+                rospy.logwarn("Sonar serial: read header timeout")
                 self.serial_handle_error()
                 return 0
         if self.Serial.inWaiting() > 12:
@@ -197,7 +205,7 @@ class SonarTritech:
                 while self.Serial.inWaiting() < msgLength:
                     time.sleep(0.001)
                     if startTime + self.SerialParam['ReadTimeout'] < time.time():
-                        rospy.loginfo("Sonar serial: read message rimeout")
+                        rospy.logwarn("Sonar serial: read message rimeout")
                         self.Serial.flushInput()
                         self.serial_handle_error()
                         return 0
@@ -237,7 +245,7 @@ class SonarTritech:
                 else:
                     rospy.logdebug("Unknown message type: " + str(msgType))
             else:
-                rospy.logerr("Sonar message does not start with the required '@'\n"
+                rospy.logwarn("Sonar message does not start with the required '@'\n"
                                + "Starting with: "+ str(headerData[0]))
                 self.serial_handle_error()
 
@@ -291,13 +299,13 @@ class SonarTritech:
         self.update_sonar_head_setting()
 
     
-    def serial_handle_error():
+    def serial_handle_error(self):
         # Always update error count
         self.receiveErrorCount += 1
         # if error count is too hight, reset serial communication
-        if self.receiveErrorCount >= self.serialParam['CriticalErrorCount']:
-            rospy.logerr("Sonar receive error count too high, 
-                            resetting sonar serial communication")
+        if self.receiveErrorCount >= self.SerialParam['CriticalErrorCount']:
+            rospy.logerr("Sonar receive error count too high, resetting sonar serial communication")
+            self.receiveErrorCount = 0
             self.serial_reset()
 
 

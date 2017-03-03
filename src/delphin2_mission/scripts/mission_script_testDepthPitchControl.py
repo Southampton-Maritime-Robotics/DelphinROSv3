@@ -67,7 +67,7 @@ def construct_smach_top():
     with sm_top:
         smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
             transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('SEQUENCE', construct_smach_sequence(demandHeading=270, demandDepth=1, demandProp = 0),
+        smach.StateMachine.add('SEQUENCE', construct_smach_sequence(demandHeading=280, demandDepth=0, demandProp = 0),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})
