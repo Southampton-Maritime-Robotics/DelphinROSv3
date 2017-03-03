@@ -1,26 +1,24 @@
 # Parameters for the MICRON and SEAKING sonar
 # used for running the sonar on the vehicle
 
-#
+######################################################
 # Sonar Settings
-#
+######################################################
 
 # Left limit for Heading
-# in [1/16th gradian]
-sonar/LLim: 130
-
-
+# in [1/16th gradian], from 0 to 6400
+sonar/LLim: 300
 
 # Right limit for Heading
-# in [1/16th gradian]
-sonar/RLim: 150
+# in [1/16th gradian], from 0 to 6400
+sonar/RLim: 301
 
 # Number of sample bins over scan-line
 # Max for SeaKing/SeaPrince/MiniKing/Micron: 800
 # New digital DST sonar products: 1500
 # see delphin2_sonar_micron_*.pdf in the datasheets
 # more bins = more resolution, more noise
-sonar/NBins: 800
+sonar/NBins: 400
 
 # Samping interval of each range bin
 # usually not used, since Range is used to calculate this 
@@ -30,7 +28,7 @@ sonar/ADInterval: 5
 # Range
 # used to calculate the ADInterval
 # in [metres]
-sonar/Range: 6
+sonar/Range: 5
 
 # not used in 8 bit mode
 sonar/ADSpan:  210
@@ -46,14 +44,46 @@ sonar/IGainB2: 84
 sonar/MoTime: 25
 # Step resolution of scanning motor
 # in [16th of a gradian]
-# defaults: 32, 16, 8, 4
+# defaults: 32=1.8 degrees, 16, 8, 4
 # 64 used in all Delphin2 sonar applications before 2016
 sonar/Step: 64
 
+#######################################################
+# Analysis and evaluation
+# Used both on the vehicle and in post processing
+#######################################################
 
-#
+# Number of repeated returns (+1 from SonarPing.m) to remove glitches
+sonar/analyse/GlitchCount: 1
+
+# Power level (0 to 250) above which sonar 'sees' a target
+# Value above which somethign is considered an object of interest
+sonar/analyse/Threshold: 80
+
+# Distance at which an obstacle is considered in the sonar range
+# (a larger range is kept for monitoring)
+# This shold be smaller or equal to sonar/Range
+sonar/analyse/ObstacleRange: 4
+
+# Blanking distance to remove returns from the sonar mount
+# Distance from sonar head withing which returns are ignored
+# probably in [metres]
+sonar/analyse/BlankDist: 0.6
+
+######################################################
+# Visualisation 
+######################################################
+
+# maximum number of measurements that are considered/shown in a plot
+/sonar/plot/Memory: 200
+
+# specific angle for which target range should be plotted
+/sonar/plot/AngleOfInterest: 100
+
+
+######################################################
 # Communication protocol
-# 
+######################################################
 # these settings are needed for use in the serial protocol,
 # but either they are just part of the serial protocol
 # or it is not specified clearly what they do
@@ -63,7 +93,8 @@ sonar/Step: 64
 # on delphin2 the port is /dev/ttyS3
 # on a laptop this may vary, e.g. /dev/ttyUSB0
 # the baudrate should not be changed, since it needs to be the same setting on computer and sonar
-sonar/serial/Port: '/dev/ttyUSB0'
+# sonar/serial/Port: '/dev/ttyUSB0'
+sonar/serial/Port: '/dev/ttyS3'
 sonar/serial/Baudrate: 115200
 
 # Timeout for reading sonar data after sonar ping message
