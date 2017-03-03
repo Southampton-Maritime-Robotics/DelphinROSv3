@@ -26,8 +26,8 @@ def sonarLoop():
     pub        = rospy.Publisher('sonar_output', String, queue_size=10)
     # Main operational loop #
     rospy.init_node('sonar_interface', anonymous=True)
-    SonarDevice.update_sonar_head_setting()
-    rate = rospy.Rate(rospy.get_param("/maxRate")
+    rate = rospy.Rate(rospy.get_param("/maxRate"))
+    SonarDevice.updateFlag = 1
 
     while not rospy.is_shutdown():
         if SonarDevice.updateFlag == 1:
@@ -52,7 +52,7 @@ def shutdown():
 if __name__ == '__main__':
     try:
         rospy.Subscriber('sonar_updateSettings', sonar_setting, SonarDevice.read_setting_demand)
-        rospy.on_shutdown(SonarDevice.shutdown)
+        rospy.on_shutdown(SonarDevice.serial_shutdown)
         sonarLoop()
     except rospy.ROSInterruptException:
         pass

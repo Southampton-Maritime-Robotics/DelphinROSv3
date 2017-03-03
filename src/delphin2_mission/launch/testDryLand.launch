@@ -1,4 +1,8 @@
 <launch>
+
+    <!-- System Parameters! -->
+    <rosparam file="$(find delphin2_mission)/launch/default_parameters.yaml" command ="load"/>
+    <rosparam file="$(find delphin2_mission)/launch/parameters/default_sonar.yaml" command ="load"/>
     
     <!-- Load AUV System! -->
     <include file="$(find delphin2_mission)/launch/system_loader.txt" />
