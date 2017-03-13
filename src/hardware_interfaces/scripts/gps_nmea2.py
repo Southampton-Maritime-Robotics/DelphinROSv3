@@ -20,7 +20,6 @@ The driver only publishes once the getAll flag is raise.
 # TODO: veryfy trajectory of (x,y) obtained from this driver. 
 # TODO: need to think about how to operate across the UTM zones
 
-from __future__ import division
 import rospy
 import serial
 import time
