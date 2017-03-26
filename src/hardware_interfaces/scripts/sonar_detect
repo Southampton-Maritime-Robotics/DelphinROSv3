@@ -1,4 +1,16 @@
 #!/usr/bin/python
+"""
+Analyse raw data from mechanical scanning sonar
+
+Current features:
+- detect the nearest obstacle/wall in the beam
+
+######################################################
+# TODO
+- get rid of global variables
+- include vehicle state/tf information
+"""
+
 ###########
 #  VERSION AS OF 19/06/2015
 #  Analysis of sonar data 
@@ -29,7 +41,6 @@ def get_sonar(msgData):
 
 def DR_callback(data):
     """ store pitch data, currently unused
-    #TODO this should not use global variables!
     """
     global pitch    
     pitch  = data.pitch
@@ -53,7 +64,6 @@ if __name__ == '__main__':
     # Uncomment to run this node in debug mode:
     #rospy.init_node('sonar_detect', log_level=rospy.DEBUG)
     rospy.Subscriber('sonar_output', String, get_sonar)
-    # rospy.Subscriber('dead_reckoner', dead_reckoner, DR_callback)
     print("la")
     pub = rospy.Publisher('sonar_processed', sonar_data)
     sonar = sonar_analyse.sonar()

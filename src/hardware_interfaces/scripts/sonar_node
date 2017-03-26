@@ -1,13 +1,13 @@
 #!/usr/bin/python
-###########
-#  VERSION AS OF 2/4/2012 
+"""
+Driver for mechanical scanning sonar
 
+Publishes raw sonar data
 
-# TODO smaria
-# At the moment, this is relying on data given in launch file
-# a set of defaults would be nice, so this script can run independently
-###########
+#####################################################
+# TODO
 
+"""
 import rospy
 import serial
 import time

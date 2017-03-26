@@ -1,4 +1,12 @@
 #!/usr/bin/python
+"""
+Graphical interface for changing sonar settings while the sonar is running
+
+##########################################
+# TODO
+- this node might be completely replaceable with an existing rqt tool
+- the script should contain more information that is currently in src
+"""
 from hardware_interfaces import sonar_GUI
 
 if __name__ == '__main__':

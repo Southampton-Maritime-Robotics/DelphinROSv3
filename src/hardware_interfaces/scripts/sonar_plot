@@ -1,13 +1,17 @@
 #!/usr/bin/python
-###########
-#  VERSION AS OF 18/06/2015
-#  simple plotter for visualising sonar data live/from rosbag
-#  current plots:
-#  * live stream of all bins recorded (bins vs time)
-#  * polar plot using the most recent bins available for each angle (polar bins)
-#  
+"""
+Simple plotter for visualising sonar data live/from rosbag
+ current plots:
+ * live stream of all bins recorded (bins vs time)
+ * polar plot using the most recent bins available for each angle (polar bins)
+ 
 
-###########
+#############################################################
+# TODO
+ - make the figure zoom/drag etc. work again
+ - make the figure set the plots new when NBINS/range get changed
+
+"""
 
 import rospy
 import numpy
@@ -87,8 +91,6 @@ def draw_figures():
 
 
     def update_figures():
-        #TODO make the figure zoom/drag etc. work again
-        #TODO make the figure set the plots new when NBINS/range get changed
         datarange = min(len(plotData.bins), plotData.memory)
         bins_vs_time.setImage(numpy.array(plotData.bins[-datarange:]))
         polar_bins.setImage(plotData.polarImage)
@@ -109,10 +111,6 @@ def draw_figures():
 ################################################################
 ################################################################
 if __name__ == '__main__':
-
-    # if script is main, assume its run manually for debugging
-    # TODO if this is only used when run manually
-    # then where does the 'sonar' variable come from normally?
 
     rospy.init_node('plot_sonar', log_level=rospy.DEBUG)
     rospy.Subscriber('sonar_output', String, get_sonar)

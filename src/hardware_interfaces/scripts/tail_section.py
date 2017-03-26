@@ -18,11 +18,9 @@ prop: propeller
 --send: $R#
 --receive: $b_feedback@c_feedback@d_feedback@e_feedback@prop_rps@#
 
-### MODIFICATION
-10/4/2015 add watchdog to automatically shutdown the actuators if there is no new message published on a relevant topic for longer then "timeLastDemandMax".
-11/4/2015 control rate via rospy.Rate()
-4/10/2015 modify the node in according to new arduino firmware
-
+###################################################
+# TODO
+- test if 5 sec delay to wait for other systems is necessary
 """
 
 import rospy
@@ -125,7 +123,6 @@ def getTailFeedback():
         data[3] = -setpointToAngle(data[3],e_zero)
     if data[4] != -1:
         data[4] = data[4]/19. # gearbox ratio
-    
     return data
 
 ################################################################################
@@ -354,6 +351,6 @@ if __name__ == '__main__':
         status = False
         pubStatus.publish(nodeID = 2, status = status)
     
-    time.sleep(5) # TODO: remove me
+    time.sleep(5) # delay to wait for other systems to come alive, might not be necessary?
     
     tail_section_loop(status)
