@@ -2,7 +2,7 @@
 maxRate: 20                     # maximum ROS rate at which the fastest nodes are run
 max-depth-demand: 2.5           # Maximum depth demand (m)
 
-thruster/SetpointMax: 2500      # Max thruster setpoint
+thruster/SetpointMax:  130      # Max thruster setpoint
                                 # in water: 2500
                                 # on land: 145
 heading/Tolerance: 5            # acceptable error for the heading (in degrees)

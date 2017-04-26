@@ -14,16 +14,16 @@ import time
 import numpy
 from std_msgs.msg import String
 from std_msgs.msg import UInt16
-from hardware_interfaces.msg import sonar	
+from hardware_interfaces.msg import sonar
 from hardware_interfaces.msg import sonar_setting
-from hardware_interfaces import sonar_interface 
-
+from hardware_interfaces import sonar_interface
 
 SonarDevice = sonar_interface.SonarTritech()
 
+
 ################################################################
 def sonarLoop():
-    pub        = rospy.Publisher('sonar_output', String, queue_size=10)
+    pub = rospy.Publisher('sonar_output', String, queue_size=10)
     # Main operational loop #
     rospy.init_node('sonar_interface', anonymous=True)
     rate = rospy.Rate(rospy.get_param("/maxRate"))
@@ -40,7 +40,6 @@ def sonarLoop():
         rate.sleep()
 
 
-            
 ################################################################
 
 def shutdown():
@@ -48,6 +47,7 @@ def shutdown():
     serialPort.flushInput()
     serialPort.flushOutput()
     serialPort.close()
+
 
 if __name__ == '__main__':
     try:
