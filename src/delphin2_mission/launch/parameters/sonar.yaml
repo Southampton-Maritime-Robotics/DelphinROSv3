@@ -138,18 +138,3 @@ sonar/serial/Lockout: 100
 sonar/serial/MinorAxis: 1600
 # Default 1 for single channel, no further explanation given
 sonar/serial/MajorAxis: 1
-# ASCII headers for different message types
-# mtSendData message header '@000C'
-sonar/serial/HeaderMtSendData: [64,48,48,48,67]
-# mtHeadCommand message header '@003C'
-sonar/serial/HeaderMtHeadCommand: [64,48,48,51,67]
-# Length of block in 3 bit unit
-sonar/serial/HexLength: [12,0]
-# Number of bytes following count byte - excluding LF character
-sonar/serial/Count: 7
-# Message identification number
-sonar/serial/MsgNum: 25
-# Current time for sonar - not required for imaing as signals not time stamped
-sonar/serial/CurrentTime: [0,0,0,0]
-# End of line character
-sonar/serial/LF: 10

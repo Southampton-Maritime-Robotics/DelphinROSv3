@@ -12,6 +12,7 @@ Implemented messages:
 - mtReBoot: reboots sonar head; currently used before every setting change
    Note: this will slow down the setting changes!
 - mtHeadCommand: sends a new set of settings to the sonar head
+- mtSendData: request scan from sonar head
 
 
 TODO: Make the reboot for every setting change optional
@@ -198,24 +199,35 @@ class SonarTritech:
 
         return mtHeadCommand
 
+    def get_mtSendData(self):
+        """
+        Assemble the mtSendData message to request a sample set
+        - total length of message is 18 bytes
+            -> the HexLength from byte 6 onwards, excluding LF is 18 - 6 = 12
+            -> the byte count No. Byte after the No. Byte entry is 12 - 5 = 7
+        
+        :return: uint8 array for mtSendData 
+        """
+        mtSendData = (
+             # Hdr, HexLength, BinLength   {1|2, 3, 4, 5| 6, 7}
+            [0x40] + int_to_hex_length_uint8_array(12, 4) + number_to_uint8(12, 2) +
+            # Tx Nde - serial ID, Rx Nde - device ID                            { 8| 9}
+            [self.SerialParam['SID'], self.SerialParam['DID']] +
+            # No. Byte, mtSendData ID 25, Message Sequence Bitset=End           {10| 11| 12}
+            [7] + [0x19] + [0x80] +
+            # repeat of Tx Nde, current Time fixed at zero (not needed), LF     {13| 14, 15, 16, 17| 18}
+            [self.SerialParam['SID']] + [0] * 4 + [0x0A]
+            )
+        return mtSendData
+
     def send_ping_trigger(self):
         # assemble array of mtHeadCommand serial communication message
-        mtSendData = (self.SerialParam['HeaderMtSendData'] +
-                      self.SerialParam['HexLength'] +
-                      [self.SerialParam['SID'],
-                       self.SerialParam['DID'],
-                       self.SerialParam['Count'],
-                       self.SerialParam['MsgNum'],
-                       self.SerialParam['MsgSeq'], # TODO: looks like this one is not defined!
-                       self.SerialParam['Node']] +
-                      self.SerialParam['CurrentTime'] +
-                      [self.SerialParam['LF']])
-        # convert from string format to hex format
-        mtSendData = ''.join([chr(char) for char in mtSendData[:]])
+        mtSendData = self.get_mtSendData
         # send mtSendData message to sonar
-        self.Serial.write(mtSendData)
+        self.Serial.write(uint8_array_to_chr(mtSendData, "mtSendData"))
         rospy.logdebug("Sending ping trigger to sonar, mtSendData Message: \n"
-                       + str(mtSendData))
+                       + str(mtSendData[0:13]) + "\n"
+                       + str(mtSendData[13:]))
 
     def read_sonar(self):
         """
