@@ -92,10 +92,16 @@ class SonarTritech:
     def get_mtHeadCommand(self):
         """
         construct mtHeadCommand message for updating the sonar head setting
-        setting values for LLim, RLim, MoTime, Step
-        ADSpan, ADLow, ADInterval, NBins
-        TODO: A future interesting value is the HdCtrl1 and HdCtrl2 setting,
-            which together change the sonar head configuration
+        setting values for 
+        * LLim, RLim [given  in degrees, transmitted in 1/16th gradians]
+        * MoTime [given and transmitted in 10 microseconds
+        * Step [Step, given and transmitted in 1/16th gradians]
+        * ADInterval, NBins
+        
+        TODO: 
+        * A future interesting value is the HdCtrl1 and HdCtrl2 setting,
+          which together change the sonar head configuration
+        * ADSpan and ADLow can be used to remap the dynamic range - is this useful for anything?
         
         notes on the content:
         - single channel DST, so extra 16 byte appendage is neglected, message length is 60
@@ -115,6 +121,9 @@ class SonarTritech:
         HdCtrl2 = int(self.SerialParam['HdCtrl2'], 2)
         llim = (self.LLim * 6400/360.) % 6400  # convert from degrees to 1/16th Gradians, make sure value is below 6400
         rlim = (self.RLim * 6400/360.) % 6400
+        # check the Step size is within the standard settings
+        if not (self.Step in [4, 8, 16, 32]):
+            rospy.logwarn("Setting sonar step size to non-standard value " + str(self.Step))
 
         mtHeadCommand = (
             # Hdr, Hex Length, Bin Length                                  {1| 2, 3, 4, 5 | 6 7}
