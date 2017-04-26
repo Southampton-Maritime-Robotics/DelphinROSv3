@@ -59,7 +59,6 @@ catkin_python_setup()
    camera.msg
    camera_info.msg
    dead_reckoner.msg
-   sonar.msg
    sonar_setting.msg
    sonar_data.msg
    SMS.msg

@@ -113,7 +113,7 @@ class SonarTritech:
 
         HdCtrl1 = int(self.SerialParam['HdCtrl1'], 2)
         HdCtrl2 = int(self.SerialParam['HdCtrl2'], 2)
-        llim = (self.LLim * 6400/360.) % 6400  # convert from degrees to 1/16th Gradians, check limits
+        llim = (self.LLim * 6400/360.) % 6400  # convert from degrees to 1/16th Gradians, make sure value is below 6400
         rlim = (self.RLim * 6400/360.) % 6400
 
         mtHeadCommand = (
