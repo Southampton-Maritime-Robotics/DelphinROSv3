@@ -117,6 +117,7 @@ class SonarTritech:
         # Flush serial buffers to ensure clean operation
         self.Serial.flushInput()
         self.Serial.flushOutput()
+        self.send_ping_trigger() # maintain write-ahead: send first ping trigger
 
     def get_mtReBoot(self):
         return [0x40, 0x30, 0x30, 0x30, 0x38, 0x08, 0x00, 0xFF, 0x02, 0x03, 0x10, 0x80, 0x02, 0x0A]
