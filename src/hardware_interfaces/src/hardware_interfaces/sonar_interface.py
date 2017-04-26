@@ -22,6 +22,8 @@ class SonarTritech:
     - receive returns
     - assemble messages
     - decode messages
+    
+    TODO: Do something nice with the resolution of the range
     """
 
     def __init__(self):
@@ -29,17 +31,15 @@ class SonarTritech:
         self.RLim = rospy.get_param("sonar/RLim")  # in degrees
         self.LLim = rospy.get_param("sonar/LLim")  # in degrees
         self.NBins = rospy.get_param("sonar/NBins")
-        # self.ADInterval = rospy.get_param("sonar/ADInterval")
         self.Range = rospy.get_param("sonar/Range")
         self.ADInterval = int(round((((self.Range * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
+        self.Resolution = self.Range/float(self.NBins) # currently unused resolution of range, in [m]
         self.ADSpan = rospy.get_param("sonar/ADSpan")
         self.ADLow = rospy.get_param("sonar/ADLow")
         self.IGainB1 = rospy.get_param("sonar/IGainB1")
         self.IGainB2 = rospy.get_param("sonar/IGainB2")
         self.MoTime = rospy.get_param("sonar/MoTime")
         self.Step = rospy.get_param("sonar/Step")
-        # Alternative expressions for calculating some of the above sonar head settings
-        self.Range = rospy.get_param("sonar/Range")
         self.Data = []  # char array, where the recorded sonar ping data goes
         self.lastMtAlive = []
         self.updateFlag = 0
@@ -48,6 +48,28 @@ class SonarTritech:
         self.serial_setup()
         self.update_sonar_head_setting()
         rospy.logwarn("Updated sonar setting")
+
+    def __setattr__(self, key, value):
+        """
+        ADInterval is defined indirectly through NBins and Range, so if either changes, it needs updating
+        R = Range, N = NBins, VOS = Sound velocity in water ~ 1500 m/s (1480 m/s in sweet water, but close enough)
+        T = 2*R / VOS; # in [s]
+        t = T/N; # in [s]
+        ADInterval = t/(640*10**-9); in [640 nanoseconds]
+        """
+        self.__dict__[key] = value
+        if key == "Range":
+            self.ADInterval = int(round((((self.Range * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
+            self.ADInterval = max(5, self.ADInterval)  # Make sure ADInterval stays above practical limit and below
+            self.ADInterval = min(256**2 - 1, self.ADInterval)
+            self.Resolution = self.Range/float(self.NBins)
+
+        if key == "NBins":
+            self.NBins = min(self.NBins, 1500)  # Make sure NBins stays below max limit for DST
+            self.ADInterval = int(round((((self.Range * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
+            self.ADInterval = max(5, self.ADInterval)  # Make sure ADInterval stays above practical limit and below
+            self.ADInterval = min(256**2 - 1, self.ADInterval)
+            self.Resolution = self.Range/float(self.NBins)
 
     def update_sonar_head_setting(self):
         """
@@ -96,7 +118,8 @@ class SonarTritech:
         * LLim, RLim [given  in degrees, transmitted in 1/16th gradians]
         * MoTime [given and transmitted in 10 microseconds
         * Step [Step, given and transmitted in 1/16th gradians]
-        * ADInterval, NBins
+        * NBins [number of bins, up to 1500]
+        * Range *indirectly*: ADInterval is automatically updated based on Range and NBins
         
         TODO: 
         * A future interesting value is the HdCtrl1 and HdCtrl2 setting,
@@ -109,7 +132,7 @@ class SonarTritech:
             -> the HexLength from byte 6 onwards, excluding LF is 66 - 6 = 60
             -> the byte count No. Byte after the No. Byte entry is 60 - 5 = 55
         - Tx Node and Rx Node are as in documentation, but might change in combination with other devices
-        - mtHeadCommandID is 19, ir 0x13 in hes
+        - mtHeadCommandID is 19, ir 0x13 in hex
         - ignored parameters were set to 0 for simplicity, before they were:
                 TXNChan = [102, 102, 102, 5]
                 RXNChan = [112, 61, 10, 9]
