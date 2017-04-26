@@ -6,6 +6,15 @@ for details on the protocol, see datasheets
 Messages are assembled as individual array entries in uint8 format
 by entering either an interger or hex value e.g. 64 or 0x40
 for sending via serial, they need to be converted to chr 
+
+Implemented messages:
+- mtAlive: broadcast by sonar head at 1-second time interval after centering and arming
+- mtReBoot: reboots sonar head; currently used before every setting change
+   Note: this will slow down the setting changes!
+- mtHeadCommand: sends a new set of settings to the sonar head
+
+
+TODO: Make the reboot for every setting change optional
 """
 
 import numpy
@@ -197,7 +206,7 @@ class SonarTritech:
                        self.SerialParam['DID'],
                        self.SerialParam['Count'],
                        self.SerialParam['MsgNum'],
-                       self.SerialParam['MsgSeq'],
+                       self.SerialParam['MsgSeq'], # TODO: looks like this one is not defined!
                        self.SerialParam['Node']] +
                       self.SerialParam['CurrentTime'] +
                       [self.SerialParam['LF']])
@@ -278,6 +287,7 @@ class SonarTritech:
                 elif msgType == 4:
                     rospy.logdebug("Message type: mtAlive")
                     self.lastMtAlive = msgData
+                    self.analyse_mtAlive()    # Analysis step, not needed for operation of sonar
                     return 4
 
                 else:
@@ -289,12 +299,14 @@ class SonarTritech:
 
     def analyse_mtAlive(self):
         """
-        content of mtAlive after header:
-        [0]        14: 'WillSend' byte
+        content of mtAlive after header bytes {14 to 21} in the docs :
+        [0]        14: 'WillSend' byte, no longer used for DST
         [1:5]   15-18: Head Time
         [5:7]   19-20: Stepper Motor Position
         [7]        21: 'HeadInf'
         [8]        22: Message Terminator
+        
+        note: "InCentre" means a re-centre operation is ongoing
         """
         byte = 2 ** 8
         stepperPosition = self.lastMtAlive[5] + self.lastMtAlive[6] * byte
