@@ -157,7 +157,12 @@ class SonarTritech:
             # Ctl2, ScanZ, LF                                              {63| 64, 65| 66}
             [0x00] + [0x00, 0x00] + [0x0A]
         )
-        rospy.logdebug("Assembled new mtHeadCommand: " + str(mtHeadCommand))
+        rospy.logdebug("Assembled new mtHeadCommand: " +
+                       str(mtHeadCommand[0:14]) + "\n" +
+                       str(mtHeadCommand[14:28]) + "\n" +
+                       str(mtHeadCommand[28:42]) + "\n" +
+                       str(mtHeadCommand[42:56]) + "\n" +
+                       str(mtHeadCommand[56:])   + "\n")
 
         return mtHeadCommand
 
