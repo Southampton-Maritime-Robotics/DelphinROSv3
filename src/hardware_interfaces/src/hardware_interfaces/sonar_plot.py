@@ -22,9 +22,9 @@ class SonarPlot():
         print(self.memory)
         self.angleOfInterest = rospy.get_param("sonar/plot/AngleOfInterest")
         self.transducerBearing = collections.deque(maxlen=self.memory)# angle at which measurement was made, in [degrees]
-        self.pingRange = collections.deque([0]*self.memory, self.memory)
-        self.targetRange = collections.deque([0]*self.memory, self.memory)
-        self.fixedAngleTarget = collections.deque([0]*self.memory, self.memory)
+        self.pingRange = collections.deque(maxlen = self.memory)
+        self.targetRange = collections.deque([0]*self.memory, self.memory)  # initialise for nicer plots at startup
+        self.fixedAngleTarget = collections.deque([0]*self.memory, self.memory)  #initialise for nicer plots at startup
         self.bins = collections.deque(maxlen=self.memory)
         self.polarResolution = 1
         self.angleStep = 0.1
@@ -39,7 +39,9 @@ class SonarPlot():
 
         # if the range changes, the plot needs to be updated
         if len(self.bins[-1])  != self.polarResolution:
-            self.polarResolution = len(self.bins[-1]) 
+            # clear all but the current bins
+            self.bins = [self.bins[-1]]
+            self.polarResolution = len(self.bins[-1])
             self.polarImage = np.zeros((self.polarResolution * 2, self.polarResolution * 2))
             # add grid for 0, 90, 180 and 270 degrees
             for x in range(2, self.polarResolution * 2 - 2):

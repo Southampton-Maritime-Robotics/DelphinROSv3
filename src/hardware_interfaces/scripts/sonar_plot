@@ -79,16 +79,21 @@ def draw_figures():
     label_270deg.setText("270 degrees")
     label_270deg.setStyleSheet('color: yellow')
 
+    label_range = QtGui.QLabel()
+    label_range.setText("Range: " + str(plotData.pingRange[-1]))
+    label_range.setStyleSheet('color: orange')
+
 
     grid.addWidget(label_270deg,         1, 4 * w, 4, 20)
     grid.addWidget(label_180deg,    2 * w, 2 * w + 5, 4, 20)
     grid.addWidget(label_90deg,   4 * w - 5, 4 * w, 4, 20)
     grid.addWidget(label_0deg,   2 * w, 6 * w - 20, 4, 20)
+    grid.addWidget(label_range, 1, 2*w + 1, 12, 20)
 
 
     # detected distance
     obstacle_detection = pg.PlotWidget()
-    obstacle_detection.plot(plotData.targetRange[-150:])
+    obstacle_detection.plot(plotData.targetRange)
     grid.addWidget(obstacle_detection, 2*w+3, 1, w, 2*w)
 
 
@@ -101,15 +106,17 @@ def draw_figures():
 
 
     def update_figures():
-        datarange = min(len(plotData.bins), plotData.memory)
-        if datarange > 0:
-            bins_vs_time.setImage(numpy.array(plotData.bins[-datarange:]))
+        if len(plotData.bins) > 0:
+            label_range.setText(" Range: " + str(round(plotData.pingRange[-1], 2)) +
+                                "\n Angle: " + str(round(plotData.transducerBearing[-1], 2)) +
+                                "\n Detection: " + str(round(plotData.targetRange[-1], 2)))
+            bins_vs_time.setImage(numpy.array(plotData.bins))
             polar_bins.setImage(plotData.polarImage)
             obstacle_detection.clear()
-            obstacle_detection.plot(plotData.targetRange[-datarange:])
+            obstacle_detection.plot(plotData.targetRange)
             obstacle_angle.clear()
             obstacle_angle.setYRange(0,15)
-            obstacle_angle.plot(plotData.fixedAngleTarget[-datarange:])
+            obstacle_angle.plot(plotData.fixedAngleTarget)
  
 
 
