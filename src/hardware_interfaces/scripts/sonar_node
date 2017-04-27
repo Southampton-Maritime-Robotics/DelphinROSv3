@@ -13,14 +13,12 @@ from std_msgs.msg import String
 from hardware_interfaces.msg import sonar_setting
 from hardware_interfaces import sonar_interface
 
-SonarDevice = sonar_interface.SonarTritech()
 
 
 ################################################################
 def sonarLoop():
     pub = rospy.Publisher('sonar_output', String, queue_size=10)
     # Main operational loop #
-    rospy.init_node('sonar_interface', anonymous=True)
     # it is unlikely that the sonar can keep up with the maximum rate,
     # but it should go as fast as possible, so the maximum rate is set
     rate = rospy.Rate(rospy.get_param("/maxRate"))
@@ -46,6 +44,8 @@ def shutdown():
 
 if __name__ == '__main__':
     try:
+        rospy.init_node('sonar_interface', anonymous=True)
+        SonarDevice = sonar_interface.SonarTritech()
         rospy.Subscriber('sonar_updateSettings', sonar_setting, SonarDevice.read_setting_demand)
         rospy.on_shutdown(SonarDevice.serial_shutdown)
         sonarLoop()
