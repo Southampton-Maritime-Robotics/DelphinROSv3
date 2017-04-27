@@ -21,11 +21,11 @@ class SonarPlot():
         self.memory = rospy.get_param("/sonar/plot/Memory")
         print(self.memory)
         self.angleOfInterest = rospy.get_param("sonar/plot/AngleOfInterest")
-        self.transducerBearing = [] # angle at which measurement was made, in [degrees]
-        self.pingRange = []
-        self.targetRange = []
-        self.fixedAngleTarget = []
-        self.bins = []
+        self.transducerBearing = collections.deque(maxlen=self.memory)# angle at which measurement was made, in [degrees]
+        self.pingRange = collections.deque([0]*self.memory, self.memory)
+        self.targetRange = collections.deque([0]*self.memory, self.memory)
+        self.fixedAngleTarget = collections.deque([0]*self.memory, self.memory)
+        self.bins = collections.deque(maxlen=self.memory)
         self.polarResolution = 1
         self.angleStep = 0.1
 

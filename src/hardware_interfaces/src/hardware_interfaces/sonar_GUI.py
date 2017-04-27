@@ -108,7 +108,8 @@ class Settings(QtGui.QWidget):
                 # TODO: before accepting values, checks using the limits dictionary
                 # should be done!
                 # TODO: make the lines display the current value instead of being empty
-                self.settings[key] = float(self.editLines[key].text())
+                text = (self.editLines[key].text())
+                self.settings[key] = float(text)
                 self.QLabels[key].setText(self.UpdateText(key))
 
             # publish new values
