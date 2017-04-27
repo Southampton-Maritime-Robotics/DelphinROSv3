@@ -40,7 +40,7 @@ class SonarTritech:
         # read initial sonar settings from parameter server
         self.RLim = rospy.get_param("sonar/RLim")  # in degrees
         self.LLim = rospy.get_param("sonar/LLim")  # in degrees
-        self.NBins = rospy.get_param("sonar/NBins")
+        self.__dict__['NBins'] = rospy.get_param("sonar/NBins")  # avoid setattr error, since range is not set yet
         self.Range = rospy.get_param("sonar/Range")
         self.ADInterval = int(round((((self.Range * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
         self.Resolution = self.Range/float(self.NBins) # currently unused resolution of range, in [m]
@@ -59,6 +59,7 @@ class SonarTritech:
         self.update_sonar_head_setting()
         rospy.logwarn("Updated sonar setting")
 
+
     def __setattr__(self, key, value):
         """
         ADInterval is defined indirectly through NBins and Range, so if either changes, it needs updating
@@ -70,16 +71,18 @@ class SonarTritech:
         self.__dict__[key] = value
         if key == "Range":
             self.ADInterval = int(round((((self.Range * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
-            self.ADInterval = max(5, self.ADInterval)  # Make sure ADInterval stays above practical limit and below
-            self.ADInterval = min(256**2 - 1, self.ADInterval)
             self.Resolution = self.Range/float(self.NBins)
 
         if key == "NBins":
-            self.NBins = min(self.NBins, 1500)  # Make sure NBins stays below max limit for DST
+            if value > 1500:
+                value = 1500
             self.ADInterval = int(round((((self.Range * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
-            self.ADInterval = max(5, self.ADInterval)  # Make sure ADInterval stays above practical limit and below
-            self.ADInterval = min(256**2 - 1, self.ADInterval)
             self.Resolution = self.Range/float(self.NBins)
+
+        if key == "ADInterval":
+            if value > (256**2 - 1):
+                value = 256**2 - 1
+        self.__dict__[key] = value
 
     def update_sonar_head_setting(self):
         """
@@ -209,8 +212,9 @@ class SonarTritech:
         
         :return: uint8 array for mtSendData 
         """
+
         mtSendData = (
-             # Hdr, HexLength, BinLength   {1|2, 3, 4, 5| 6, 7}
+            # Hdr, HexLength, BinLength                                         {1|2, 3, 4, 5| 6, 7}
             [0x40] + int_to_hex_length_uint8_array(12, 4) + number_to_uint8(12, 2) +
             # Tx Nde - serial ID, Rx Nde - device ID                            { 8| 9}
             [self.SerialParam['SID'], self.SerialParam['DID']] +
@@ -222,8 +226,10 @@ class SonarTritech:
         return mtSendData
 
     def send_ping_trigger(self):
+        rospy.logwarn("send ping trigger")
         # assemble array of mtHeadCommand serial communication message
-        mtSendData = self.get_mtSendData
+        mtSendData = self.get_mtSendData()
+
         # send mtSendData message to sonar
         self.Serial.write(uint8_array_to_chr(mtSendData, "mtSendData"))
         rospy.logdebug("Sending ping trigger to sonar, mtSendData Message: \n"
@@ -273,6 +279,7 @@ class SonarTritech:
                 msgData = numpy.fromstring(msgData, dtype=numpy.uint8)
                 rospy.logdebug("Data from sonar: message data: "
                                + str(msgData))
+                rospy.logwarn(msgType)
 
                 if msgData[-1] != 10:
                     rospy.logdebug("Message error: Message does not end in '\\LF'")
@@ -285,6 +292,7 @@ class SonarTritech:
                     return 1
 
                 elif msgType == 2:
+                    rospy.logwarn("received data")
                     msgData = numpy.concatenate((headerData, msgData))
                     # convert from numpy array into string so it can be published
                     self.Data = uint8_array_to_chr(msgData, 'mtHeadData')
@@ -415,7 +423,7 @@ def number_to_uint8(number, out_len):
     while out_len > 0:
         out_len = out_len - 1
         result[out_len] = int(int_number / (256 ** out_len))  # starting with MSB, enforce division result stays int
-        int_number = int_number % (256 ** out_len * result[out_len])  # get remainder
+        int_number = int_number % (256 ** out_len)  # get remainder
     return result
 
 
@@ -429,7 +437,7 @@ def uint8_array_to_chr(intArray, messageName):
         return result
     except:
         # This will throw an error e.g. if the int value is larger than 256
-        warnings.warn("Error converting message from int array to char for " + messageName)
+        rospy.logwarn("Error converting message from int array to char for " + messageName)
 
 
 def int_to_hex_length_uint8_array(value, out_len):
@@ -455,9 +463,9 @@ def int_to_hex_length_uint8_array(value, out_len):
         # transform entry_chr in the hex format of the value
         # enter the int representation of the string representing that value
         if entry_chr < 10:
-            result[bytes] = ord('0') + entry_chr
+            result[-(out_len+1)] = ord('0') + entry_chr
         else:
-            result[bytes] = ord('A') + entry_chr - 10
+            result[-(out_len+1)] = ord('A') + entry_chr - 10
     return result
 
 
