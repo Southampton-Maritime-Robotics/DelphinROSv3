@@ -92,13 +92,14 @@ def draw_figures():
 
     def update_figures():
         datarange = min(len(plotData.bins), plotData.memory)
-        bins_vs_time.setImage(numpy.array(plotData.bins[-datarange:]))
-        polar_bins.setImage(plotData.polarImage)
-        obstacle_detection.clear()
-        obstacle_detection.plot(plotData.targetRange[-datarange:])
-        obstacle_angle.clear()
-        obstacle_angle.setYRange(0,15)
-        obstacle_angle.plot(plotData.fixedAngleTarget[-datarange:])
+        if datarange > 0:
+            bins_vs_time.setImage(numpy.array(plotData.bins[-datarange:]))
+            polar_bins.setImage(plotData.polarImage)
+            obstacle_detection.clear()
+            obstacle_detection.plot(plotData.targetRange[-datarange:])
+            obstacle_angle.clear()
+            obstacle_angle.setYRange(0,15)
+            obstacle_angle.plot(plotData.fixedAngleTarget[-datarange:])
  
 
 
