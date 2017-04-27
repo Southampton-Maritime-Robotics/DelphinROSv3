@@ -1,6 +1,7 @@
 import numpy as np
 import rospy
 import time
+import collections
 
 from hardware_interfaces import sonar_analyse
 
@@ -18,9 +19,9 @@ class SonarPlot():
 
     def __init__(self):
         self.memory = rospy.get_param("/sonar/plot/Memory")
+        print(self.memory)
         self.angleOfInterest = rospy.get_param("sonar/plot/AngleOfInterest")
         self.transducerBearing = [] # angle at which measurement was made, in [degrees]
-        # TODO switch to [radians]
         self.pingRange = []
         self.targetRange = []
         self.fixedAngleTarget = []
@@ -40,6 +41,14 @@ class SonarPlot():
         if len(self.bins[-1])  != self.polarResolution:
             self.polarResolution = len(self.bins[-1]) 
             self.polarImage = np.zeros((self.polarResolution * 2, self.polarResolution * 2))
+            # add grid for 0, 90, 180 and 270 degrees
+            for x in range(2, self.polarResolution * 2 - 2):
+                self.polarImage[x, self.polarResolution] = 200
+                self.polarImage[x, self.polarResolution + 1] = 200
+                self.polarImage[x, self.polarResolution - 1] = 200
+                self.polarImage[self.polarResolution, x] = 200
+                self.polarImage[self.polarResolution + 1, x] = 200
+                self.polarImage[self.polarResolution - 1, x] = 200
 
         self.update_polar()
         self.update_angleOfInterest()
@@ -50,25 +59,37 @@ class SonarPlot():
         Update polar plot with most recent measurement
         """
         new_bins = self.bins[-1]
-        
+
         # determine how much the sonar transducer moved since last measurement
-        if len(self.bins)>1:
-            self.angleStep = self.transducerBearing[-1] - self.transducerBearing[-2]  
+        if len(self.bins) > 1:
+            self.angleStep = abs(self.transducerBearing[-1] - self.transducerBearing[-2])
+            # check for transition over 360 degree
+            if self.angleStep > 300:
+                self.angleStep = 360 - self.angleStep
+
 
         for idx, amplitude in enumerate(new_bins):
             # for each bin, get an list of pixels for plotting, 
             # increasing the entries in the list based on the distance from the centre
             angleCoverage = [
-                self.transducerBearing[-1] - self.angleStep/2. + self.angleStep * n/np.sqrt(idx)
+                #self.transducerBearing[-1] - self.angleStep/2. + self.angleStep * n/np.sqrt(idx)
+                (self.transducerBearing[-1] + self.angleStep/2. + self.angleStep * n/np.sqrt(idx))%360
                 for n in range(int(np.sqrt(idx)))
                 ]
+
             for theta in angleCoverage:
                 sine = np.sin(np.radians(theta))
                 cosine = np.cos(np.radians(theta))
 
+                # polar plot around centre of plotting are, making sure the plotting area is not exceeded
+                # (rounding errors sometimes lead to
                 x_coord = int(idx * cosine) + self.polarResolution  # polar plot around centre of plotting area
                 y_coord = int(idx * sine) + self.polarResolution
-                self.polarImage[x_coord, y_coord] = amplitude
+                gridlines = [self.polarResolution, self.polarResolution + 1, self.polarResolution -1]
+                if (x_coord in gridlines) or (y_coord in gridlines):
+                    self.polarImage[x_coord, y_coord] = 200
+                else:
+                    self.polarImage[x_coord, y_coord] = amplitude
 
 
 
