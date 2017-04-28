@@ -109,7 +109,8 @@ class Settings(QtGui.QWidget):
                 # should be done!
                 # TODO: make the lines display the current value instead of being empty
                 text = (self.editLines[key].text())
-                self.settings[key] = float(text)
+                if text != "":
+                    self.settings[key] = float(text)
                 self.QLabels[key].setText(self.UpdateText(key))
 
             # publish new values
