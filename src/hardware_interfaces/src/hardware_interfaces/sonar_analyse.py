@@ -54,6 +54,65 @@ class SonarPing(object):
         else:
             self.hasBins = 0
 
+        def read_return_information(self):
+            """
+            The mtHeadData contains information that is usually not used but that might be useful for debugging
+            self.header contains 52 bytes, these are made of:
+            self.header[0:13]: {1 to 13} relevant for serial communication
+            self.header[13:]: (14 ->} Device Parameters/Reply Data
+            
+            Currently the following Device Para
+            self.header[15]: Byte {16} Device Type, 11 is DST
+            self.header[16]: Byte {17} 'Head Status'
+            self.header[17]: Byte{18} Sweep Code
+            self.header[18:20]: Byte{19, 20} 'HdCtrl' bytes
+               the default values are added to the detailed analysis of the HdCtrl,
+               they are in brackets if they may be changed without referring the docs for details
+            self.header[26]: Byte{27} Gain setting
+            :return: dict of all values that were extracted
+            """
+            result = {'Device Type': self.header[15],
+                      'Gain setting': self.header[26] * 210
+                      }
+            byte = 2**8
+            bitset = bin(self.header[16] + byte)  # add byte to make sure the bin value is full length
+            result['HdPwrLoss'] = bitset[-1]
+            result['MotErr'] = bitset[-2]
+
+            sweep_code = {0: 'Scanning_Normal',
+                          1: 'Scan at left limit',
+                          2: 'Scan at right limit',
+                          5: 'Scan at centre'}
+            if self.header[17] in sweep_code:
+                result['Sweep Code'] = sweep_code[self.header[17]]
+            else:
+                result['Sweep Code'] = ("Invalid Sweep code: " + str(self.header[17]))
+
+            result['HdCtrl, MSB left'] = bin(self.header[18] + byte)[-8:] + bin(self.header[19] + byte)[-8:]
+            hdctrl = {0: 'adc8on(=0)',
+                      1: 'cont(=0)',
+                      2: 'scanright(=0)',
+                      3: 'invert=0',
+                      4: 'motoff=0',
+                      5: 'txoff=0',
+                      6: 'spare=0',
+                      7: 'chan2=0',
+                      8: 'raw=1',
+                      9: 'hasmot=1',
+                      10:'applyoffset=0',
+                      11: 'pingpong=0',
+                      12: 'stareLLim=0',
+                      13: 'ReplyASL=1',
+                      14: 'ReplyThr=0',
+                      15: 'IgnoreSensor=0'}
+            for idx in hdctrl:
+                result['HdCtrl: ' + hdctrl[idx]] = result['HdCtrl, MSB left'][-idx]
+
+            return result
+
+
+
+
 
 class SonarEvaluate(object):
     """
@@ -72,13 +131,11 @@ class SonarEvaluate(object):
         based on deprecated sonar_detectobstacle.py
 
         Parameters that exist but are currently not used:
-        # ADInterval = rospy.get_param("/ADInterval")
         # GlitchCount = rospy.get_param("/GlitchCount")
-        # ThresholdCount = GlitchCount - 1
-
+        This might be interesting in connection with the capability of the sonar to repeat a ping,
+        though I am not sure if the micron is one of the sonar that can do repeats, and of course this looses time
         """
         if sonarPing.hasBins:
-            BinLength = sonarPing.pingRange/float(sonarPing.NBins)              # Distance each bin covers
             BinLength = sonarPing.ADInterval / float(self.SoundspeedInWater)    # Make sure the division is by float
             StartBin = int(numpy.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
 
@@ -86,9 +143,6 @@ class SonarEvaluate(object):
             ReturnIndexes = numpy.flatnonzero(sonarPing.pingPower[StartBin:-1]>self.Threshold)
             # include number of bins in blanking distance for true distance
             ReturnIndexes = ReturnIndexes + StartBin
-            # Convert back from 16th of a gradian to degrees
-            #transBearing =        transBearing = transBearing %360
-
             # calculate target range in metres
             if ReturnIndexes != []:
                 # calculate distance to first bin that is above threshold
@@ -98,20 +152,11 @@ class SonarEvaluate(object):
 
             # mean intensity of bins beyond the blanking disance
             # may be of interest in identifying areas of interest
-            # meanIntensity = numpy.mean(self.pingPower[StartBin:-1])
-            # TODO fix this
-            meanIntensity = 0
-            pitch = 0
+            meanIntensity = numpy.mean(self.pingPower[StartBin:-1])
 
-            #rospy.logdebug('bearing:',transBearing)
-            #rospy.logdebug('range:',TargetRange)
-            #rospy.logdebug(time.time())
-            #self.targetRange.append(TargetRange)
-            #    self.fixedAngleTarget.append(TargetRange)
-            #else:
-            #    self.fixedAngleTarget.append(self.fixedAngleTarget[-1])
-            results = [sonarPing.transducerBearing, pitch, TargetRange, meanIntensity]
+            results = [sonarPing.transducerBearing, TargetRange, meanIntensity]
         else:
             results = [0, 0, 0, 0]
         return results
+
 
