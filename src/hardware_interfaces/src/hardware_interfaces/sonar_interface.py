@@ -96,25 +96,31 @@ class SonarTritech:
         self.Serial.write(uint8_array_to_chr(mtReBoot, 'mtReBoot'))
 
         # wait for mtAlive
-        start_t = time.time()
         message_type = 0
-        while (message_type != 4) and (time.time() - start_t < 60) and not rospy.is_shutdown():
-            rospy.loginfo("Waiting for mtAlive after sending mtReBoot")
-            if time.time() - start_t > 50:
-                warnings.warn("waiting for mtAlive about to timeout - check sonar connection")
+        while (message_type != 4) and not rospy.is_shutdown():
+            rospy.logdebug("Waiting for mtAlive after sending mtReBoot")
             # wait a little longer for mtAlive message from transducer
             rospy.sleep(0.1)
             message_type = self.read_sonar()
 
-        # continuously send mtHeadCommand message
-        # until sonar node responds with message type 4 message mtAlive:
-        mtHeadCommand = self.get_mtHeadCommand()
+        # Flush serial buffers to ensure clean operation
+        self.Serial.flushInput()
+        self.Serial.flushOutput()
+
+        # send mtHeadCommand message
+        # wait for type 4 message mtAlive:
         self.updateFlag = 0
+        mtHeadCommand = self.get_mtHeadCommand()
+        self.Serial.write(uint8_array_to_chr(mtHeadCommand, 'mtHeadCommand'))
+
+        start_t = time.time()
         message_type = 0
-        while (message_type != 4) and not rospy.is_shutdown():
-            self.Serial.write(uint8_array_to_chr(mtHeadCommand, 'mtHeadCommand'))
+        while (message_type != 4) and (time.time() - start_t < 60) and not rospy.is_shutdown():
+            rospy.loginfo("Waiting for mtAlive after sending mtHeadCommand")
+            if time.time() - start_t > 50:
+                rospy.logwarn("waiting for mtAlive after sending mtHeadCommand - check mtHeadCommand"
+                              + str(mtHeadCommand))
             rospy.sleep(0.1)
-            rospy.loginfo("Changing sonar head settings: Waiting for mtAlive")
             message_type = self.read_sonar()
 
         # Flush serial buffers to ensure clean operation
@@ -226,7 +232,6 @@ class SonarTritech:
         return mtSendData
 
     def send_ping_trigger(self):
-        rospy.logwarn("send ping trigger")
         # assemble array of mtHeadCommand serial communication message
         mtSendData = self.get_mtSendData()
 
@@ -279,7 +284,6 @@ class SonarTritech:
                 msgData = numpy.fromstring(msgData, dtype=numpy.uint8)
                 rospy.logdebug("Data from sonar: message data: "
                                + str(msgData))
-                rospy.logwarn(msgType)
 
                 if msgData[-1] != 10:
                     rospy.logdebug("Message error: Message does not end in '\\LF'")
@@ -292,7 +296,6 @@ class SonarTritech:
                     return 1
 
                 elif msgType == 2:
-                    rospy.logwarn("received data")
                     msgData = numpy.concatenate((headerData, msgData))
                     # convert from numpy array into string so it can be published
                     self.Data = uint8_array_to_chr(msgData, 'mtHeadData')
@@ -314,7 +317,7 @@ class SonarTritech:
                 else:
                     rospy.logdebug("Unknown message type: " + str(msgType))
             else:
-                rospy.logwarn("Sonar message does not start with the required '@'\n"
+                rospy.logdebug("Sonar message does not start with the required '@'\n"
                               + "Starting with: " + str(headerData[0]))
                 self.serial_handle_error()
 
@@ -376,11 +379,11 @@ class SonarTritech:
             self.Serial.bytesize = serial.EIGHTBITS
             self.Serial.stopbits = serial.STOPBITS_ONE
             self.Serial.parity = serial.PARITY_NONE
-            warnings.warn("Setup serial port for sonar: "
+            rospy.loginfo("Setup serial port for sonar: "
                           + str(self.Serial.portstr) + '\n'
                           + str(self.Serial.isOpen()))
         except:
-            warnings.warn("Sonar could not be mounted to given serial port " + str(self.SerialParam['Port']))
+            rospy.logwarn("Sonar could not be mounted to given serial port " + str(self.SerialParam['Port']))
 
     def serial_reset(self):
         # this function is called to restart the serial communication
@@ -391,9 +394,14 @@ class SonarTritech:
     def serial_handle_error(self):
         # Always update error count
         self.receiveErrorCount += 1
+        # Flush serial buffers to ensure clean operation
+        self.Serial.flushInput()
+        self.Serial.flushOutput()
+
         # if error count is too high, reset serial communication
         if self.receiveErrorCount >= self.SerialParam['CriticalErrorCount']:
-            rospy.logerr("Sonar receive error count too high, resetting sonar serial communication")
+            rospy.logerr("Resetting sonar serial communication: "
+                         "Error count too high, too many messages did not start with required '@'")
             self.receiveErrorCount = 0
             self.serial_reset()
 
