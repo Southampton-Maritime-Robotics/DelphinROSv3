@@ -21,6 +21,7 @@ driftOffset = rospy.get_param("/sonar/Driftoffset")
 if driftOffset != 0:
     warnings.warn("Caution: A drift offset has been set")
 
+
 class SonarPing(object):
     """
     class for splitting the Tritech Micron Ping into the information contained in it
@@ -54,7 +55,6 @@ class SonarPing(object):
             self.hasBins = 0
 
 
-
 class SonarEvaluate(object):
     """
     Inspect a given sonar ping/set of sonar pings
@@ -64,18 +64,12 @@ class SonarEvaluate(object):
     def __init__(self):
         self.BlankDist = rospy.get_param("/sonar/analyse/BlankDist")
         self.Threshold = rospy.get_param("/sonar/analyse/Threshold")
-
-
-
+        self.SoundspeedInWater = rospy.get_param("/sonar/SoundspeedWater")
 
     def detect_obstacle(self, sonarPing):
         """
         calculate distance at which obstacle is detected
         based on deprecated sonar_detectobstacle.py
-
-        Future ideas:
-        # Variable blanking distance
-        # Variable sonar return threshold
 
         Parameters that exist but are currently not used:
         # ADInterval = rospy.get_param("/ADInterval")
@@ -85,6 +79,7 @@ class SonarEvaluate(object):
         """
         if sonarPing.hasBins:
             BinLength = sonarPing.pingRange/float(sonarPing.NBins)              # Distance each bin covers
+            BinLength = sonarPing.ADInterval / float(self.SoundspeedInWater)    # Make sure the division is by float
             StartBin = int(numpy.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
 
             # return indices of bins with value above threshold:

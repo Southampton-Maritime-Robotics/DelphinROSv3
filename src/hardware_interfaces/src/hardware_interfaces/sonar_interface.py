@@ -23,7 +23,6 @@ import numpy
 import rospy
 import time
 import serial
-import warnings
 
 
 class SonarTritech:
@@ -42,6 +41,7 @@ class SonarTritech:
         self.DriftOffset = rospy.get_param("sonar/Driftoffset")  # in degrees, to offset a drift of the scanning head
         if self.DriftOffset != 0:
             rospy.logerr("Using sonar drift offset of " + str(self.DriftOffset) + " degrees!")
+        self.SoundspeedWater = float(rospy.get_param("sonar/SoundspeedWater")) # make sure this value is float
         self.RLim = rospy.get_param("sonar/RLim")  # in degrees
         self.LLim = rospy.get_param("sonar/LLim")  # in degrees
         self.__dict__['NBins'] = rospy.get_param("sonar/NBins")  # avoid setattr error, since range is not set yet
@@ -74,7 +74,7 @@ class SonarTritech:
         
         B)
         ADInterval is defined indirectly through NBins and Range, so if either changes, it needs updating
-        R = Range, N = NBins, VOS = Sound velocity in water ~ 1500 m/s (1480 m/s in sweet water, but close enough)
+        R = Range, N = NBins, VOS = Sound velocity in water
         T = 2*R / VOS; # in [s]
         t = T/N; # in [s]
         ADInterval = t/(640*10**-9); in [640 nanoseconds]
@@ -89,13 +89,13 @@ class SonarTritech:
 
         # B) ADINTERVAL
         if key == "Range":
-            self.ADInterval = int(round((((value * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
+            self.ADInterval = int(round((((value * 2) / self.SoundspeedWater) / self.NBins) / 0.000000640, 0))
             self.Resolution = value/float(self.NBins)
 
         if key == "NBins":
             if value > 1500:
                 value = 1500
-            self.ADInterval = int(round((((self.Range * 2) / 1500.0) / value) / 0.000000640, 0))
+            self.ADInterval = int(round((((self.Range * 2) / self.SoundspeedWater) / value) / 0.000000640, 0))
             self.Resolution = self.Range/float(value)
 
         if key == "ADInterval":

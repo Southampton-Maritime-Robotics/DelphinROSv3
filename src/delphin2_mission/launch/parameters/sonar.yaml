@@ -11,7 +11,6 @@
 # in degrees, from 0 to 359
 sonar/Driftoffset: 0
 
-
 # Left limit for Heading
 # in degrees, from 0 to 359
 sonar/LLim: 0
@@ -37,6 +36,12 @@ sonar/ADInterval: 5
 # used to calculate the ADInterval
 # in [metres]
 sonar/Range: 5
+
+# Speed of sound in water, to calculate the ADInterval correctly
+# in seawater ~: 1500. m/s
+# in sweet water: 1484. m/s
+# in [metre/second]
+sonar/SoundspeedWater: 1484.
 
 # not used in 8 bit mode
 sonar/ADSpan:  210
