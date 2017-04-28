@@ -34,19 +34,25 @@ class SonarPing(object):
         :param rawData: 
         """
         global driftOffset
-        self.bins =[] 
+        self.bins =[]
         self.header = []
         data = numpy.fromstring(rawData.data, dtype=numpy.uint8)
-        # now split the most recent dataset:
-        self.header = data[0:52]   # 13 byte header are read from sonar
-        self.bins = data[52:]     # the rest is bins
-        self.NBins = float(self.header[42] + self.header[43]*256)
-        self.transducerBearing = ((float(self.header[40]+(self.header[41]*256))/6400.0)*360 + driftOffset)%360
-        self.LLim =  ((float(self.header[35]+(self.header[36]*256))/6400.0)*360)%360
-        self.RLim =  ((float(self.header[37]+(self.header[38]*256))/6400.0)*360)%360
-        self.ADInterval = float(self.header[33]+(self.header[34]*256))
-        self.pingRange = self.ADInterval * 0.000000640 * self.NBins * 1500. /2
-        self.pingPower = data[44:-1]
+        # only fill the dataset, if the packet contains bins
+        if len(data) > 200:
+            self.hasBins = 1
+            # now split the most recent dataset:
+            self.header = data[0:52]   # 13 byte header are read from sonar
+            self.bins = data[52:]     # the rest is bins
+            self.NBins = float(self.header[42] + self.header[43]*256)
+            self.transducerBearing = ((float(self.header[40]+(self.header[41]*256))/6400.0)*360 + driftOffset)%360
+            self.LLim =  ((float(self.header[35]+(self.header[36]*256))/6400.0)*360)%360
+            self.RLim =  ((float(self.header[37]+(self.header[38]*256))/6400.0)*360)%360
+            self.ADInterval = float(self.header[33]+(self.header[34]*256))
+            self.pingRange = self.ADInterval * 0.000000640 * self.NBins * 1500. /2
+            self.pingPower = data[44:-1]
+        else:
+            self.hasBins = 0
+
 
 
 class SonarEvaluate(object):
@@ -77,38 +83,40 @@ class SonarEvaluate(object):
         # ThresholdCount = GlitchCount - 1
 
         """
+        if sonarPing.hasBins:
+            BinLength = sonarPing.pingRange/float(sonarPing.NBins)              # Distance each bin covers
+            StartBin = int(numpy.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
 
-        BinLength = sonarPing.pingRange/float(sonarPing.NBins)              # Distance each bin covers
-        StartBin = int(numpy.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
+            # return indices of bins with value above threshold:
+            ReturnIndexes = numpy.flatnonzero(sonarPing.pingPower[StartBin:-1]>self.Threshold)
+            # include number of bins in blanking distance for true distance
+            ReturnIndexes = ReturnIndexes + StartBin
+            # Convert back from 16th of a gradian to degrees
+            #transBearing =        transBearing = transBearing %360
 
-        # return indices of bins with value above threshold:
-        ReturnIndexes = numpy.flatnonzero(sonarPing.pingPower[StartBin:-1]>self.Threshold)
-        # include number of bins in blanking distance for true distance
-        ReturnIndexes = ReturnIndexes + StartBin  
-        # Convert back from 16th of a gradian to degrees
-        #transBearing =        transBearing = transBearing %360 
+            # calculate target range in metres
+            if ReturnIndexes != []:
+                # calculate distance to first bin that is above threshold
+                TargetRange = ReturnIndexes[0] * BinLength
+            else:
+                TargetRange = -1 # indicate no returns
 
-        # calculate target range in metres
-        if ReturnIndexes != []: 
-            # calculate distance to first bin that is above threshold
-            TargetRange = ReturnIndexes[0] * BinLength  
-        else: 
-            TargetRange = -1 # indicate no returns
-                                                
-        # mean intensity of bins beyond the blanking disance
-        # may be of interest in identifying areas of interest
-        # meanIntensity = numpy.mean(self.pingPower[StartBin:-1]) 
-        # TODO fix this
-        meanIntensity = 0
-        pitch = 0
+            # mean intensity of bins beyond the blanking disance
+            # may be of interest in identifying areas of interest
+            # meanIntensity = numpy.mean(self.pingPower[StartBin:-1])
+            # TODO fix this
+            meanIntensity = 0
+            pitch = 0
 
-        #rospy.logdebug('bearing:',transBearing)
-        #rospy.logdebug('range:',TargetRange)
-        #rospy.logdebug(time.time())
-        #self.targetRange.append(TargetRange)
-        #    self.fixedAngleTarget.append(TargetRange)
-        #else:
-        #    self.fixedAngleTarget.append(self.fixedAngleTarget[-1])
-        results = [sonarPing.transducerBearing, pitch, TargetRange, meanIntensity]
+            #rospy.logdebug('bearing:',transBearing)
+            #rospy.logdebug('range:',TargetRange)
+            #rospy.logdebug(time.time())
+            #self.targetRange.append(TargetRange)
+            #    self.fixedAngleTarget.append(TargetRange)
+            #else:
+            #    self.fixedAngleTarget.append(self.fixedAngleTarget[-1])
+            results = [sonarPing.transducerBearing, pitch, TargetRange, meanIntensity]
+        else:
+            results = [0, 0, 0, 0]
         return results
 
