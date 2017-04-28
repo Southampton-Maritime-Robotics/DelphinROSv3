@@ -22,9 +22,6 @@ from pyqtgraph.Qt import QtGui, QtCore
 import signal
 
 from std_msgs.msg import String
-from std_msgs.msg import Float32
-from hardware_interfaces.msg import sonar_data
-from hardware_interfaces.msg import sonar	
 
 from hardware_interfaces import sonar_analyse
 from hardware_interfaces import sonar_plot
