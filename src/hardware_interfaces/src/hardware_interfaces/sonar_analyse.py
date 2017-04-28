@@ -1,7 +1,3 @@
-import numpy
-import rospy
-import time
-
 """
 VERSION AS OF 18/06/2015
 
@@ -15,6 +11,11 @@ sonarPing: Information that is contained within one ping as the raw bins and the
 sonarPlotData: collection onf sonar Pings and further things for plotting, e.g. polar plot data
 sonarEvaluate: Further data that is needed for sonar evaluation, e.g. pitch and evaluation results
 """
+
+import numpy
+import rospy
+import time
+
 
 
 class SonarPing(object):
