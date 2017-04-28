@@ -13,6 +13,7 @@ Implemented messages:
    Note: this will slow down the setting changes!
 - mtHeadCommand: sends a new set of settings to the sonar head
 - mtSendData: request scan from sonar head
+- mtHeadData: This one is taken apart in sonar_analyse, after receiving it here
 
 
 TODO: Make the reboot for every setting change optional
@@ -38,6 +39,9 @@ class SonarTritech:
 
     def __init__(self):
         # read initial sonar settings from parameter server
+        self.DriftOffset = rospy.get_param("sonar/Driftoffset")  # in degrees, to offset a drift of the scanning head
+        if self.DriftOffset != 0:
+            rospy.logerr("Using sonar drift offset of " + str(self.DriftOffset) + " degrees!")
         self.RLim = rospy.get_param("sonar/RLim")  # in degrees
         self.LLim = rospy.get_param("sonar/LLim")  # in degrees
         self.__dict__['NBins'] = rospy.get_param("sonar/NBins")  # avoid setattr error, since range is not set yet
@@ -57,27 +61,42 @@ class SonarTritech:
         self.receiveErrorCount = 0  # catch when communication with the sonar gets out of sync
         self.serial_setup()
         self.update_sonar_head_setting()
-        rospy.logwarn("Updated sonar setting")
-
 
     def __setattr__(self, key, value):
         """
+        A) Apply drift offset automatically
+        B) Update ADInterval when  NBins or Range are set
+        
+        A) In 2017 the sonar incurred a large amount of drift
+        This drift *should* get removed if the sonar is reset, however just in case this becomes a problem
+        during an experiment when there is no time to fix, this value offset can work as a hotfix
+        It shifts 0 degrees to the DriftOffset angle
+        
+        B)
         ADInterval is defined indirectly through NBins and Range, so if either changes, it needs updating
         R = Range, N = NBins, VOS = Sound velocity in water ~ 1500 m/s (1480 m/s in sweet water, but close enough)
         T = 2*R / VOS; # in [s]
         t = T/N; # in [s]
         ADInterval = t/(640*10**-9); in [640 nanoseconds]
         """
-        self.__dict__[key] = value
+
+        # A) DRIFTOFFSET
+        if key == "RLim":
+            value = (value - self.DriftOffset)%360
+
+        if key == "LLim":
+            value = (value - self.DriftOffset)%360
+
+        # B) ADINTERVAL
         if key == "Range":
-            self.ADInterval = int(round((((self.Range * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
-            self.Resolution = self.Range/float(self.NBins)
+            self.ADInterval = int(round((((value * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
+            self.Resolution = value/float(self.NBins)
 
         if key == "NBins":
             if value > 1500:
                 value = 1500
-            self.ADInterval = int(round((((self.Range * 2) / 1500.0) / self.NBins) / 0.000000640, 0))
-            self.Resolution = self.Range/float(self.NBins)
+            self.ADInterval = int(round((((self.Range * 2) / 1500.0) / value) / 0.000000640, 0))
+            self.Resolution = self.Range/float(value)
 
         if key == "ADInterval":
             if value > (256**2 - 1):
@@ -92,6 +111,7 @@ class SonarTritech:
         however, with issues of the sonar head drifting, the reset is always performed
         stepper motor position and head info are monitored
         """
+        rospy.logwarn("updated sonar tritech settings")
         mtReBoot = self.get_mtReBoot()
         self.Serial.write(uint8_array_to_chr(mtReBoot, 'mtReBoot'))
 
@@ -415,6 +435,14 @@ def analyse_header(headerData):
     # headerData[5]+headerData[6]*256  converting 2 uint8s to 1 uint16 
     return msgType, msgLength
 
+
+
+
+##################################
+#
+# DATA CONVERSIONS
+#
+##################################
 
 def number_to_uint8(number, out_len):
     """

@@ -5,6 +5,13 @@
 # Sonar Settings
 ######################################################
 
+# Drift offset, should it ever occur again!
+# A drift offset of 90 means that the data that is currently measured at 90 degrees
+# will now be used at 0 degrees
+# in degrees, from 0 to 359
+sonar/Driftoffset: 0
+
+
 # Left limit for Heading
 # in degrees, from 0 to 359
 sonar/LLim: 0
@@ -18,7 +25,8 @@ sonar/RLim: 301
 # New digital DST sonar products: 1500
 # see delphin2_sonar_micron_*.pdf in the datasheets
 # more bins = more resolution, more noise
-sonar/NBins: 400
+# 300 bins is about the upper limit of the visualisation
+sonar/NBins: 200
 
 # Samping interval of each range bin
 # usually not used, since Range is used to calculate this 

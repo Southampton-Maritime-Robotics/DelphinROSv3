@@ -11,6 +11,7 @@ Publishes raw sonar data
 import rospy
 from std_msgs.msg import String
 from hardware_interfaces.msg import sonar_setting
+from hardware_interfaces.msg import sonar_data
 from hardware_interfaces import sonar_interface
 
 
@@ -22,7 +23,7 @@ def sonarLoop():
     # it is unlikely that the sonar can keep up with the maximum rate,
     # but it should go as fast as possible, so the maximum rate is set
     rate = rospy.Rate(rospy.get_param("/maxRate"))
-    SonarDevice.updateFlag = 1
+    SonarDevice.updateFlag = 0   # sonar tritech updates settings on initialisation
 
     while not rospy.is_shutdown():
         if SonarDevice.updateFlag == 1:

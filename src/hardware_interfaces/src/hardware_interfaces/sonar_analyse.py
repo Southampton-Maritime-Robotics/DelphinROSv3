@@ -14,9 +14,12 @@ sonarEvaluate: Further data that is needed for sonar evaluation, e.g. pitch and 
 
 import numpy
 import rospy
-import time
+import warnings
 
-
+global driftOffset
+driftOffset = rospy.get_param("/sonar/Driftoffset")
+if driftOffset != 0:
+    warnings.warn("Caution: A drift offset has been set")
 
 class SonarPing(object):
     """
@@ -26,6 +29,11 @@ class SonarPing(object):
     TODO: Is it really???
     """
     def __init__(self, rawData):
+        """
+        Read one dataset from string as published by sonar
+        :param rawData: 
+        """
+        global driftOffset
         self.bins =[] 
         self.header = []
         data = numpy.fromstring(rawData.data, dtype=numpy.uint8)
@@ -33,7 +41,7 @@ class SonarPing(object):
         self.header = data[0:52]   # 13 byte header are read from sonar
         self.bins = data[52:]     # the rest is bins
         self.NBins = float(self.header[42] + self.header[43]*256)
-        self.transducerBearing = ((float(self.header[40]+(self.header[41]*256))/6400.0)*360)%360
+        self.transducerBearing = ((float(self.header[40]+(self.header[41]*256))/6400.0)*360 + driftOffset)%360
         self.LLim =  ((float(self.header[35]+(self.header[36]*256))/6400.0)*360)%360
         self.RLim =  ((float(self.header[37]+(self.header[38]*256))/6400.0)*360)%360
         self.ADInterval = float(self.header[33]+(self.header[34]*256))
