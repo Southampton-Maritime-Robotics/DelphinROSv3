@@ -9,7 +9,6 @@ Simple plotter for visualising sonar data live/from rosbag
 #############################################################
 # TODO
  - make the figure zoom/drag etc. work again
- - make the figure set the plots new when NBINS/range get changed
 
 """
 
