@@ -72,3 +72,9 @@ xsens_filter_profile: 42
  # The altimeter currently assumes a constand depth as in a towing tank
  # in [m]
 dummy/PoolDepth: 3.
+
+# number of satellites seen by simulated GPS
+dummy/gps/Nsat: 2
+
+# True if simulated GPS is supposed to have a GPS fix
+dummy/gps/Fix: True
