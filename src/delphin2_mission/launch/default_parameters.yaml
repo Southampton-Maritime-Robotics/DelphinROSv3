@@ -65,3 +65,10 @@ xsens_filter_profile: 42
   # use dynamic for most cases
   # use vru_general when the magnetic reading can not be thrusted at all.
   # for more information see delphin2_xsens datasheet
+
+ ######## DUMMY NODE SETTINGS
+ # Sometimes individual nodes are replaced by dummy nodes, e.g. if a sensor is broken.
+
+ # The altimeter currently assumes a constand depth as in a towing tank
+ # in [m]
+dummy/PoolDepth: 3.
