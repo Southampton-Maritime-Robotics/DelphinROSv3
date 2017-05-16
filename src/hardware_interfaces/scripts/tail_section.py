@@ -78,7 +78,7 @@ def getTailFeedback():
         
     #initialize an empty string and 4x1 matrix filled with zero
     msg = ""
-    data = [-1,-1,-1,-1,-1] # [b_position, c_posiiton, d_position, e_position, prop_rps]
+    data = [-1] * 10 # control surfaces b, c, d, e, and prop: arduino acknowledgement and feedback
     
     try:
         if serialPort.inWaiting(): # if arduino replied
@@ -188,25 +188,38 @@ def tail_section_loop(status):
             serialPort.write(message)
             timeLastWrite = time.time()
         except:
-            print 'Write error'
+            rospy.logwarn('Arduino write error')
 
-        [b_feedback, c_feedback, d_feedback, e_feedback, prop_rps] = [0, 0, 0, 0, 0]
+        [b_arduino, b_feedback, 
+         c_arduino, c_feedback, 
+         d_arduino, d_feedback, 
+         e_arduino, e_feedback, 
+         prop_arduino, prop_rps] = [-2] * 10  # arduino has not been read
         try:
-            [b_feedback, c_feedback, d_feedback, e_feedback, prop_rps] = getTailFeedback()
+            [b_arduino, b_feedback, 
+            c_arduino, c_feedback, 
+            d_arduino, d_feedback, 
+            e_arduino, e_feedback, 
+            prop_arduino, prop_rps] = getTailFeedback()
             timeLastRead = time.time()
         except:
-            print 'read error'
+            rospy.logwarn('arduino read error')
                
         ############################# PUBLISH THE INFORMATION ######################################
         pub.publish(b_sp = b_demand,
+                    b_ack = b_arduino,
                     b_fb = b_feedback,
                     c_sp = c_demand,
+                    c_ack = c_arduino,
                     c_fb = c_feedback,
                     d_sp = d_demand,
+                    d_ack = d_arduino,
                     d_fb = d_feedback,
                     e_sp = e_demand,
+                    e_ack = d_arduino,
                     e_fb = e_feedback,
                     prop_sp = prop_demand,
+                    prop_ack = prop_arduino,
                     prop_rps = prop_rps)
 
         ############################# WATCHDOG to monotor the connection to the tail section ######################################
