@@ -66,6 +66,12 @@ xsens_filter_profile: 42
   # use vru_general when the magnetic reading can not be thrusted at all.
   # for more information see delphin2_xsens datasheet
 
+
+######### HARDWARE SPECIFIC
+thruster/SetpointMin: 145.
+thruster/SetpoingMax: 2500.
+thruster/ArduinoMax: 255.
+
  ######## DUMMY NODE SETTINGS
  # Sometimes individual nodes are replaced by dummy nodes, e.g. if a sensor is broken.
 
@@ -78,3 +84,29 @@ dummy/gps/Nsat: 2
 
 # True if simulated GPS is supposed to have a GPS fix
 dummy/gps/Fix: True
+
+# Change rates of the simulated Thrusters
+# set to 0 for non-functioning thrusters
+# in rpm/second
+dummy/thruster/Changerate0: 100
+dummy/thruster/Changerate1: 100
+dummy/thruster/Changerate2: 100
+dummy/thruster/Changerate3: 100
+
+# thruster setpoint is reset to 0 if no setpoint has been received for too long
+# in [s]
+dummy/thruster/Timeout: 1
+
+
+sonar/XPosition: 0.8   # in [m], relative to CoB
+sonar/YPosition: 0.0
+sonar/ZPosition: 0.0
+
+# to stay flexible for horizontal and vertical scanning,
+# choose axis around which rotation happens
+sonar/rotation/Axis: [0.0, 1.0, 0.0] # choose axis for sonar rotation, [x, y, z]
+sonar/rotation/Direction: -1  # -1 if the sonar transducer angle moves in opposite direction of Eurler Angle Convention
+# depending on the mounting, the zero angle might not be somewhere meaningful
+# this offset helps to adjust so the zero of the angle is the correct position for the rotation around the given axis
+# Note: there is a separate parameter to achieve a drift offset, in case of (temporary) sonar head drift!
+sonar/rotation/Offset: 0 # offset [in degrees]

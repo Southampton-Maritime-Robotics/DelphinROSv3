@@ -9,6 +9,7 @@ During the abscense of gps: lat-long will be back calculated from the X_pos and 
 
 note1: actual depth of the AUV will not be considered in the mathematical model - a constant depth is used instead.
 note2: this node requires either the mtdevice.py or mtdevice_dummy.py to update the AUV heading.
+note3: the tf currently goes with the ros convention: the z axis is going upwards, against direction of the depth!
 
 '''
 
@@ -24,6 +25,9 @@ import copy
 import time
 
 import rospy
+import tf
+import tf2_ros
+import geometry_msgs.msg
 
 from hardware_interfaces.msg    import compass
 from hardware_interfaces.msg    import depth
@@ -146,18 +150,27 @@ class delphin2_AUV(object):
         self.pubMissionLog = rospy.Publisher('MissionStrings', String)
         self.posOut = position()
 
+        # tf broadcaster
+        self.tfBroadcast = tf2_ros.TransformBroadcaster()
+        self.delphintf = geometry_msgs.msg.TransformStamped()
+
         # create subscribers and parameters for callback functions
         rospy.Subscriber('gps_out', gps, self.gps_callback)
         rospy.Subscriber('prop_demand', Int8, self.demand_prop_cb)
         rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, self.demand_th_hor_cb)
         rospy.Subscriber('tail_setpoints_vertical', tail_setpoints, self.demand_rudder_cb)
         rospy.Subscriber('compass_out', compass, self.compass_cb)
+        rospy.Subscriber('depth_out', depth, self.depth_cb)
         self.gpsInfo = gps()
         self.comInfo = compass()
+        self.roll_rad = 0
+        self.pitch_rad = 0
+        self.yaw_rad = 0
+        self.depthInfo = depth()
         self.timeLastDemand_prop = time.time()
         self.timeLastDemand_th_hori = time.time()
         self.timeLastDemand_cs_vert = time.time()
-        self.timeLastDemand_max = 1 # [sec]
+        self.timeLastDemand_max = 1  # [sec]
         self.demand_prop = 0
         self.demand_th_fh = 0
         self.demand_th_ah = 0
@@ -419,6 +432,24 @@ class delphin2_AUV(object):
             self.posOut.th_rpm_fh   = self.thruster_rpm_fh
             self.posOut.th_rpm_ah   = self.thruster_rpm_ah
             self.pubPosition.publish(self.posOut)
+
+            # pack information into the tf broadcaster
+            self.delphintf.header.stamp = rospy.Time.now()
+            self.delphintf.header.frame_id = "world"
+            self.delphintf.child_frame_id = "delphin2"
+            self.delphintf.transform.translation.x = X_pos
+            self.delphintf.transform.translation.y = Y_pos
+            self.delphintf.transform.translation.z = - self.depthInfo.depth_filt
+
+
+            q = tf.transformations.quaternion_from_euler(self.roll_rad, self.pitch_rad, self.yaw_rad)
+            self.delphintf.transform.rotation.x = q[0]
+            self.delphintf.transform.rotation.y = q[1]
+            self.delphintf.transform.rotation.z = q[2]
+            self.delphintf.transform.rotation.w = q[3]
+
+            self.tfBroadcast.sendTransform(self.delphintf)
+
             
             ## Verify and maintain loop timing
             timeElapse = time.time()-timeRef
@@ -447,9 +478,15 @@ class delphin2_AUV(object):
         
     def compass_cb(self, newComInfo):
         self.comInfo = newComInfo
+        self.yaw_rad = np.deg2rad(self.comInfo.heading)
+        self.pitch_rad = np.deg2rad(self.comInfo.pitch)
+        self.roll_rad = np.deg2rad(self.comInfo.roll)
         
     def gps_callback(self, gps):
         self.gpsInfo = gps
+
+    def depth_cb(self, new_depth):
+        self.depthInfo = new_depth
     
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online

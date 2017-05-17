@@ -21,6 +21,12 @@ driftOffset = rospy.get_param("/sonar/Driftoffset")
 if driftOffset != 0:
     warnings.warn("Caution: A drift offset has been set")
 
+class SonarConfiguration(object):
+    def __init__(self):
+        """
+        Some of the sonar configurations need to be read from rosparam;
+        this class mostly exists so the sonar configuration can be read for use in the analysis
+        """
 
 class SonarPing(object):
     """
@@ -124,6 +130,10 @@ class SonarEvaluate(object):
         self.BlankDist = rospy.get_param("/sonar/analyse/BlankDist")
         self.Threshold = rospy.get_param("/sonar/analyse/Threshold")
         self.SoundspeedInWater = rospy.get_param("/sonar/SoundspeedWater")
+        self.rotationDirection = rospy.get_param("/sonar/rotation/Direction")
+        self.rotationOffset = rospy.get_param("/sonar/rotation/Offset")
+
+
 
     def detect_obstacle(self, sonarPing):
         """
@@ -152,11 +162,14 @@ class SonarEvaluate(object):
 
             # mean intensity of bins beyond the blanking disance
             # may be of interest in identifying areas of interest
-            meanIntensity = numpy.mean(self.pingPower[StartBin:-1])
+            meanIntensity = numpy.mean(sonarPing.pingPower[StartBin:-1])
 
-            results = [sonarPing.transducerBearing, TargetRange, meanIntensity]
+            # apply offsets so the bearing angle can be turned into rotation around a given axis
+            # in the Delphin2 Coordinate system
+            bearing_in_delphin2ks = (sonarPing.transducerBearing - self.rotationOffset) * self.rotationDirection
+            results = [bearing_in_delphin2ks, TargetRange, meanIntensity]
         else:
-            results = [0, 0, 0, 0]
+            results = [0, 0, 0]
         return results
 
 

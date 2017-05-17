@@ -9,6 +9,7 @@ Current features:
 # TODO
 - get rid of global variables
 - include vehicle state/tf information
+- use int array to 
 """
 
 ###########
@@ -19,10 +20,15 @@ Current features:
 ###########
 
 import rospy
-import numpy
+import numpy as np
 import time
 import sys
 import signal
+import tf
+import tf2_ros
+import geometry_msgs.msg
+
+
 
 from std_msgs.msg import String
 from std_msgs.msg import Float32
@@ -34,24 +40,27 @@ from hardware_interfaces import sonar_analyse
 ################################################################
 
 def get_sonar(msgData):
-    """ add sonar data to sonar object as it comes in from ROS messages as *msgData*
     """
-    sonar.add_message(msgData)
-    detect()
-
-def DR_callback(data):
-    """ store pitch data, currently unused
+    currently the sonar is only read and an analysis of this ping is published, no sonar data is kept
+    if needed, the SonarEvaluate object needs adapting
+    :param msgData: sonar ping in string format
     """
-    global pitch    
-    pitch  = data.pitch
+    result = sonar.detect_obstacle(sonar_analyse.SonarPing(msgData))
+    pub.publish(transBearing=result[0], pitch=0, TargetRange=result[1], meanIntinsity=result[2])  # TODO get rid of pitch entry in this message
 
+    [sonartf.transform.rotation.x,
+     sonartf.transform.rotation.y,
+     sonartf.transform.rotation.z,
+     sonartf.transform.rotation.w] = tf.transformations.quaternion_about_axis(np.deg2rad(result[0]), [sonar_axis.x,
+                                                                                              sonar_axis.y,
+                                                                                              sonar_axis.z])
 
-def detect():
-    result = sonar.detect_obstacle(0)  # 0 needs to be replaced with pitch if sonar is not run from fixed mount
-    pub.publish(transBearing = result[0], pitch = result[1], TargetRange = result[2], meanIntinsity = result[3])
-    print(result)
-    time.sleep(0.01)
- 
+    sonartf.header.stamp = rospy.Time.now()
+    sonartf.header.frame_id = "delphin2"
+    sonartf.child_frame_id = "mechScanningSonar"
+    #transform.rotation.w] = tf.transformations.quaternion_from_euler(0, np.deg2rad(result[0]), 0)
+    br.sendTransform(sonartf)
+
 
 ################################################################
 ################################################################
@@ -63,10 +72,16 @@ if __name__ == '__main__':
     rospy.init_node('sonar_detect')
     # Uncomment to run this node in debug mode:
     #rospy.init_node('sonar_detect', log_level=rospy.DEBUG)
-    rospy.Subscriber('sonar_output', String, get_sonar)
-    print("la")
     pub = rospy.Publisher('sonar_processed', sonar_data)
-    sonar = sonar_analyse.sonar()
+    br = tf2_ros.TransformBroadcaster()
+    sonar_axis = geometry_msgs.msg.Vector3()
+    [sonar_axis.x, sonar_axis.y, sonar_axis.z] = rospy.get_param("/sonar/rotation/Axis")
+    sonartf = geometry_msgs.msg.TransformStamped()
+    sonartf.transform.translation.x = rospy.get_param("/sonar/XPosition")
+    sonartf.transform.translation.y = rospy.get_param("/sonar/YPosition")
+    sonartf.transform.translation.z = rospy.get_param("/sonar/ZPosition")
+    sonar = sonar_analyse.SonarEvaluate()
+    rospy.Subscriber('sonar_output', String, get_sonar)
     rospy.spin()
 
    
