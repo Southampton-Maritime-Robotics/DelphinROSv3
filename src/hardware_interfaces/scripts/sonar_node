@@ -11,9 +11,7 @@ Publishes raw sonar data
 import rospy
 from std_msgs.msg import String
 from hardware_interfaces.msg import sonar_setting
-from hardware_interfaces.msg import sonar_data
 from hardware_interfaces import sonar_interface
-
 
 
 ################################################################
