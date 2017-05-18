@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+
+"""
+Calibration test for the xsens magnetic field calibration
+
+The norm of the magnetic field is logged and published over a period of time
+It should stay constant if the calibration is good
+
+- orientation: radian
+- angular velocity: rad/s
+- acceleration: m/s2 (either free fall or with gravity)
+# axis orientation (converted from ENU)
+- x: forward
+- y: left
+- z: up
+
+
+TODO: Expected IMU to read zero yaw when facing east [to comply with REP103 and REP105].
+TODO: used when the sensor fusion algorithm outputs erroneous data or when you need to read out the eMTS device of the devic.
+TODO: verify the heading measurement quality with the magnetometer reading. The norm is expected to maintain stable with a magnitude close to 1.
+TODO: a seperated code to do ICC
+TODO: a seperated code to do gyro bias estimation
+
+Note that:
+- ICC is not yet fully supported by xsens, it should be available
+
+"""
+
+from __future__ import division
+import rospy
+import numpy as np
+import time
+import struct
+from std_msgs.msg import Float32
+from xsens_driver.mtdevice import MTDevice
+
+
+# request data packets
+class XSensDriver(object):
+    def __init__(self):
+        self._device = '/dev/usbxsens'
+        self._ReqPacket = {'magField'}
+        
+        self.mt = MTDevice(device=self._device, br=115200, timeout=0.2)
+        
+        self.mt._scenario_id = chr(39)
+        # if 'd' is selected, higher buadrate may be necessary
+        self.mt._ffmt = rospy.get_param('xsens/DataFormat')
+        # some numbers are not supported by the sensor, e.g., 40 Hz
+        self._xsensCommsRate = rospy.get_param('xsens/Rate')
+        lat_ori = rospy.get_param('lat_orig')
+        lon_ori = rospy.get_param('lon_orig')
+
+        # Hz (reading loop for xsens, needs to be faster than communication)
+        self._r = rospy.Rate(self._xsensCommsRate*4.)
+        self._LatLonAlt = struct.pack('!3d', lat_ori, lon_ori, 0)
+
+        self.deviceReset = True  # perform soft reset
+
+        self.config()
+        self.pubMagField = rospy.Publisher('mag_field_vector_norm', Float32, queue_size=10)
+
+        self.mainloop()
+
+    def config(self):
+        # Put sensor in configuration mode:
+        self.mt.GoToConfig()
+
+        # Set:
+        if self.deviceReset:
+            rospy.loginfo("Reset to the xsens device")
+            self.mt.Reset()
+            self.mt.GoToConfig()
+        
+        self.mt.SetOptionFlags_clear()
+        if self.enableAHS:
+            self.mt.SetOptionFlags_EnableAHS()
+            
+        self.mt.SetLatLonAlt(self._LatLonAlt)
+        self.mt.SetCurrentScenario(self.mt._scenario_id)
+        self.mt.SetOutputConfiguration(self._ReqPacket, self._xsensCommsRate)
+
+        # Req:
+        rospy.loginfo("Current scenario: %s (id: %d)" % self.mt.ReqCurrentScenario())
+        rospy.loginfo("Current location: Lat=%.4f, Lon=%.4f, Alt=%.4f" % self.mt.ReqLatLonAlt())
+
+        # Put sensor in measurement mode:
+        self.mt.GoToMeasurement()
+
+    def mainloop(self):
+        while not rospy.is_shutdown():
+            self.mt.read_measurement()
+            if self.mt._getAll:
+                vector_norm = np.linalg.norm([self.mt._mag_x,  self.mt._mag_y, self.mt._mag_y])
+                self.pubSensorIMU_deg.publish(vector_norm)
+            self.mt._getAll = False
+            self._r.sleep()
+
+if __name__ == '__main__':
+    time.sleep(1)  # allow the system to come online
+
+    rospy.init_node('xsens_driver', anonymous=True)
+
+    # get the xsens object
+
+    try:
+        XSensDriver()
+    except rospy.ROSInterruptException:
+        pass
