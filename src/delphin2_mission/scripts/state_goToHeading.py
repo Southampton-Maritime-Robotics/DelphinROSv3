@@ -3,13 +3,13 @@
 '''
 Set heading demand to None to track the current heading; Otherwise, specify the value for the heading demand.
 
-Usage1 - stabilising: if stable_time is specified
+Usage1 - stabilising: if time_steady is specified
 Get the AUV to a desired heading and stay steady for some many seconds.
 @return: preempted: the backSeatErrorFlag has been raised
 @return: succeeded: stable at the heading long enough withing the timeout
 @return: aborted: not stable at the heading long enough withing the timeout
 
-Usage2 - reaching: if stable_time is -1
+Usage2 - reaching: if time_steady is -1
 Keep publishing heading demand until a timeout criteria has been reached.
 @return: preempted: the backSeatErrorFlag has been raised
 @return: succeeded: the heading has been reached withing the timeout
@@ -24,15 +24,15 @@ import time
 from std_msgs.msg import String
 
 class GoToHeading(smach.State):
-    def __init__(self, lib, myUti, demandHeading, stable_time, timeout):
+    def __init__(self, lib, myUti, demandHeading, time_steady, timeout):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller       = lib
         self.__uti              = myUti
         self.__demandHeading    = demandHeading
-        self.__tolerance        = 20                 # [deg] a band that accounts as the AUV is at a desired heading
-        self.__stable_time      = stable_time       # AUV must stay at a desired heading for this many seconds
+        self.__tolerance        = rospy.get_param("heading/Tolerance")                 # [deg] a band that accounts as the AUV is at a desired heading
+        self.__time_steady      = time_steady       # AUV must stay at a desired heading for this many seconds
         self.__timeout          = timeout           # [sec] abort criteria
-        self.__controlRate      = 5                 # [Hz]
+        self.__controlRate      = rospy.get_param("heading/ControlRate")                 # [Hz]
         self.__at_heading_time  = None
         
     def execute(self,userdata):
@@ -50,7 +50,7 @@ class GoToHeading(smach.State):
         else:
             self.__demandHeading = self.__demandHeading%360
 
-        str='Execute GoToHeading State: heading demand = %.3f deg, stable time = %s, timeout = %s.' %(self.__demandHeading, self.__stable_time, self.__timeout)
+        str='Execute GoToHeading State: heading demand = %.3f deg, stable time = %s, timeout = %s.' %(self.__demandHeading, self.__time_steady, self.__timeout)
         pubMissionLog.publish(str)
         rospy.loginfo(str)
         
@@ -68,7 +68,7 @@ class GoToHeading(smach.State):
             at_heading_reached, at_heading_stable = self.check_heading()
             self.__controller.setHeading(self.__demandHeading)
             
-            if self.__stable_time != -1 and at_heading_stable:
+            if self.__time_steady != -1 and at_heading_stable:
                 str= 'goToHeading - stabilising: succeeded'
                 pubMissionLog.publish(str)
                 rospy.loginfo(str)
@@ -82,7 +82,7 @@ class GoToHeading(smach.State):
             rospy.loginfo(str)
             return 'preempted'
         else:
-            if self.__stable_time == -1:
+            if self.__time_steady == -1:
                 if at_heading_reached:
                     str= 'goToHeading - reaching: succeeded'
                     pubMissionLog.publish(str)
@@ -112,7 +112,7 @@ class GoToHeading(smach.State):
             at_heading_reached = True
             
         # verify if the heading is stable long enough
-        if time.time()-self.__at_heading_time <= self.__stable_time:
+        if time.time()-self.__at_heading_time <= self.__time_steady:
             at_heading_stable = False
         else:
             at_heading_stable = True

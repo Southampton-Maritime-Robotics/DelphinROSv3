@@ -35,10 +35,11 @@ class controller_PID(object):
         self.dt = 1./self.controlRate
         
         ## controller parameters
-        self.P_gain = 0.8 # TODO: tune me
+        # used in comparison with SMC, could be tuned further?
+        self.P_gain = 0.8
         self.I_gain = 0 # This must always be set to zero as to avoid an integral windup phenomenon.
-        self.D_gain = -1.2 # TODO: tune me 0.4 take some time to settle - 0.8 is the good one
-        self.I_term_lim = 10 # TODO tume me [N.m]
+        self.D_gain = -1.2 
+        self.I_term_lim = 10 # [N.m]
         
         ## actuator parameter
         self.rho    = 1000  # water density [kg/m^3]
@@ -46,7 +47,7 @@ class controller_PID(object):
         self.u_R_lim    = 30                    # hard limit on the rudder demand 
         self.N_uu_delta =  0.32536336           # gain for the moment produced by thruster in according to forward velocity and rudder angle
         # thruster parameters
-        self.u_th_lim           = 2500          # hard limit on the horizontal thrusters demand
+        self.u_th_lim           = rospy.get_param("thruster/SetpointMax")
         self.deadband_th        = 145           # deadband of the thruster demand
         self.c1_th              = 0.35          # thruster transient model parameter
         self.c2_th              = 1.5           # thruster transient model parameter
@@ -154,7 +155,6 @@ class controller_PID(object):
                 self.pub_tsl.publish(thruster0 = u_th, thruster1 = -u_th)
                 
             else:
-                # TODO: correct this section
                 self.HC.controller_onOff = False
                 err = 0
                 P_term = 0

@@ -67,7 +67,7 @@ class controller_SMC(object):
         self.u_R_lim    = 30                    # hard limit on the rudder demand 
         self.N_uu_delta =  0.32536336           # gain for the moment produced by thruster in according to forward velocity and rudder angle
         # thruster parameters
-        self.u_th_lim           = 2500          # hard limit on the horizontal thrusters demand
+        self.u_th_lim           = rospy.get_param("thruster/SetpointMax") # hard limit on the horizontal thrusters demand
         self.deadband_th        = 145           # deadband of the thruster demand
         self.c1_th              = 0.35          # thruster transient model parameter
         self.c2_th              = 1.5           # thruster transient model parameter

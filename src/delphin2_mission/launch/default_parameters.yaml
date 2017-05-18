@@ -2,10 +2,14 @@
 maxRate: 20                     # maximum ROS rate at which the fastest nodes are run
 max-depth-demand: 2.5           # Maximum depth demand (m)
 
-thruster/setpointMax: 2500      # Max thruster setpoint
+thruster/SetpointMax:  130      # Max thruster setpoint
                                 # in water: 2500
                                 # on land: 145
+heading/Tolerance: 5            # acceptable error for the heading (in degrees)
+heading/ControlRate: 5          # rate of heading control in [Hz]
 
+depth/Tolerance: 0.2            # acceptable error for the depth (inn m)
+depth/ControlRate: 5            # rate of heading control in [Hz]
 
 ### LIMITS CAUSING ABORT
 over-depth: 3                   # Maximum depth (m)
@@ -23,7 +27,6 @@ status_timing: 2.               # To control publishing timing interval of node 
 horizontal/thruster/Pgain: 40000.0
 horizontal/thruster/Igain: 0.0
 horizontal/thruster/Dgain: -100000.0
-horizontal/thruster/Smax: 2500.0
 
 vertical/thruster/depth/Pgain: 3500000.0
 vertical/thruster/depth/Igain: 250000.0
@@ -31,7 +34,6 @@ vertical/thruster/depth/Dgain: -9500000.0
 vertical/thruster/pitch/Pgain: 0.02
 vertical/thruster/pitch/Igain: 0.002
 vertical/thruster/pitch/Dgain: -0.1
-verticl/thruster/Smax: 2500
 
 
 
@@ -58,8 +60,56 @@ LOS_distance: 10                # line-of-sight distance (in m) for path followi
 radius_of_acceptance: 3         # (in m) for path following algorithm
 max-speed: 1                    # maximum surge speed (in m/s) of the AUV
 
-xsens_filter_profile: 42     
+xsens/filter_profile: 42
   # available xsens filter options {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
-  # use dynamic for most cases
   # use vru_general when the magnetic reading can not be thrusted at all.
   # for more information see delphin2_xsens datasheet
+
+# Set the Active Heading Stabilisation
+xsens/AHSOn: False
+# Soft reset (does not overwrite calibration, but resets all user settings
+xsens/SoftResetOnStart: True
+
+######### HARDWARE SPECIFIC
+thruster/SetpointMin: 145.
+thruster/SetpoingMax: 2500.
+thruster/ArduinoMax: 255.
+
+ ######## DUMMY NODE SETTINGS
+ # Sometimes individual nodes are replaced by dummy nodes, e.g. if a sensor is broken.
+
+ # The altimeter currently assumes a constand depth as in a towing tank
+ # in [m]
+dummy/PoolDepth: 3.
+
+# number of satellites seen by simulated GPS
+dummy/gps/Nsat: 2
+
+# True if simulated GPS is supposed to have a GPS fix
+dummy/gps/Fix: True
+
+# Change rates of the simulated Thrusters
+# set to 0 for non-functioning thrusters
+# in rpm/second
+dummy/thruster/Changerate0: 100
+dummy/thruster/Changerate1: 100
+dummy/thruster/Changerate2: 100
+dummy/thruster/Changerate3: 100
+
+# thruster setpoint is reset to 0 if no setpoint has been received for too long
+# in [s]
+dummy/thruster/Timeout: 1
+
+
+sonar/XPosition: 0.8   # in [m], relative to CoB
+sonar/YPosition: 0.0
+sonar/ZPosition: 0.0
+
+# to stay flexible for horizontal and vertical scanning,
+# choose axis around which rotation happens
+sonar/rotation/Axis: [0.0, 1.0, 0.0] # choose axis for sonar rotation, [x, y, z]
+sonar/rotation/Direction: -1  # -1 if the sonar transducer angle moves in opposite direction of Eurler Angle Convention
+# depending on the mounting, the zero angle might not be somewhere meaningful
+# this offset helps to adjust so the zero of the angle is the correct position for the rotation around the given axis
+# Note: there is a separate parameter to achieve a drift offset, in case of (temporary) sonar head drift!
+sonar/rotation/Offset: 0 # offset [in degrees]

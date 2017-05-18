@@ -42,6 +42,7 @@ if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     
     rospy.init_node('node_status_dummy')
+    rospy.logwarn("CAUTION: The initialise state is being bypassed by dummy system!")
   
     #Define Publishers
     pubStatus = rospy.Publisher('status', status)

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-A driver for GPS.
+GPS driver
 
 The gps sensor works at 1Hz by default. The driver, however, loops twice as fast as the sensor sample rate to clear the serial buffer.
 
@@ -9,18 +9,17 @@ Within one cycle, the sensor provices information via various NMEA message types
 
 The driver only publishes once the getAll flag is raise.
 
-#######################################################
-#Notes
 - X corresponds to East
 - Y corresponds to North
 - A gps fix is either (0=invalid, 1=GPS_fix or 2=Diff._GPS_fix)
   But it may briefly become 6 when the invalid flag is just received
 
-"""
-# TODO: veryfy trajectory of (x,y) obtained from this driver. 
-# TODO: need to think about how to operate across the UTM zones
+######################################################################
+# TODO
+- verify trajectory of (x,y) obtained from this driver. 
+- need to think about how to operate across the UTM zones
 
-from __future__ import division
+"""
 import rospy
 import serial
 import time

@@ -19,16 +19,7 @@ Developed based on "tsl_customer_mission.py" that was originally used to control
 +ve demand contribute to +ve force w.r.t. the front-east-down body-fixed frame convertion
 
 ######################################
-#Modifications
-12/6/14: created the thruster interface
-5/4/15: maked this node work at 5Hz. Rate is control by rospy.Rate()
-10/5/15: compensated the voltage reading with a scale factor of 1.08
-4/6/15: remap a setpoint from [-2500,-145] U [145,2500] to [0,255] with direction of either 0 or 1.
-5/10/15: removed voltage and amp measurement to energy_monitoring node
-
-# NOTE: setpoint within (-145,145) will be set to 0, i.e. incorporate as a deadband
-
-TODO:
+# TODO
 - shrink down the preamble and checksum: fa->$, cs->#
 - do not need to subscribe to on-off flag
 

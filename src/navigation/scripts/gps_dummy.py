@@ -78,9 +78,13 @@ if __name__ == '__main__':
     #Define Publishers
     pub = rospy.Publisher('gps_out', gps)
     pubStatus = rospy.Publisher('status', status)
-    n_sat = 1
-    valid_gpsFix = True
-    str = "\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n A dummy auv system is being used instead of the actual system. \n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n number of (dummy) satellites being detected: %s \n valid GPS fix: %s \n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" %(n_sat, valid_gpsFix) 
+    n_sat = rospy.get_param("dummy/gps/Nsat")
+    valid_gpsFix = rospy.get_param("dummy/gps/Fix")
+    str = "\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" \
+          "\n A dummy auv system is being used instead of the actual system. " \
+          "\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " \
+          "\n number of (dummy) satellites being detected: %s \n valid GPS fix: %s " \
+          "\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" %(n_sat, valid_gpsFix)
     rospy.logwarn(str)
     
     listenForData(n_sat, valid_gpsFix)                     #Main loop for receiving data

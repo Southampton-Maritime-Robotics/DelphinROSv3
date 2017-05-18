@@ -56,7 +56,7 @@ def main_control_loop():
     DPC.Np = Np = 60#60
     DPC.Nc = Nc = 10#8
     Thrust_Smin = 0
-    Thrust_Smax = 2500
+    Thrust_Smax = rospy.get_param("thruster/SetpointMax")
     start_flag = 1 ######new################
     switch_flag = 0.6
     speed_flag = 0

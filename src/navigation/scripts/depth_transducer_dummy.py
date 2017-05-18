@@ -1,11 +1,16 @@
 #!/usr/bin/python
 
 """
-A node that update a current depth of the AUV in according to the depth demand by using a first order transfer function.
-If a new depth demand has not been received for some period of time, the demand will be set to zero and the AUV will start surfacing.
+A node that update a current depth of the AUV in according to the depth demand
+using a first order transfer function.
+If a new depth demand has not been received for some period of time, 
+the demand will be set to zero and the AUV will start surfacing.
 
-NB: the depth extimated here is so wrong and should not be thrusted at all; even so, it is very useful when testing a state machine.
+NB: the depth extimated here is so wrong and should not be thrusted at all; 
+even so, it is very useful when testing a state machine.
 
+###################################################
+# TODO: Use actual model for depth estimate
 """
 
 import rospy
@@ -102,7 +107,7 @@ def shutdown():
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online    
     rospy.init_node('depth_transducer')
-    
+    rospy.logwarn(">>>>> USING DUMMY DEPTH TRANSDUCER instead of actual depth sensor")
     pub = rospy.Publisher('depth_out', depth)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
     rospy.Subscriber('depth_demand', Float32, depth_demand_cb)

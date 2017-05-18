@@ -1,13 +1,16 @@
 #!/usr/bin/python
-###########
-#  VERSION AS OF 18/06/2015
-#  simple plotter for visualising sonar data live/from rosbag
-#  current plots:
-#  * live stream of all bins recorded (bins vs time)
-#  * polar plot using the most recent bins available for each angle (polar bins)
-#  
+"""
+Simple plotter for visualising sonar data live/from rosbag
+ current plots:
+ * live stream of all bins recorded (bins vs time)
+ * polar plot using the most recent bins available for each angle (polar bins)
+ 
 
-###########
+#############################################################
+# TODO
+ - make the figure zoom/drag etc. work again
+
+"""
 
 import rospy
 import numpy
@@ -18,9 +21,6 @@ from pyqtgraph.Qt import QtGui, QtCore
 import signal
 
 from std_msgs.msg import String
-from std_msgs.msg import Float32
-from hardware_interfaces.msg import sonar_data
-from hardware_interfaces.msg import sonar	
 
 from hardware_interfaces import sonar_analyse
 from hardware_interfaces import sonar_plot
@@ -53,50 +53,66 @@ def draw_figures():
     w = 20
     # bins vs time
     bins_vs_time = pg.ImageView()
-    grid.addWidget(bins_vs_time, 1, 1, w, w)
-
-    bins = QtGui.QLabel('Bins')
-    grid.addWidget(bins, 1, 0)
-
-    time = QtGui.QLabel('Time')
-    grid.addWidget(time, w + 1, w/2)
-
-    title_bins_vs_time = QtGui.QLabel('Time vs Bin Intensity')
-    grid.addWidget(title_bins_vs_time, 0, 1, 1, w)
-
+    grid.addWidget(bins_vs_time, 1, 1, 2*w, 2*w)
 
     # polar bins
     polar_bins = pg.ImageView()
-    grid.addWidget(polar_bins, 1, w + 1, w, w)
-    grid.addWidget(QtGui.QLabel('Polar plot of recent bin intensities'), 0, w + 1, 1, w)
+    grid.addWidget(polar_bins, 1, 2*w + 1, 4*w, 4*w)
+
+    label_0deg = QtGui.QLabel()
+    label_0deg.setText("0 degrees")
+    label_0deg.setStyleSheet('color: yellow')
+
+    label_90deg = QtGui.QLabel()
+    label_90deg.setText("90 degrees")
+    label_90deg.setStyleSheet('color: yellow')
+
+    label_180deg = QtGui.QLabel()
+    label_180deg.setText("180 degrees")
+    label_180deg.setStyleSheet('color: yellow')
+
+    label_270deg = QtGui.QLabel()
+    label_270deg.setText("270 degrees")
+    label_270deg.setStyleSheet('color: yellow')
+
+    label_range = QtGui.QLabel()
+    label_range.setText("Range: " + str(plotData.pingRange[-1]))
+    label_range.setStyleSheet('color: orange')
+
+
+    grid.addWidget(label_270deg,         1, 4 * w, 4, 20)
+    grid.addWidget(label_180deg,    2 * w, 2 * w + 5, 4, 20)
+    grid.addWidget(label_90deg,   4 * w - 5, 4 * w, 4, 20)
+    grid.addWidget(label_0deg,   2 * w, 6 * w - 20, 4, 20)
+    grid.addWidget(label_range, 1, 2*w + 1, 12, 20)
+
 
     # detected distance
     obstacle_detection = pg.PlotWidget()
-    obstacle_detection.plot(plotData.targetRange[-150:])
-    grid.addWidget(obstacle_detection, w+3, 1, w, w)
-    grid.addWidget(QtGui.QLabel('Obstacle range for all angles'), w+2, 1, 1, w)
+    obstacle_detection.plot(plotData.targetRange)
+    grid.addWidget(obstacle_detection, 2*w+3, 1, w, 2*w)
 
 
 
     # detect distance at fixed angle
     obstacle_angle = pg.PlotWidget()
-    grid.addWidget(obstacle_angle, w+3, w+1, w, w)
-    grid.addWidget(QtGui.QLabel('Obstacle range for one fixed angle'), w+2, w + 1, 1, w)
+    grid.addWidget(obstacle_angle, 3*w+3, 1, w, 2*w)
 
 
 
 
     def update_figures():
-        #TODO make the figure zoom/drag etc. work again
-        #TODO make the figure set the plots new when NBINS/range get changed
-        datarange = min(len(plotData.bins), plotData.memory)
-        bins_vs_time.setImage(numpy.array(plotData.bins[-datarange:]))
-        polar_bins.setImage(plotData.polarImage)
-        obstacle_detection.clear()
-        obstacle_detection.plot(plotData.targetRange[-datarange:])
-        obstacle_angle.clear()
-        obstacle_angle.setYRange(0,15)
-        obstacle_angle.plot(plotData.fixedAngleTarget[-datarange:])
+        if len(plotData.bins) > 0:
+            label_range.setText(" Range: " + str(round(plotData.pingRange[-1], 2)) +
+                                "\n Angle: " + str(round(plotData.transducerBearing[-1], 2)) +
+                                "\n Detection: " + str(round(plotData.targetRange[-1], 2)))
+            bins_vs_time.setImage(numpy.array(plotData.bins))
+            polar_bins.setImage(plotData.polarImage)
+            obstacle_detection.clear()
+            obstacle_detection.plot(plotData.targetRange)
+            obstacle_angle.clear()
+            obstacle_angle.setYRange(0,15)
+            obstacle_angle.plot(plotData.fixedAngleTarget)
  
 
 
@@ -109,10 +125,6 @@ def draw_figures():
 ################################################################
 ################################################################
 if __name__ == '__main__':
-
-    # if script is main, assume its run manually for debugging
-    # TODO if this is only used when run manually
-    # then where does the 'sonar' variable come from normally?
 
     rospy.init_node('plot_sonar', log_level=rospy.DEBUG)
     rospy.Subscriber('sonar_output', String, get_sonar)

@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
 '''
-A mission script to test the PID-based depth-pitch controller(see depthPitchPID.py).
-
+A mission script to test the PID-based depth-pitch controller(see depthPitchPID.py) with an altitude demand
 '''
 
 from __future__ import division
@@ -29,7 +28,7 @@ _smCon = construct_stateContainer(_lib, _myUti)
 
 ################################################################################
 # state container generating section
-def construct_smach_sequence(demandHeading, demandDepth, demandProp):
+def construct_smach_sequence(demandHeading, demandAltitude, demandProp):
     # creating a sequence state machine
     sm_se = smach.Sequence(outcomes=['succeeded','aborted','preempted'],
                         connector_outcome = 'succeeded')
@@ -37,24 +36,24 @@ def construct_smach_sequence(demandHeading, demandDepth, demandProp):
     # define a sequence of tasks
     with sm_se:
 
-        smach.Sequence.add('GoToDepth_start', _smCon.track_depth_while_keeping_heading_and_going_forward(
+        smach.Sequence.add('GoToAltitude_start', _smCon.track_altitude_while_keeping_heading_and_going_forward(
                                         demandProp=0,
                                         demandHeading=demandHeading,
-                                        demandDepth=demandDepth,
-                                        time_steady=-1,
-                                        timeout=35))
+                                        demandAltitude=demandAltitude,
+                                        time_steady=1,
+                                        timeout=20))
 
-        smach.Sequence.add('GoToDepth_atSpeed', _smCon.track_depth_while_keeping_heading_and_going_forward(
-                                        demandProp,
+        smach.Sequence.add('GoToAltitude_atSpeed', _smCon.track_altitude_while_keeping_heading_and_going_forward(
+                                        demandProp=demandProp,
                                         demandHeading=demandHeading,
-                                        demandDepth=demandDepth,
+                                        demandAltitude=demandAltitude,
                                         time_steady=-1,
-                                        timeout=0))
+                                        timeout=50))
                                         
-        smach.Sequence.add('GoToDepth_end', _smCon.track_depth_while_keeping_heading_and_going_forward(
+        smach.Sequence.add('GoToAltitude_end', _smCon.track_altitude_while_keeping_heading_and_going_forward(
                                         demandProp=0,
                                         demandHeading=demandHeading,
-                                        demandDepth=demandDepth,
+                                        demandAltitude=demandAltitude,
                                         time_steady=-1,
                                         timeout=5))
     return sm_se
@@ -67,7 +66,7 @@ def construct_smach_top():
     with sm_top:
         smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
             transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('SEQUENCE', construct_smach_sequence(demandHeading=280, demandDepth=0, demandProp = 0),
+        smach.StateMachine.add('SEQUENCE', construct_smach_sequence(demandHeading=270, demandAltitude=3.3, demandProp = 0),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})
@@ -94,4 +93,4 @@ def main():
 if __name__ == '__main__':
     rospy.init_node('smach_state_machine')
     _lib.wakeUp(5)
-    main()
+main()

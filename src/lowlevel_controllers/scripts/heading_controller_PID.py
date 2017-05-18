@@ -65,7 +65,7 @@ def set_params():
     HC.Thrust_Pgain = rospy.get_param("horizontal/thruster/Pgain")
     HC.Thrust_Igain = rospy.get_param("horizontal/thruster/Igain")
     HC.Thrust_Dgain = rospy.get_param("horizontal/thruster/Dgain") # -30000.00 # D gain has to be negative (c.f. PI-D)
-    HC.Thrust_Smax  = rospy.get_param("horizontal/thruster/Smax") # 1000 # maximum thruster setpoint
+    HC.Thrust_Smax  = rospy.get_param("thruster/SetpointMax") # 1000 # maximum thruster setpoint
 
     ### Utility Object ###
     myUti = uti()

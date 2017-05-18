@@ -1,22 +1,16 @@
 #!/usr/bin/python
 
 """
-######################################
-Driver for a pressure transducer
+Driver for a pressure transducer to measure depth
 
-This node is for publishing the depth from pressure transducer.
-
-keys parameters that sill in use
--depth: the raw measurement took from the pressure transducer
--depth_calib: the depth that calibrated with the pitch angle of the AUV
+keys parameters 
+-depth: the raw measurement from the pressure transducer
+-depth_calib: the depth calibrated with the pitch angle of the AUV
 -depth_filt: the depth reading that is filtered by the polynomial-type (PT) filter
 -depth_der: the derivative of depth that is determined from the gradient of PT filter
 
 ######################################
-#Modifications
-9 Apr 2015: alter the way to control sampling rate with rospy.rate()
-24 Apr 2015: calibrate the depth reading using the pitch angle and shift between center of rotation and location of depth transducer 
-22 May 2015: have this node publishes directly to the depth_out topic rather than send to the xsens and then publish to the compass_out topic
+# TODO 
 
 """
 

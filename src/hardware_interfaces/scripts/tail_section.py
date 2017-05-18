@@ -18,11 +18,9 @@ prop: propeller
 --send: $R#
 --receive: $b_feedback@c_feedback@d_feedback@e_feedback@prop_rps@#
 
-### MODIFICATION
-10/4/2015 add watchdog to automatically shutdown the actuators if there is no new message published on a relevant topic for longer then "timeLastDemandMax".
-11/4/2015 control rate via rospy.Rate()
-4/10/2015 modify the node in according to new arduino firmware
-
+###################################################
+# TODO
+- test if 5 sec delay to wait for other systems is necessary
 """
 
 import rospy
@@ -80,7 +78,7 @@ def getTailFeedback():
         
     #initialize an empty string and 4x1 matrix filled with zero
     msg = ""
-    data = [-1,-1,-1,-1,-1] # [b_position, c_posiiton, d_position, e_position, prop_rps]
+    data = [-1] * 10 # control surfaces b, c, d, e, and prop: arduino acknowledgement and feedback
     
     try:
         if serialPort.inWaiting(): # if arduino replied
@@ -125,7 +123,6 @@ def getTailFeedback():
         data[3] = -setpointToAngle(data[3],e_zero)
     if data[4] != -1:
         data[4] = data[4]/19. # gearbox ratio
-    
     return data
 
 ################################################################################
@@ -191,25 +188,38 @@ def tail_section_loop(status):
             serialPort.write(message)
             timeLastWrite = time.time()
         except:
-            print 'Write error'
+            rospy.logwarn('Arduino write error')
 
-        [b_feedback, c_feedback, d_feedback, e_feedback, prop_rps] = [0, 0, 0, 0, 0]
+        [b_arduino, b_feedback, 
+         c_arduino, c_feedback, 
+         d_arduino, d_feedback, 
+         e_arduino, e_feedback, 
+         prop_arduino, prop_rps] = [-2] * 10  # arduino has not been read
         try:
-            [b_feedback, c_feedback, d_feedback, e_feedback, prop_rps] = getTailFeedback()
+            [b_arduino, b_feedback, 
+            c_arduino, c_feedback, 
+            d_arduino, d_feedback, 
+            e_arduino, e_feedback, 
+            prop_arduino, prop_rps] = getTailFeedback()
             timeLastRead = time.time()
         except:
-            print 'read error'
+            rospy.logwarn('arduino read error')
                
         ############################# PUBLISH THE INFORMATION ######################################
         pub.publish(b_sp = b_demand,
+                    b_ack = b_arduino,
                     b_fb = b_feedback,
                     c_sp = c_demand,
+                    c_ack = c_arduino,
                     c_fb = c_feedback,
                     d_sp = d_demand,
+                    d_ack = d_arduino,
                     d_fb = d_feedback,
                     e_sp = e_demand,
+                    e_ack = d_arduino,
                     e_fb = e_feedback,
                     prop_sp = prop_demand,
+                    prop_ack = prop_arduino,
                     prop_rps = prop_rps)
 
         ############################# WATCHDOG to monotor the connection to the tail section ######################################
@@ -354,6 +364,6 @@ if __name__ == '__main__':
         status = False
         pubStatus.publish(nodeID = 2, status = status)
     
-    time.sleep(5) # TODO: remove me
+    time.sleep(5) # delay to wait for other systems to come alive, might not be necessary?
     
     tail_section_loop(status)

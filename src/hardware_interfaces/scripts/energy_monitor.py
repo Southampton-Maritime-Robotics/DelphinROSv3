@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 """
+Monitor for availabel and consumed energy
+
 A node to monitor
 - voltage from battery
 - current consumed by thrusters (one for each)
@@ -18,7 +20,7 @@ A node to monitor
   - get current: "faIcs" # [thruster0, thruster1, thruster2, thruster3, fins, prop]
     
 ######################################
-#Modifications
+#TODO
 
 """
 

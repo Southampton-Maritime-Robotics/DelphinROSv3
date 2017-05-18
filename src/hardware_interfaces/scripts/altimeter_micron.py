@@ -6,9 +6,6 @@ A driver for an altertude w.r.t. to the sea bottom.
 The sensor is very noisy, therefore, filterred by the Polynomial-Type (PT) filtering technique.
 
 #######################################################
-# Modifications to code
-4/4/2015: control rate by rospy.Rate()
-
 # TODO
 - must include a pitch angle of the AUV into the altitude measurement.
 
