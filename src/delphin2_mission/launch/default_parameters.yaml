@@ -77,8 +77,6 @@ xsens/filter_profile: 42
 # use vru_general with AHSOn when the magnetic reading can not be thrusted at all.
 # for more information see delphin2_xsens datasheet
 
-# Set the Active Heading Stabilisation
-xsens/AHSOn: False
 # Soft reset (does not overwrite calibration, but resets all user settings
 xsens/SoftResetOnStart: True
 # xsens data format (can be float or double; double never tested)

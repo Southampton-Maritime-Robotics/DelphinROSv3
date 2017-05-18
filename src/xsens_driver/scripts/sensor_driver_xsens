@@ -63,7 +63,7 @@ class XSensDriver(object):
         self._r = rospy.Rate(self._xsensCommsRate*4.)
         self._LatLonAlt = struct.pack('!3d', lat_ori, lon_ori, 0)
 
-        self.deviceReset = True  # perform soft reset
+        self.deviceReset = rospy.get_param('/xsens/SoftResetOnStart')  # perform soft reset
         if self.mt._scenario_id==chr(54) or self.mt._scenario_id==chr(43):
             # To enable Active Heading Stabilisation (AHS)
             # needed only when using vru_general
