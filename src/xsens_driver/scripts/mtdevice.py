@@ -1,744 +1,143 @@
 #!/usr/bin/env python
 
 """
-An xsens_driver developed from the driver written by Francis Colas.
+A driver for xsens sensors (tested on MTi-3).
+It is developed based on the driver written by Francis Colas:
+http://wiki.ros.org/xsens_driver.
 
-Aims to provide a communication with xsens product (mainly MTi-30) using MTData2 message structure.
+user can set:
+- sample rate
+- scenario id
+- reference location for magnetic field map (lat, lon)
+- reset the device
+- RestoreFactoryDefaults (this will discard MFM calibration!)
 
-Specify
--ReqPacket to choose the combination of outputs (this may affect the sampling frequency)
--scenario_id to modify the filtering technique used in xsens devices
--LatLonAlt
--_baudrate
+The following convention agrees with REP103 and REP105
+# units
+- orientation: radian
+- angular velocity: rad/s
+- acceleration: m/s2 (either free fall or with gravity)
+# axis orientation (converted from ENU)
+- x: forward
+- y: left
+- z: up
 
-## MODIFICATION ##
-25/11/1014 apply configuration to the sensor everytime the driver is run
-10/4/2015 control sampling rate with rospy.Rate()
-15/4/2015 let users adjust baudrate
-        -> open the device with a default baudrate of 115200 
-        -> RestoreFactoryDefaults 
-        -> close devide
-        -> open the device with a prefered baudrate
+
+TODO: Expected IMU to read zero yaw when facing east [to comply with REP103 and REP105].
+TODO: used when the sensor fusion algorithm outputs erroneous data or when you need to read out the eMTS device of the devic.
+TODO: verify the heading measurement quality with the magnetometer reading. The norm is expected to maintain stable with a magnitude close to 1.
+TODO: a seperated code to do ICC
+TODO: a seperated code to do gyro bias estimation
+
+Note that:
+- ICC is not yet fully supported by xsens, it should be available
+
 """
 
-import serial
-import struct
-import select
+from __future__ import division
 import rospy
-from hardware_interfaces.msg import status
-
-import sys, time
-
-from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName, location, req
-from hardware_interfaces.msg import compass # compass is a message that is originally used by delphin2.
-########from custom_def import location, req
-
-################################################################
-# set a configuration
-################################################################
-
-## filter profile
-# available option {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
-# use dynamic for most cases
-# use vru_general when the magnetic reading can not be thrusted at all.
-try: 
-    scenario_id = rospy.get_param('xsens_filter_profile')
-except:
-    scenario_id = 41
-
-## reference location (for a good heading measurement)
-# available options {Boldrewood_Campus, Common_Park, Eastleight_Lake}
-LatLonAlt = location.get_LatLonAlt('Eastleight_Lake')
-
-## request data packets
-# available options {'Acc_lin','FreeAcc_lin','Vel_ang','Ori','Temp'}
-ReqPacket = {'req.Acc_lin','req.Vel_ang','req.Ori'}
-# need to check the allignment matrix when using FreeAcc_lin
-
-_baudrate = 115200
-_controlRate = 20.
-
-################################################################
-# MTDevice class
-################################################################
-## XSens MT device communication object.
-class MTDevice(object):
-    """XSens MT device communication object."""
-    def __init__(self, port, baudrate=115200, timeout=0.04, autoconf=True, config_mode=False):
-        """Open device."""
-        ## serial interface to the device
-        self.device = serial.Serial(port, baudrate, timeout=timeout, writeTimeout=timeout)
-        self.device.flushInput()    # flush to make sure the port is ready 
-        self.device.flushOutput()    # flush to make sure the port is ready 
-        
-        ## timeout for communication.
-        self.timeout = timeout
-
-    ############################################################
-    # Low-level communication
-    ############################################################
-    ## Low-level message sending function.
-    def write_msg(self, mid, data=[]):
-        """Low-level message sending function."""
-        length = len(data)
-        
-        if length>254:
-            lendat = [0xFF, 0xFF&length, 0xFF&(length>>8)]
-        else:
-            lendat = [length]
-        packet = [0xFA, 0xFF, mid] + lendat + list(data)
-        packet.append(0xFF&(-(sum(packet[1:]))))
-        msg = struct.pack('%dB'%len(packet), *packet)
-
-        self.device.write(msg)
-
-    # Wait until this many bytes available in the serial buffer.
-    def waitforAndRead(self, size, __timeout, __timeStart):
-        while self.device.inWaiting() < size and time.time()-__timeStart < __timeout:
-            pass
-        # verify the outcome
-        if self.device.inWaiting() >= size and time.time()-__timeStart < __timeout:
-            return self.device.read(size)
-        else:
-            pubStatus.publish(nodeID = 6, status = False)
-            str = "timeout: no data available in serial port"
-            rospy.logerr(str)
-            return -1
-
-    ## Low-level MTData2 receiving function.
-    def read_data_msg2(self):
-        start = time.time()        
-        __timeout = self.timeout
-        self.device.flushInput()        # ensure the data is of this moment
-        self.device.flushOutput()        # ensure the data is of this moment
-
-        while (time.time()-start)<self.timeout: # this is where the "continue" is pointing to
-            # search for [Pre] and [Bid]
-            _in = bytearray() # clear the buffer variable that is used for serial communication
-            _in.extend(self.waitforAndRead(1, __timeout, start)) # read one byte
-            if ord(_in[-1:])<>0xFA: # verify if the byte is [Pre]
-                continue # start searching for the header again
-            _in.extend(self.waitforAndRead(1, __timeout, start))   # read the next byte
-            if ord(_in[-1:])<>0xFF: # verify if the byte is [Bid]
-                continue # start searching for the header again
-            _in.extend(self.waitforAndRead(1, __timeout, start))   # read the next byte
-            if ord(_in[-1:])<>0x36: # verify if the byte is [MID] for MTData2
-                continue # start searching for the header again
-            _in.extend(self.waitforAndRead(1, __timeout, start))   # read the next byte
-            dataLength, = struct.unpack('!B', buffer(_in[-1:]))  # unpack the data length from the last byte of the buffer variable
-            
-            # get the remaining parts of the message: data packets + checksum
-            _in.extend(self.waitforAndRead(dataLength+1, __timeout, start)) # read [datalength]+[CS]
-            
-            """communication error detection: If all message bytes excluding the preamble are summed and the lower byte value of the result equals zero, the message is valid and it may be processed. The checksum value of the message should be included in the summation"""
-            if 0xFF&sum(_in[1:]):
-                continue # start searching for the header again
-                
-            data = _in[4:-1] # take only the data, i.e., ignore [Pre], [Bid], [MID], [LEN] and [CS]
-            return data
-        else:
-            pubStatus.publish(nodeID = 6, status = False)
-            str = "timeout: no valid MTData2 is received"
-            rospy.logerr(str)
-            return []
-
-    ## Low-level message receiving function.
-    def read_msg(self):
-        """Low-level message receiving function."""
-        __timeout = self.timeout*200 # give extra time for the sensor to response
-        start = time.time()
-
-        while (time.time()-start)<__timeout:
-            # search for [Pre] and [Bid]
-            _in = bytearray()
-            _in.extend(self.waitforAndRead(1, __timeout, start))
-            if ord(_in[-1:])<>0xFA: # verify if the byte is [Pre]
-                continue # start searching for the header again
-            _in.extend(self.waitforAndRead(1, __timeout, start))
-            if ord(_in[-1:])<>0xFF: # verify if the byte is [Bid]
-                continue # start searching for the header again
-            
-            # read message id and length of message
-            _in.extend(self.waitforAndRead(2, __timeout, start))
-            mid, length = struct.unpack('!BB', buffer(_in[-2:]))
-
-            # read contents and checksum
-            _in.extend(self.waitforAndRead(length+1, __timeout, start))
-            
-            if length == 0:
-                data = []
-            else:
-                data = _in[4:-1] # take only the data, i.e., ignore [Pre], [Bid], [MID], [LEN] and [CS]
-                if mid == MID.Error:
-                    # TODO kantapon: will need to check if dataUnpacked is done corectly.
-                    dataUnpacked = struct.unpack('!%dB'%length, buffer(data))
-                    print "dataUnpacked :", dataUnpacked
-                    sys.stderr.write("MT error 0x%02X: %s."%(dataUnpacked[0], MID.ErrorCodes[dataUnpacked[0]]))
-            
-            """communication error detection: If all message bytes excluding the preamble are summed and the lower byte value of the result equals zero, the message is valid and it may be processed. The checksum value of the message should be included in the summation"""
-            if 0xFF&sum(_in[1:]):
-                continue
-            
-            # return mid and the data
-            return (mid, data)
-        
-        else:
-            pubStatus.publish(nodeID = 6, status = False)
-            str = "timeout: could not find message."
-            rospy.logerr(str)
-            return (-1, -1)
-            
-    ## Send a message and read confirmation
-    def write_ack(self, mid, data=[]):
-        """Send a message a read confirmation."""
-        self.write_msg(mid, data)
-        
-        for tries in range(100):
-            mid_ack, data_ack = self.read_msg()
-            if mid_ack==(mid+1):
-                break
-        else:
-            pubStatus.publish(nodeID = 6, status = False)
-            raise MTException("Ack (0x%X) expected, MID 0x%X received instead"\
-                    " (after 100 tries)."%(mid+1, mid_ack))
-            pass
-        return data_ack    
-
-    ############################################################
-    # High-level functions    ############################################################
-
-    # apply the configuration to the MT device
-    def SetOutputConfiguration(self,data):
-        self.GoToConfig()
-        self.write_ack(MID.OutputConfiguration,data)
-        self.GoToMeasurement()
-        
-    ## Place MT device in configuration mode.
-    def GoToConfig(self):
-        """Place MT device in configuration mode."""
-        self.write_ack(MID.GoToConfig)
-
-    ## Place MT device in measurement mode.
-    def GoToMeasurement(self):
-        """Place MT device in measurement mode."""
-        self.write_ack(MID.GoToMeasurement)
-        
-    def ReqCurrentScenario(self):
-        """Request the ID of the currently used XKF scenario.
-        Assume the device is in Config state."""
-        data = self.write_ack(MID.SetCurrentScenario)
-        ## current XKF id
-        self.scenario_id, = struct.unpack('!H', buffer(data))
-        try:
-            scenarios = self.scenarios
-        except AttributeError:
-            scenarios = self.ReqAvailableScenarios()
-        for t, _, label in scenarios:
-            if t==self.scenario_id:
-                ## current XKF label
-                self.scenario_label = label
-                break
-        else:
-            self.scenario_label = ""
-        return self.scenario_id, self.scenario_label
-
-    def SetCurrentScenario(self, scenario_id):
-        """Sets the XKF scenario to use.
-        Assume the device is in Config state."""
-        self.GoToConfig()
-        self.write_ack(MID.SetCurrentScenario, (0x00, scenario_id&0xFF))
-        self.GoToMeasurement()    
-        
-    def SetLatLonAlt(self, LatLonAlt):
-        """Sets the reference location.
-        Assume the device is in Config state."""
-        self.GoToConfig()
-        self.write_ack(MID.SetLatLonAlt, LatLonAlt)
-        self.GoToMeasurement()
-        
-    def SetBaudrate(self,new_baudrate):
-        self.GoToConfig()
-        brid = Baudrates.get_BRID(new_baudrate)
-        self.write_ack(MID.SetBaudrate,(brid,))
-        self.device.baudrate = new_baudrate
-        time.sleep(0.01)
-
-    def ReqLatLonAlt(self):
-        """Request the reference location.
-        Assume the device is in Config state."""
-        data = self.write_ack(MID.SetLatLonAlt)
-        data_interpreted = struct.unpack('BBBBBBBBBBBBBBBBBBBBBBBB',buffer(data))
-        return data_interpreted
-
-    def ReqAvailableScenarios(self):
-        """Request the available XKF scenarios on the device.
-        Assume the device is in Config state."""
-        scenarios_dat = self.write_ack(MID.ReqAvailableScenarios)
-        scenarios = []
-
-        try:
-            for i in range(len(scenarios_dat)/22):
-                scenario_type, version, label =\
-                        struct.unpack('!BB20s', buffer(scenarios_dat[22*i:22*(i+1)]))
-                scenarios.append((scenario_type, version, label.strip()))
-            ## available XKF scenarios
-            self.scenarios = scenarios
-        except struct.error:
-            pubStatus.publish(nodeID = 6, status = False)
-            raise MTException("could not parse the available XKF scenarios.")
-        return scenarios
-        
-    def ReqBaudrate(self):
-        """Request the baudrate.
-        Assume the device is in Config state."""
-        data = self.write_ack(MID.SetBaudrate)
-        brid, = struct.unpack('!B', buffer(data)) #
-        return brid
-
-    def RestoreFactoryDefaults(self):
-        """Restore MT device configuration to factory defaults (soft version).
-        """
-        self.GoToConfig()
-        self.write_ack(MID.RestoreFactoryDef)
-        self.GoToMeasurement()
+import time
+import struct
+from sensor_msgs.msg import Imu
+from xsens_driver.mtdevice import MTDevice
 
 
-    ############################################################
-    # High-level utility functions    ############################################################
-    def read_measurement2(self):
-        # get data
-        data = self.read_data_msg2()
-        return self.parse_MTData2(buffer(data))
-
-    ## Parse a new MTData2 message
-    def parse_MTData2(self, data):
-        # Functions to parse each type of packet
-        def parse_temperature(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # Temperature
-                o['Temp'], = struct.unpack('!'+ffmt, content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_timestamp(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # UTC Time
-                o['ns'], o['Year'], o['Month'], o['Day'], o['Hour'],\
-                        o['Minute'], o['Second'], o['Flags'] =\
-                        struct.unpack('!LHBBBBBB', content)
-            elif (data_id&0x00F0) == 0x20:    # Packet Counter
-                o['PacketCounter'], = struct.unpack('!H', content)
-            elif (data_id&0x00F0) == 0x30:    # Integer Time of Week
-                o['TimeOfWeek'], = struct.unpack('!L', content)
-            elif (data_id&0x00F0) == 0x40:    # GPS Age
-                o['gpsAge'], = struct.unpack('!B', content)
-            elif (data_id&0x00F0) == 0x50:    # Pressure Age
-                o['pressureAge'], = struct.unpack('!B', content)
-            elif (data_id&0x00F0) == 0x60:    # Sample Time Fine
-                o['SampleTimeFine'], = struct.unpack('!L', content)
-            elif (data_id&0x00F0) == 0x70:    # Sample Time Coarse
-                o['SampleTimeCoarse'], = struct.unpack('!L', content)
-            elif (data_id&0x00F0) == 0x80:    # Frame Range
-                o['startFrame'], o['endFrame'] = struct.unpack('!HH', content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_orientation_data(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # Quaternion
-                o['Q0'], o['Q1'], o['Q2'], o['Q3'] = struct.unpack('!'+4*ffmt,
-                        content)
-            elif (data_id&0x00F0) == 0x20:    # Rotation Matrix
-                o['a'], o['b'], o['c'], o['d'], o['e'], o['f'], o['g'], o['h'],\
-                        o['i'] = struct.unpack('!'+9*ffmt, content)
-            elif (data_id&0x00F0) == 0x30:    # Euler Angles
-                o['Roll'], o['Pitch'], o['Yaw'] = struct.unpack('!'+3*ffmt,
-                        content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_pressure(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # Baro pressure
-                # FIXME is it really U4 as in the doc and not a float/double?
-                o['Pressure'], = struct.unpack('!L', content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_acceleration(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # Delta V
-                o['Delta v.x'], o['Delta v.y'], o['Delta v.z'] = \
-                        struct.unpack('!'+3*ffmt, content)
-            elif (data_id&0x00F0) == 0x20:    # Acceleration
-                o['accX'], o['accY'], o['accZ'] = \
-                        struct.unpack('!'+3*ffmt, content)
-            elif (data_id&0x00F0) == 0x30:    # Free Acceleration
-                o['freeAccX'], o['freeAccY'], o['freeAccZ'] = \
-                        struct.unpack('!'+3*ffmt, content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_position(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # Altitude MSL
-                o['altMsl'], = struct.unpack('!'+ffmt, content)
-            elif (data_id&0x00F0) == 0x20:    # Altitude Ellipsoid
-                o['altEllipsoid'], = struct.unpack('!'+ffmt, content)
-            elif (data_id&0x00F0) == 0x30:    # Position ECEF
-                o['ecefX'], o['ecefY'], o['ecefZ'] = \
-                        struct.unpack('!'+3*ffmt, content)
-            elif (data_id&0x00F0) == 0x40:    # LatLon
-                o['lat'], o['lon'] = struct.unpack('!'+2*ffmt, content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_angular_velocity(data_id, content, ffmt):
-            o = {}
-            # FIXME is it really 802y and 803y as in the doc?
-            if (data_id&0x00F0) == 0x20:    # Rate of Turn
-                o['gyrX'], o['gyrY'], o['gyrZ'] = \
-                        struct.unpack('!'+3*ffmt, content)
-            elif (data_id&0x00F0) == 0x30:    # Delta Q
-                o['Delta q0'], o['Delta q1'], o['Delta q2'], o['Delta q3'] = \
-                        struct.unpack('!'+4*ffmt, content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_GPS(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x30:    # DOP
-                o['iTOW'], o['gDOP'], o['pDOP'], o['tDOP'], o['vDOP'], \
-                        o['hDOP'], o['nDOP'], o['nDOP'] = \
-                        struct.unpack('!LHHHHHHH', content)
-            elif (data_id&0x00F0) == 0x40:    # SOL
-                o['iTOW'], o['fTOW'], o['Week'], o['gpsFix'], o['Flags'], \
-                        o['ecefX'], o['ecefY'], o['ecefZ'], o['pAcc'], \
-                        o['ecefVX'], o['ecefVY'], o['ecefVZ'], o['sAcc'], \
-                        o['pDOP'], o['numSV'] = \
-                        struct.unpack('!LlhBBlllLlllLHxBx', content)
-            elif (data_id&0x00F0) == 0x80:    # Time UTC
-                o['iTOW'], o['tAcc'], o['nano'], o['year'], o['month'], \
-                        o['day'], o['hour'], o['min'], o['sec'], o['valid'] = \
-                        struct.unpack('!LLlHBBBBBB', content)
-            elif (data_id&0x00F0) == 0xA0:    # SV Info
-                o['iTOW'], o['numCh'] = struct.unpack('!LBxx', content[:8])
-                channels = []
-                for i in range(numCh):
-                    ch['chn'], ch['svid'], ch['flags'], ch['quality'], \
-                            ch['cno'], ch['elev'], ch['azim'], ch['prRes'] = \
-                            struct.unpack('!BBBBBbhl', content[8+12*i:20+12*i])
-                    channels.append(ch)
-                o['channels'] = channels
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_SCR(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # ACC+GYR+MAG+Temperature
-                o['accX'], o['accY'], o['accZ'], o['gyrX'], o['gyrY'], \
-                        o['gyrZ'], o['magX'], o['magY'], o['magZ'], o['Temp']=\
-                        struct.unpack("!9Hh", content)
-            elif (data_id&0x00F0) == 0x20:    # Gyro Temperature
-                o['tempGyrX'], o['tempGyrY'], o['tempGyrZ'] = \
-                        struct.unpack("!hhh", content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_analog_in(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # Analog In 1
-                o['analogIn1'], = struct.unpack("!H", content)
-            elif (data_id&0x00F0) == 0x20:    # Analog In 2
-                o['analogIn2'], = struct.unpack("!H", content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_magnetic(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x20:    # Magnetic Field
-                o['magX'], o['magY'], o['magZ'] = \
-                        struct.unpack("!3"+ffmt, content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_velocity(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # Velocity XYZ
-                o['velX'], o['velY'], o['velZ'] = \
-                        struct.unpack("!3"+ffmt, content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-        def parse_status(data_id, content, ffmt):
-            o = {}
-            if (data_id&0x00F0) == 0x10:    # Status Byte
-                o['StatusByte'], = struct.unpack("!B", content)
-            elif (data_id&0x00F0) == 0x20:    # Status Word
-                o['StatusWord'], = struct.unpack("!L", content)
-            elif (data_id&0x00F0) == 0x40:    # RSSI
-                o['RSSI'], = struct.unpack("!b", content)
-            else:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("unknown packet: 0x%04X."%data_id)
-            return o
-
-        # data object
-        output = {}
-        while data:
-            try:
-                data_id, size = struct.unpack('!HB', data[:3])
-                if (data_id&0x0003) == 0x3:
-                    ffmt = 'd'
-                elif (data_id&0x0003) == 0x0:
-                    ffmt = 'f'
-                else:
-                    pubStatus.publish(nodeID = 6, status = False)
-                    raise MTException("fixed point precision not supported.")
-                content = data[3:3+size]
-                data = data[3+size:]
-                group = data_id&0xFF00
-                if group == XDIGroup.Temperature:
-                    output['Temperature'] = parse_temperature(data_id, content, ffmt)
-                elif group == XDIGroup.Timestamp:
-                    output['Timestamp'] = parse_timestamp(data_id, content, ffmt)
-                elif group == XDIGroup.OrientationData:
-                    output['Orientation Data'] = parse_orientation_data(data_id, content, ffmt)
-                elif group == XDIGroup.Pressure:
-                    output['Pressure'] = parse_pressure(data_id, content, ffmt)
-                elif group == XDIGroup.Acceleration:
-                    output['Acceleration'] = parse_acceleration(data_id, content, ffmt)
-                elif group == XDIGroup.Position:
-                    output['Position'] = parse_position(data_id, content, ffmt)
-                elif group == XDIGroup.AngularVelocity:
-                    output['Angular Velocity'] = parse_angular_velocity(data_id, content, ffmt)
-                elif group == XDIGroup.GPS:
-                    output['GPS'] = parse_GPS(data_id, content, ffmt)
-                elif group == XDIGroup.SensorComponentReadout:
-                    output['SCR'] = parse_SCR(data_id, content, ffmt)
-                elif group == XDIGroup.AnalogIn:
-                    output['Analog In'] = parse_analog_in(data_id, content, ffmt)
-                elif group == XDIGroup.Magnetic:
-                    output['Magnetic'] = parse_magnetic(data_id, content, ffmt)
-                elif group == XDIGroup.Velocity:
-                    output['Velocity'] = parse_velocity(data_id, content, ffmt)
-                elif group == XDIGroup.Status:
-                    output['Status'] = parse_status(data_id, content, ffmt)
-                else:
-                    pubStatus.publish(nodeID = 6, status = False)
-                    raise MTException("unknown XDI group: 0x%04X."%group)
-            except struct.error, e:
-                pubStatus.publish(nodeID = 6, status = False)
-                raise MTException("couldn't parse MTData2 message.")
-
-        return output
-
-##############################
-# # # XSensDriver object # # #
-##############################
+# request data packets
 class XSensDriver(object):
-    
     def __init__(self):
-        # get the baudrate defined globally at the top
-        self.__baudrate = _baudrate
-        # create messages and default values
-        self.com = compass()
-        self.mt = None # declare a publishing variable without assigning the value
+        self._device = '/dev/usbxsens'
+        self._ReqPacket = {'linAcc', 'angVel', 'ori'}
         
-    def setupSerial(self):
-        device = '/dev/usbxsens'
-        # open device with a default baudrate
-        try:
-            self.mt = MTDevice(device, 115200)
-        except serial.SerialException:
-            pubStatus.publish(nodeID = 6, status = False)
-            return False
+        self.mt = MTDevice(device=self._device, br=115200, timeout=0.2)
         
-        # restore all the setting to factory defaults. 
-        self.mt.RestoreFactoryDefaults()
-        # By this point, sensor baudrate is definitely 115200."
-        
-        # If the sensor baudrate does not match the desired value, Set the baudrate and re-open the sensor.
-        if self.__baudrate != 115200:
-            # apply the preferred baudrate to the sensor
-            self.mt.SetBaudrate(self.__baudrate) 
-            # re-open device after applying the new baudrate
-            try:
-                self.mt.device.close()
-                self.mt = MTDevice(device, self.__baudrate)
-            except serial.SerialException:
-                pubStatus.publish(nodeID = 6, status = False)
-                return False
-        return True
+        # General: 50; high_mag_dep: 51; dynamic: 52; north_reference: 53; vru_general: 54
+        self.mt._scenario_id = chr(rospy.get_param('xsens/filter_profile', 53))
+        # if 'd' is selected, higher buadrate may be necessary
+        self.mt._ffmt = rospy.get_param('xsens/data_format', 'f')
+        # some numbers are not supported by the sensor, e.g., 40 Hz
+        self._controlRate = rospy.get_param('loop_timing/state_updaters', 20.)
+        lat_ori = rospy.get_param('launch_location/lat_ori', 50.938539)
+        lon_ori = rospy.get_param('launch_location/lon_ori', -1.384939)
 
-    def applyConfiguration(self):
-        try:
-            self.mt.SetCurrentScenario(scenario_id)
-            self.mt.SetLatLonAlt(LatLonAlt)
-            
-            # construct a configuration vector that consists of requested packets
-            OutputData = ()
-            for n in ReqPacket:
-                dummy = eval(n)
-                OutputData += dummy[:-1]
-            self.mt.SetOutputConfiguration(OutputData)
-            
-            # request a current configuration on the xsens
-            self.mt.GoToConfig()
-            print "Current scenario: %s (id: %d)"%self.mt.ReqCurrentScenario()[::-1]            
-            brid = self.mt.ReqBaudrate()
-            print "Current baudrate: %s (id: %s)"%(Baudrates.get_BR(int(brid)),brid)
-            print "Current LatLonAlt: %s"%location.get_name(self.mt.ReqLatLonAlt())
-            self.mt.GoToMeasurement()
-            
-            return True
-        
-        except KeyboardInterrupt:
-        
-            return False
+        # Hz (loop four times as fast as the sensor sample rate)
+        self._r = rospy.Rate(self._controlRate*4.)
+        self._LatLonAlt = struct.pack('!3d', lat_ori, lon_ori, 0)
 
-    def spin(self):
-        r = rospy.Rate(_controlRate)
-        _controlPeriod = 1./_controlRate            
-
-        # to control a timing for status publishing
-        timeZero_status = time.time()
-        try:
-            dt_status = rospy.get_param('status_timing')
-        except:
-            dt_status = 2.
-
-        try:
-            while not rospy.is_shutdown():
-                
-                timeStart = time.time()
-                
-                # to control a timing for status publishing
-                if time.time()-timeZero_status > dt_status:
-                    timeZero_status = time.time()
-                    pubStatus.publish(nodeID = 6, status = True)
-                                
-                self.spin_once()
-
-                timeElapse = time.time()-timeStart
-                if timeElapse < _controlPeriod:
-                    r.sleep()
-                else:
-                    actualRate = 1./(timeElapse)
-                    str = "xsens rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(_controlRate, actualRate)
-                    rospy.logwarn(str)
-
-        # Ctrl-C signal interferes with select with the ROS signal handler
-        # should be OSError in python 3.?
-        except select.error:
-            pubStatus.publish(nodeID = 6, status = False)
-
-
-    def spin_once(self):
-        
-        has_Temp = False
-        has_Ori = False
-        has_AngVel = False
-        has_Acc = False
-        pub_IMU = False
-        
-        # get data and split it into particular variables
-        output = self.mt.read_measurement2()
-
-        if output.has_key('Temperature'):
-            out_Temp = output['Temperature']
-            has_Temp = True
-        if output.has_key('Orientation Data'):
-            out_Ori = output['Orientation Data']
-            has_Ori = True
-        if output.has_key('Angular Velocity'):
-            out_AngVel = output['Angular Velocity']
-            has_AngVel = True
-        if output.has_key('Acceleration'):
-            out_Acc = output['Acceleration']
-            has_Acc = True
-        
-        # fill information where it's due #
-        if has_Temp:
-            self.com.temperature = out_Temp['Temp']
-            pub_IMU = True
-        if has_Ori:
-            # compensate a heading offset due to a different in the reference frame
-            out_Ori['Yaw'] = out_Ori['Yaw'] + 90
-            # remap heading from [-pi,pi] to [0,2pi]
-            if out_Ori['Yaw']>0:
-                out_Ori['Yaw'] = 360-out_Ori['Yaw']
-            else:
-                out_Ori['Yaw'] = -out_Ori['Yaw']
-            # b-frame convension base on the orientation of sensor mounted on delphin2    
-            self.com.roll = -out_Ori['Roll']
-            self.com.pitch = out_Ori['Pitch']
-            self.com.heading = out_Ori['Yaw']
-            pub_IMU = True
-        if has_AngVel:
-            # b-frame convension base on the orientation of sensor mounted on delphin2
-            self.com.angular_velocity_x = -out_AngVel['gyrX']
-            self.com.angular_velocity_y = out_AngVel['gyrY']
-            self.com.angular_velocity_z = -out_AngVel['gyrZ']
-            pub_IMU = True
-        if has_Acc: 
-            # b-frame convension base on the orientation of sensor mounted on delphin2
-            if out_Acc.has_key('freeAccX'):
-                self.com.ax = out_Acc['freeAccX']
-                self.com.ay = -out_Acc['freeAccY']
-                self.com.az = out_Acc['freeAccZ']
-            elif out_Acc.has_key('accX'):
-                self.com.ax = out_Acc['accX']
-                self.com.ay = -out_Acc['accY']
-                self.com.az = out_Acc['accZ']
-            pub_IMU = True
-            
-        # publish available information #
-        if pub_IMU:
-            pubCompassOut.publish(self.com)
-            
-if __name__=='__main__': 
-    time.sleep(1) #Allow System to come Online
-    rospy.init_node('xsens_driver')
-
-    pubCompassOut = rospy.Publisher('compass_out',compass)
-    pubStatus = rospy.Publisher('status', status)
-    
-    driver = XSensDriver()
-    _portReady = False
-    _setConfig = False
-    _r = rospy.Rate(5.) # Hz
-    for _nTry in range(20):
-        if not rospy.is_shutdown():
-            try:
-                _portReady = driver.setupSerial()
-                _setConfig = driver.applyConfiguration()
-                if _portReady and _setConfig:
-                    rospy.loginfo("xsens_driver online")
-                    driver.spin()
-                    break
-            except:
-                _portReady = False
-                _setConfig = False
+        self.deviceReset = True  # perform soft reset
+        if self.mt._scenario_id==chr(54) or self.mt._scenario_id==chr(43):
+            # To enable Active Heading Stabilisation (AHS)
+            # needed only when using vru_general
+            self.enableAHS = True
         else:
-            break
-        _r.sleep()
-    
-    if not _portReady:
-        str = "fail to connect to xsens" 
-        rospy.logwarn(str)
-    elif not _setConfig:
-        str = "fail to apply a configuration" 
-        rospy.logwarn(str)
+            self.enableAHS = False
+
+        # To enable the In-run Compass Calibration (ICC)
+        # Not yet fully supported by xsens
+        # TODO: should be implemented as a separated file instead.
+        self.enableICC = False
+
+        self.config()
+        self.pubSensorIMU_deg = rospy.Publisher('imu/MTi3_deg', Imu, queue_size=10)
+        self.pubSensorIMU = rospy.Publisher('imu/data', Imu, queue_size=10)
+
+        self.mainloop()
+
+    def config(self):
+        # Put sensor in configuration mode:
+        self.mt.GoToConfig()
+
+        # Set:
+        if self.deviceReset:
+            rospy.loginfo("Reset to the xsens device")
+            self.mt.Reset()
+            self.mt.GoToConfig()
+        
+        self.mt.SetOptionFlags_clear()
+        if self.enableAHS:
+            self.mt.SetOptionFlags_EnableAHS()
+            
+        if self.enableICC:
+            # Not yet fully supported by xsens.
+            self.mt.SetOptionFlags_EnableICC()
+            # TODO: should be implemented as a separated file instead
+            # with the following procedure using the low level communication:
+            # - RepresentativeMotion: start
+            # - perform calibration
+            # - RepresentativeMotion: stop [is the feedback of 4 good enough?]
+            # - RepresentativeMotion: store
+
+        self.mt.SetLatLonAlt(self._LatLonAlt)
+        self.mt.SetCurrentScenario(self.mt._scenario_id)
+        self.mt.SetOutputConfiguration(self._ReqPacket, self._controlRate)
+
+        # Req:
+        rospy.loginfo("Current scenario: %s (id: %d)" % self.mt.ReqCurrentScenario())
+        rospy.loginfo("Current location: Lat=%.4f, Lon=%.4f, Alt=%.4f" % self.mt.ReqLatLonAlt())
+
+        # Put sensor in measurement mode:
+        self.mt.GoToMeasurement()
+
+    def mainloop(self):
+        while not rospy.is_shutdown():
+            self.mt.read_measurement()
+            if self.mt._getAll:
+                self.mt._imu_deg.header.stamp = rospy.Time.now()
+                self.mt._imu_deg.header.frame_id = 'base_link'
+                self.pubSensorIMU_deg.publish(self.mt._imu_deg)
+                self.mt._imu.header.stamp = rospy.Time.now()
+                self.mt._imu.header.frame_id = 'base_link'  # does this need to be done every time
+                self.pubSensorIMU.publish(self.mt._imu)
+            self.mt._getAll = False
+            self._r.sleep()
+
+if __name__ == '__main__':
+    time.sleep(1)  # allow the system to come online
+
+    rospy.init_node('xsens_driver', anonymous=True)
+
+    # get the xsens object
+
+    try:
+        XSensDriver()
+    except rospy.ROSInterruptException:
+        pass
