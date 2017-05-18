@@ -50,17 +50,16 @@ class XSensDriver(object):
         
         self.mt = MTDevice(device=self._device, br=115200, timeout=0.2)
         
-        # General: 50; high_mag_dep: 51; dynamic: 52; north_reference: 53; vru_general: 54
-        self.mt._scenario_id = chr(rospy.get_param('xsens/filter_profile', 53))
+        self.mt._scenario_id = chr(rospy.get_param('xsens/filter_profile'))
         # if 'd' is selected, higher buadrate may be necessary
-        self.mt._ffmt = rospy.get_param('xsens/data_format', 'f')
+        self.mt._ffmt = rospy.get_param('xsens/DataFormat')
         # some numbers are not supported by the sensor, e.g., 40 Hz
-        self._controlRate = rospy.get_param('loop_timing/state_updaters', 20.)
-        lat_ori = rospy.get_param('launch_location/lat_ori', 50.938539)
-        lon_ori = rospy.get_param('launch_location/lon_ori', -1.384939)
+        self._xsensCommsRate = rospy.get_param('xsens/Rate')
+        lat_ori = rospy.get_param('lat_orig')
+        lon_ori = rospy.get_param('lon_orig')
 
-        # Hz (loop four times as fast as the sensor sample rate)
-        self._r = rospy.Rate(self._controlRate*4.)
+        # Hz (reading loop for xsens, needs to be faster than communication)
+        self._r = rospy.Rate(self._xsensCommsRate*4.)
         self._LatLonAlt = struct.pack('!3d', lat_ori, lon_ori, 0)
 
         self.deviceReset = True  # perform soft reset
@@ -108,7 +107,7 @@ class XSensDriver(object):
 
         self.mt.SetLatLonAlt(self._LatLonAlt)
         self.mt.SetCurrentScenario(self.mt._scenario_id)
-        self.mt.SetOutputConfiguration(self._ReqPacket, self._controlRate)
+        self.mt.SetOutputConfiguration(self._ReqPacket, self._xsensCommsRate)
 
         # Req:
         rospy.loginfo("Current scenario: %s (id: %d)" % self.mt.ReqCurrentScenario())

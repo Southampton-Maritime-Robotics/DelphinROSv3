@@ -81,7 +81,10 @@ xsens/filter_profile: 42
 xsens/AHSOn: False
 # Soft reset (does not overwrite calibration, but resets all user settings
 xsens/SoftResetOnStart: True
-
+# xsens data format (can be float or double; double never tested)
+xsens/DataFormat: 'f'
+# xsens rate (needs to be one of the supported) in [Hz]
+xsens/Rate: 20
 
 ### THRUSTERS
 thruster/SetpointMax:  130      # Max thruster setpoint
