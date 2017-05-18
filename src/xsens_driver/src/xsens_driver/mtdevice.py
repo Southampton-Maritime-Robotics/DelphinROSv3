@@ -31,6 +31,9 @@ class MTDevice(object):
         self._compass = compass()  # this does not comply with REP103
         self._imu = Imu()
         self._getAll = False
+        self._mag_x = 0.
+        self._mag_y = 0.
+        self._mag_z = 0.
 
     # ###########################################################
     # Low-level communication
@@ -248,6 +251,11 @@ class MTDevice(object):
             self._imu.linear_acceleration.y = o[1]  # [m/s2]
             self._imu.linear_acceleration.z = o[2]  # [m/s2]
 
+        def parse_magnetic_field_vectors(data_id, content):
+            self._mag_x = o[0]
+            self._mag_y = o[1]
+            self._mag_z = o[2]
+
 
         # data object
         while data:
@@ -264,3 +272,5 @@ class MTDevice(object):
                 parse_acceleration(data_id, content)
             elif group == XDIGroup.AngularVelocity:
                 parse_angular_velocity(data_id, content)
+            elif group == XDIGroup.MagneticFieldVectors:
+                parse_magnetic_field_vectors(data_id, content)

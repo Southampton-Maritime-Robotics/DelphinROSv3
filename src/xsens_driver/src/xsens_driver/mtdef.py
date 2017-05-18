@@ -2,7 +2,7 @@
 
 
 class Scenarios:
-    """Scenario ID (for MTi-1 series)"""
+    """Scenario ID (for MTi-10 and MTi-1 series)"""
     ID2Lable = {39: 'general',
                 40: 'high_mag_dep',
                 41: 'dynamic',
@@ -53,11 +53,13 @@ class XDIGroup:
     Acceleration = 0x4020  # acceleration with gravity
     Acceleration_free = 0x4030  # free acceleration
     AngularVelocity = 0x8020  # rate of turn
+    MagneticFieldVector = 0xC020
 
     Req = {'ori': OrientationData,
            'linAcc': Acceleration,
            'linAcc_free': Acceleration_free,
-           'angVel': AngularVelocity}
+           'angVel': AngularVelocity,
+           'magField': MagneticFieldVector}
 
     # FIXME: At present, only 'ENU' convention works
     # Hence, the coordinate tranformation is done manually.
