@@ -28,7 +28,7 @@ class MTDevice(object):
 
         self._timeout = timeout  # serial communication timeout
         self._preamble = '\xFA\xFF'  # preamble for a MTData packet
-        self._imu_deg = Imu()  # this does not comply with REP103
+        self._compass = compass()  # this does not comply with REP103
         self._imu = Imu()
         self._getAll = False
 
@@ -214,9 +214,9 @@ class MTDevice(object):
             The initial yaw reading is zero, when a scenario_id is 54, vru_general.
             Otherwise, the yaw reading indicates 0 when facing east.
             """
-            self._imu_deg.orientation.x = o[0]  # [deg]
-            self._imu_deg.orientation.y = o[1]  # [deg]
-            self._imu_deg.orientation.z = o[2]  # [deg]
+            self._compass.heading = o[2]  # [deg], rotation around z axis
+            self._compass.roll = o[0]     # [deg], rotation around x axis
+            self._compass.pitch = o[1]    # [deg], rotation around y axis
 
             # convert from [deg] to [rad] then [qua]
             q = tf.transformations.quaternion_from_euler(o[0]*np.pi/180,
@@ -231,21 +231,23 @@ class MTDevice(object):
 
         def parse_angular_velocity(data_id, content):
             o = struct.unpack('!'+3*self._ffmt, content)
-            self._imu_deg.angular_velocity.x = o[0]*180/np.pi  # [deg/s]
-            self._imu_deg.angular_velocity.y = o[1]*180/np.pi  # [deg/s]
-            self._imu_deg.angular_velocity.z = o[2]*180/np.pi  # [deg/s]
+            self._compass.agular_velocity_x = o[0]*180/np.pi  # [deg/s]
+            self._compass.agular_velocity_y = o[1]*180/np.pi  # [deg/s]
+            self._compass.agular_velocity_z = o[2]*180/np.pi  # [deg/s]
             self._imu.angular_velocity.x = o[0]  # [rad/s]
             self._imu.angular_velocity.y = o[1]  # [rad/s]
             self._imu.angular_velocity.z = o[2]  # [rad/s]
 
+
         def parse_acceleration(data_id, content):
             o = struct.unpack('!'+3*self._ffmt, content)
-            self._imu_deg.linear_acceleration.x = o[0]  # [m/s2]
-            self._imu_deg.linear_acceleration.y = o[1]  # [m/s2]
-            self._imu_deg.linear_acceleration.z = o[2]  # [m/s2]
+            self._compass.ax = o[0]  # [m/s2]
+            self._compass.ay = o[1]  # [m/s2]
+            self._compass.az = o[2]  # [m/s2]
             self._imu.linear_acceleration.x = o[0]  # [m/s2]
             self._imu.linear_acceleration.y = o[1]  # [m/s2]
             self._imu.linear_acceleration.z = o[2]  # [m/s2]
+
 
         # data object
         while data:

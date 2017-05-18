@@ -39,6 +39,7 @@ import rospy
 import time
 import struct
 from sensor_msgs.msg import Imu
+from hardware_interfaces.msg import compass
 from xsens_driver.mtdevice import MTDevice
 
 
@@ -76,7 +77,7 @@ class XSensDriver(object):
         self.enableICC = False
 
         self.config()
-        self.pubSensorIMU_deg = rospy.Publisher('imu/MTi3_deg', Imu, queue_size=10)
+        self.pubSensorIMU_deg = rospy.Publisher('compass_out', compass, queue_size=10)
         self.pubSensorIMU = rospy.Publisher('imu/data', Imu, queue_size=10)
 
         self.mainloop()
@@ -122,7 +123,7 @@ class XSensDriver(object):
             if self.mt._getAll:
                 self.mt._imu_deg.header.stamp = rospy.Time.now()
                 self.mt._imu_deg.header.frame_id = 'base_link'
-                self.pubSensorIMU_deg.publish(self.mt._imu_deg)
+                self.pubSensorIMU_deg.publish(self.mt._compass)
                 self.mt._imu.header.stamp = rospy.Time.now()
                 self.mt._imu.header.frame_id = 'base_link'  # does this need to be done every time
                 self.pubSensorIMU.publish(self.mt._imu)
