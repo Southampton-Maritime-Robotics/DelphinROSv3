@@ -1,9 +1,0 @@
-# Parameters for sonar plotting 
-#
-
-# maximum number of measurements that are considered/shown in a plot
-/sonar/plot/Memory: 200
-
-# specific angle for which target range should be plotted
-/sonar/plot/AngleOfInterest: 100
-

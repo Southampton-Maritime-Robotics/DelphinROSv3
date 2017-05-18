@@ -1,10 +1,11 @@
-####### LIMITS
-maxRate: 20                     # maximum ROS rate at which the fastest nodes are run
+###################################
+# LIMITS
+###################################
+
+
 max-depth-demand: 2.5           # Maximum depth demand (m)
 
-thruster/SetpointMax:  130      # Max thruster setpoint
-                                # in water: 2500
-                                # on land: 145
+
 heading/Tolerance: 5            # acceptable error for the heading (in degrees)
 heading/ControlRate: 5          # rate of heading control in [Hz]
 
@@ -20,9 +21,27 @@ min-motor-voltage: 19000        # Minimum Motor voltage (mV)
 mission-timeout: 5              # Mission timeout (minutes) 
 
 
+#######################################
+# MISSION SETTINGS
+#######################################
 
-####### CONFIGURATION
-status_timing: 2.               # To control publishing timing interval of node status (sec)
+lat_orig: 50.957024             # Origin Latitude
+long_orig: -1.366769            # Origin Longitude
+  # useful positions
+  # Eastleigh North Pier: (50.957024,-1.366769)
+  # Eastleigh South Pier: (50.956473,-1.366835)
+
+
+ImportWaypoints: False          # Import Waypoints
+LOS_distance: 10                # line-of-sight distance (in m) for path following algorithm
+radius_of_acceptance: 3         # (in m) for path following algorithm
+max-speed: 1                    # maximum surge speed (in m/s) of the AUV
+
+
+
+################################
+# CONTROLLERS
+################################
 
 horizontal/thruster/Pgain: 40000.0
 horizontal/thruster/Igain: 0.0
@@ -35,8 +54,6 @@ vertical/thruster/pitch/Pgain: 0.02
 vertical/thruster/pitch/Igain: 0.002
 vertical/thruster/pitch/Dgain: -0.1
 
-
-
 vertical/PID/weight/thruster/U_star: 0.9        # speed at which thruster weight is 0.5, in [m/s]
 vertical/PID/weight/thruster/delta: 0.03        # width of the transition
 vertical/PID/weight/controlsurface/U_star: 0.5  # speed at which control surface weight is 0.5
@@ -45,41 +62,192 @@ vertical/PID/weight/controlsurface/delta: 0.04  # width of the transition
 # to use only control surfaces, set U_star to 0
 # caution: delta cannot be zero (otherwise division by zero)
 
+#################################
+# CONFIGURATION
+#################################
+maxRate: 20                     # maximum ROS rate at which the fastest nodes are run
+status_timing: 2.               # Publishing interval of node status (sec)
 
 
-####### MISSION SPECIFIC
-lat_orig: 50.957024             # Origin Latitude
-long_orig: -1.366769            # Origin Longitude
-  # useful positions
-  # Eastleigh North Pier: (50.957024,-1.366769)
-  # Eastleigh South Pier: (50.956473,-1.366835)
- 
+######### HARDWARE SPECIFIC
 
-ImportWaypoints: False          # Import Waypoints
-LOS_distance: 10                # line-of-sight distance (in m) for path following algorithm
-radius_of_acceptance: 3         # (in m) for path following algorithm
-max-speed: 1                    # maximum surge speed (in m/s) of the AUV
-
+### XSENS
 xsens/filter_profile: 42
-  # available xsens filter options {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
-  # use vru_general when the magnetic reading can not be thrusted at all.
-  # for more information see delphin2_xsens datasheet
+# available xsens filter options {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
+# use vru_general with AHSOn when the magnetic reading can not be thrusted at all.
+# for more information see delphin2_xsens datasheet
 
 # Set the Active Heading Stabilisation
 xsens/AHSOn: False
 # Soft reset (does not overwrite calibration, but resets all user settings
 xsens/SoftResetOnStart: True
 
-######### HARDWARE SPECIFIC
+
+### THRUSTERS
+thruster/SetpointMax:  130      # Max thruster setpoint
+                                # in water: 2500
+                                # on land: 145
 thruster/SetpointMin: 145.
-thruster/SetpoingMax: 2500.
 thruster/ArduinoMax: 255.
 
- ######## DUMMY NODE SETTINGS
- # Sometimes individual nodes are replaced by dummy nodes, e.g. if a sensor is broken.
+### SONAR
+sonar/XPosition: 0.8   # in [m], relative to CoB
+sonar/YPosition: 0.0
+sonar/ZPosition: 0.0
 
- # The altimeter currently assumes a constand depth as in a towing tank
- # in [m]
+# to stay flexible for horizontal and vertical scanning,
+# choose axis around which rotation happens
+sonar/rotation/Axis: [0.0, 1.0, 0.0] # choose axis for sonar rotation, [x, y, z]
+sonar/rotation/Direction: -1  # -1 if the sonar transducer angle moves in opposite direction of Eurler Angle Convention
+# depending on the mounting, the zero angle might not be somewhere meaningful
+# this offset helps to adjust so the zero of the angle is the correct position for the rotation around the given axis
+# Note: there is a separate parameter to achieve a drift offset, in case of (temporary) sonar head drift!
+sonar/rotation/Offset: 0 # offset [in degrees]
+
+# ANALYSIS
+# Number of repeated returns (+1 from SonarPing.m) to remove glitches
+sonar/analyse/GlitchCount: 1
+
+# Power level (0 to 250) above which sonar 'sees' a target
+# Value above which something is considered an object of interest
+sonar/analyse/Threshold: 100
+
+# Blanking distance to remove returns from the sonar mount
+# Distance from sonar head withing which returns are ignored
+# in [metres]
+sonar/analyse/BlankDist: 0.6
+
+# PLOTTING
+# maximum number of measurements that are considered/shown in a plot
+sonar/plot/Memory: 200
+# specific angle for which target range should be plotted
+sonar/plot/AngleOfInterest: 100
+
+# Parameters for the MICRON and SEAKING sonar
+# used for running the sonar on the vehicle
+
+
+### Sonar Settings
+
+# Drift offset, should it ever occur again!
+# A drift offset of 90 means that the data that is currently measured at 90 degrees
+# will now be used at 0 degrees
+# in degrees, from 0 to 359
+sonar/Driftoffset: 0
+
+# Left limit for Heading
+# in degrees, from 0 to 359
+sonar/LLim: 0
+
+# Right limit for Heading
+# in degrees, from 0 to 359
+sonar/RLim: 301
+
+# Number of sample bins over scan-line
+# Max for SeaKing/SeaPrince/MiniKing/Micron: 800
+# New digital DST sonar products: 1500
+# see delphin2_sonar_micron_*.pdf in the datasheets
+# more bins = more resolution, more noise
+# 300 bins is about the upper limit of the visualisation
+sonar/NBins: 200
+
+# Samping interval of each range bin
+# usually not used, since Range is used to calculate this
+# in units of [640 nanoseconds]
+sonar/ADInterval: 5
+
+# Range
+# used to calculate the ADInterval
+# in [metres]
+sonar/Range: 5
+
+# Speed of sound in water, to calculate the ADInterval correctly
+# in seawater ~: 1500. m/s
+# in sweet water: 1484. m/s
+# in [metre/second]
+sonar/SoundspeedWater: 1484.
+
+# not used in 8 bit mode
+sonar/ADSpan:  210
+sonar/ADLow: 0
+
+# Initial gain for channel 1
+sonar/IGainB1: 84
+# Initial gain for channel 2
+sonar/IGainB2: 84
+
+# High-speed limit of scanning motor
+# in [10 microseconds]
+sonar/MoTime: 25
+# Step resolution of scanning motor
+# in [16th of a gradian]
+# defaults: 32=1.8 degrees, 16, 8, 4
+# 64 used in all Delphin2 sonar applications before 2016
+sonar/Step: 64
+
+# Sonar Communication protocol
+# these settings are needed for use in the serial protocol,
+# but either they are just part of the serial protocol
+# or it is not specified clearly what they do
+
+# Serial Port Settings
+# on delphin2 the port is /dev/ttyS3
+# on a laptop this may vary, e.g. /dev/ttyUSB0
+# the baudrate should not be changed, since it needs to be the same setting on computer and sonar
+# sonar/serial/Port: '/dev/ttyUSB0'
+sonar/serial/Port: '/dev/ttyS3'
+sonar/serial/Baudrate: 115200
+
+# Timeout for reading sonar data after sonar ping message
+sonar/serial/ReadTimeout: 2
+
+# Receive error count from which the sonar communication is considererd as failed
+# and the serial communication is reset
+sonar/serial/CriticalErrorCount: 5
+
+# head Type selection
+# 1 for MICRON, 29 for SEAKING
+sonar/serial/HeadType: 1
+
+# Source transmission node (documentation value: 155 (0xFF))
+sonar/serial/SID: 255
+
+# Msg destination node (documentation value: 02 (0x02))
+sonar/serial/DID: 2
+
+# Repeat of SID (not what it sais in the manual!)
+sonar/serial/Node: 255
+
+#
+# HdCtrl bytes
+# see datasheets delphin2_sonar_micron_*.pdf
+# this assembles to 0010001100000101
+# which means: adc8on = 1, cont = 0, scanright = 1, invert = 0, motoff = 0, etc. (from here as defaults)
+# most significant bit: left most bit
+sonar/serial/HdCtrl1: '00000101'
+sonar/serial/HdCtrl2: '00100011'
+
+# set as Imagign Sonar, DST head type
+sonar/serial/DstHead: 11
+
+# Default 500, no further explanation given
+sonar/serial/MaxADBuf: 500
+# Blanking interval, default 100
+# in [microseconds]
+sonar/serial/Lockout: 100
+# Default 1600 for single channel, no further explanation given
+sonar/serial/MinorAxis: 1600
+# Default 1 for single channel, no further explanation given
+sonar/serial/MajorAxis: 1
+
+###############################################
+# DUMMY NODE SETTINGS
+###############################################
+
+# Sometimes individual nodes are replaced by dummy nodes, e.g. if a sensor is broken.
+
+# The altimeter currently assumes a constand depth as in a towing tank
+# in [m]
 dummy/PoolDepth: 3.
 
 # number of satellites seen by simulated GPS
@@ -100,16 +268,3 @@ dummy/thruster/Changerate3: 100
 # in [s]
 dummy/thruster/Timeout: 1
 
-
-sonar/XPosition: 0.8   # in [m], relative to CoB
-sonar/YPosition: 0.0
-sonar/ZPosition: 0.0
-
-# to stay flexible for horizontal and vertical scanning,
-# choose axis around which rotation happens
-sonar/rotation/Axis: [0.0, 1.0, 0.0] # choose axis for sonar rotation, [x, y, z]
-sonar/rotation/Direction: -1  # -1 if the sonar transducer angle moves in opposite direction of Eurler Angle Convention
-# depending on the mounting, the zero angle might not be somewhere meaningful
-# this offset helps to adjust so the zero of the angle is the correct position for the rotation around the given axis
-# Note: there is a separate parameter to achieve a drift offset, in case of (temporary) sonar head drift!
-sonar/rotation/Offset: 0 # offset [in degrees]
