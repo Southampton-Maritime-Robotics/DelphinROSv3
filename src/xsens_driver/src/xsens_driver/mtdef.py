@@ -3,7 +3,12 @@
 
 class Scenarios:
     """Scenario ID (for MTi-1 series)"""
-    ID2Lable = {50: 'General',
+    ID2Lable = {39: 'general',
+                40: 'high_mag_dep',
+                41: 'dynamic',
+                42: 'low_mag_dep',
+                43: 'vru_general',
+                50: 'General',
                 51: 'high_mag_dep',
                 52: 'dynamic',
                 53: 'north_reference',
