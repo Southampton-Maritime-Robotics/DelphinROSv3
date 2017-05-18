@@ -60,12 +60,15 @@ LOS_distance: 10                # line-of-sight distance (in m) for path followi
 radius_of_acceptance: 3         # (in m) for path following algorithm
 max-speed: 1                    # maximum surge speed (in m/s) of the AUV
 
-xsens_filter_profile: 42     
+xsens/filter_profile: 42
   # available xsens filter options {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
-  # use dynamic for most cases
   # use vru_general when the magnetic reading can not be thrusted at all.
   # for more information see delphin2_xsens datasheet
 
+# Set the Active Heading Stabilisation
+xsens/AHSOn: False
+# Soft reset (does not overwrite calibration, but resets all user settings
+xsens/SoftResetOnStart: True
 
 ######### HARDWARE SPECIFIC
 thruster/SetpointMin: 145.
