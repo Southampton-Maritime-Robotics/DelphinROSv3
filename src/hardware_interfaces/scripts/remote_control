@@ -1,0 +1,96 @@
+#!/usr/bin/python
+"""
+Node for basic remote controlling of the AUV
+every key press will lead to an actuator action of a given time
+
+VERSION AS OF 12/10/2016
+"""
+
+###########
+
+import rospy
+import time
+import cv2
+from collections import deque
+
+from std_msgs.msg import Int8
+from hardware_interfaces.msg import tsl_setpoints
+
+
+
+################################################################
+def rcLoop():
+    rate = rospy.Rate(rospy.get_param("/maxRate"))
+
+    sign = -1  # quick way to flip the sign in case right and left are switched
+    cv2.startWindowThread()
+    cv2.namedWindow("delphin RC")
+    waitTime = int(1./rospy.get_param("/maxRate")*1000)
+    thrusterOn = rospy.get_param("/RC/thruster")
+    propOn = rospy.get_param("/RC/prop")
+    onTime = rospy.get_param("/RC/onTime") * rospy.get_param("/maxRate")
+    thrusters = tsl_setpoints()
+    thruster0 = deque(maxlen=onTime)
+    thruster1 = deque(maxlen=onTime)
+    prop = deque(maxlen=onTime)
+
+    instructions = ("Delphin2 remote control active! \n"
+                   +"l -- left translate\n"
+                   +"r -- right translate\n"
+                   +"a -- anti-clockwise (left) rotation\n"
+                   +"c -- clockwise (right) rotation\n"
+                   +"f -- forwards")
+    rospy.logwarn(instructions)
+
+    while not rospy.is_shutdown():
+        
+        # reset all values, in case connection is broken
+        thruster0.append(0)
+        thruster1.append(0)
+        prop.append(0)
+
+        key = cv2.waitKey(waitTime) & 0xFF
+        if key == ord('l'):
+            for i in range(onTime):
+                thruster0.append(sign * thrusterOn)
+                thruster1.append(sign * thrusterOn)
+            
+        if key == ord('r'):
+            for i in range(onTime):
+                thruster0.append(-1 * sign * thrusterOn)
+                thruster1.append(-1 * sign * thrusterOn)
+
+        if key == ord('a'):
+            for i in range(onTime):
+                thruster0.append(sign * thrusterOn)
+                thruster1.append(-1 * sign * thrusterOn)
+
+        if key == ord('c'):
+            for i in range(onTime):
+                thruster0.append(-1 * sign * thrusterOn)
+                thruster1.append(sign * thrusterOn)
+
+        if key == ord('f'):
+            for i in range(onTime):
+                prop.append(propOn)
+
+        thrusters.thruster0 = thruster0.popleft()
+        thrusters.thruster1 = thruster1.popleft()
+        pubThruster.publish(thrusters)
+        pubProp.publish(prop.popleft())
+
+        rate.sleep()
+
+
+            
+################################################################
+
+
+if __name__ == '__main__':
+    try:
+        pubThruster = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
+        pubProp = rospy.Publisher('prop_demand', Int8)
+        rospy.init_node('remote_control', anonymous=True)
+        rcLoop()
+    except rospy.ROSInterruptException:
+        pass
