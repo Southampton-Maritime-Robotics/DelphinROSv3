@@ -13,6 +13,6 @@
 
     <!-- ADDITIONAL NODES 
     -->
-    <node name="remote_control" pkg="navigation" type="test_thrusters" required="true"/>
+    <node name="remote_control" pkg="navigation" type="test_actuators" required="true"/>
 
 </launch>

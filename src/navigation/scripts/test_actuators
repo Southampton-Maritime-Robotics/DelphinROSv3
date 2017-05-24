@@ -1,0 +1,129 @@
+#!/usr/bin/python
+"""
+Node for testing AUV actuators
+
+Very regularly the dry land test fails with actuator problems,
+this node helps running some tests
+
+VERSION AS OF 24/05/2017
+
+TODO:
+- Make settings adjustable through (dynamic?) parameters
+- make individual actuators move
+"""
+
+###########
+
+import rospy
+import cv2
+from collections import deque
+
+from std_msgs.msg import Int8
+from hardware_interfaces.msg import tsl_setpoints
+from hardware_interfaces.msg import tail_setpoints
+
+
+################################################################
+def rcLoop():
+    rate = rospy.Rate(rospy.get_param("/maxRate"))
+
+    cv2.startWindowThread()
+    cv2.namedWindow("delphin2 Actuator Test")
+    waitTime = int(1./rospy.get_param("/maxRate")*1000)
+    thrusterLow = 146 # rpm
+    thrusterHigh = 245 # rpm
+    propMax = 10 # rpm
+    csMax = 30  # degrees
+    thruster_v = tsl_setpoints()
+    thruster_h = tsl_setpoints()
+    tail_v = tail_setpoints()
+    tail_h = tail_setpoints()
+
+    onTime = rospy.get_param("/RC/onTime") * rospy.get_param("/maxRate")
+    thrusters = deque(maxlen=onTime)
+    control_surfaces = deque(maxlen=onTime)
+    prop = deque(maxlen=onTime)
+
+    instructions = ("Delphin2 actuator test active! \n"
+                   +" THRUSTERS: \n"
+                   +"f -- forwards at 145 rpm \n"
+                   +"F -- forwards at 245 rpm\n"
+                   +"b -- backwards ar 145 rpm\n"
+                   +"B -- bachwards at 245 rpm\n"
+                   + "TAIL SECTION: \n"
+                   + "p -- propeller at 10 rpm\n"
+                   + "c -- control surfaces at +30 degrees\n"
+                   + "C -- control surfaces at -30 degrees\n")
+    rospy.logwarn(instructions)
+
+    while not rospy.is_shutdown():
+        
+        # reset all values, in case connection is broken
+        thrusters.append(0)
+        control_surfaces.append(0)
+        prop.append(0)
+
+        key = cv2.waitKey(waitTime) & 0xFF
+        if key == ord('f'):
+            for i in range(onTime):
+                thrusters.append(thrusterLow)
+            
+        if key == ord('F'):
+            for i in range(onTime):
+                thrusters.append(thrusterHigh)
+ 
+        if key == ord('b'):
+            for i in range(onTime):
+                thrusters.append(-thrusterLow)
+ 
+        if key == ord('B'):
+            for i in range(onTime):
+                thrusters.append(-thrusterHigh)
+
+        if key == ord('p'):
+            for i in range(onTime):
+                prop.append(propMax)
+
+        if key == ord('c'):
+            for i in range(onTime):
+                control_surfaces.append(csMax)
+
+        if key == ord('C'):
+            for i in range(onTime):
+                control_surfaces.append(-csMax)
+
+        setpoint = thrusters.popleft()
+        thruster_v.thruster0 = setpoint
+        thruster_v.thruster1 = setpoint
+        thruster_h.thruster0 = setpoint
+        thruster_h.thruster1 = setpoint
+
+        setpoint = control_surfaces.popleft()
+        tail_v.cs0 = setpoint
+        tail_v.cs1 = setpoint
+        tail_h.cs0 = setpoint
+        tail_h.cs1 = setpoint
+
+        pubThrusterV.publish(thruster_v)
+        pubThrusterH.publish(thruster_h)
+        pubTailV.publish(tail_v)
+        pubTailH.publish(tail_h)
+        pubProp.publish(prop.popleft())
+
+        rate.sleep()
+
+################################################################
+
+
+if __name__ == '__main__':
+    try:
+        pubThrusterV = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
+        pubThrusterH = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
+        pubTailV = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
+        pubTailH = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
+        pubProp = rospy.Publisher('prop_demand', Int8)
+
+        rospy.init_node('test_thrusters', anonymous=True)
+        rcLoop()
+    except rospy.ROSInterruptException:
+        pass
