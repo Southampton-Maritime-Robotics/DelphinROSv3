@@ -1,0 +1,18 @@
+<launch>
+
+    <!-- System Parameters! -->
+    <rosparam file="$(find delphin2_mission)/launch/default_parameters.yaml" command ="load"/>
+    <param name="RC/thruster" value="245" />
+    <param name="RC/prop" value="15" />
+    <param name="RC/onTime" value="1" />
+
+
+ 
+    <!-- AUV system! -->
+    <include file="$(find delphin2_mission)/launch/set_auv_system.txt" /> 
+
+    <!-- ADDITIONAL NODES 
+    -->
+    <node name="remote_control" pkg="navigation" type="test_thrusters" required="true"/>
+
+</launch>

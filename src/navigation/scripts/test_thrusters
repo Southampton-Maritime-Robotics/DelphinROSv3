@@ -1,0 +1,87 @@
+#!/usr/bin/python
+"""
+Node for basic remote controlling of the AUV
+every key press will lead to an actuator action of a given time
+
+VERSION AS OF 12/10/2016
+"""
+
+###########
+
+import rospy
+import time
+import cv2
+from collections import deque
+
+from std_msgs.msg import Int8
+from hardware_interfaces.msg import tsl_setpoints
+
+
+
+################################################################
+def rcLoop():
+    rate = rospy.Rate(rospy.get_param("/maxRate"))
+
+    cv2.startWindowThread()
+    cv2.namedWindow("delphin RC")
+    waitTime = int(1./rospy.get_param("/maxRate")*1000)
+    thrusterLow = 145
+    thrusterHigh = 245
+    onTime = rospy.get_param("/RC/onTime") * rospy.get_param("/maxRate")
+    thrustersVert = tsl_setpoints()
+    thrustersHori = tsl_setpoints()
+    thrusters = deque(maxlen=onTime)
+
+    instructions = ("Delphin2 thruster test active! \n"
+                   +"f -- forwards at 145 rpm \n"
+                   +"F -- forwards at 245 rpm\n"
+                   +"b -- backwards ar 145 rpm\n"
+                   +"B -- bachwards at 245 rpm\n")
+    rospy.logwarn(instructions)
+
+    while not rospy.is_shutdown():
+        
+        # reset all values, in case connection is broken
+        thrusters.append(0)
+
+        key = cv2.waitKey(waitTime) & 0xFF
+        if key == ord('f'):
+            for i in range(onTime):
+                thrusters.append(thrusterLow)
+            
+        if key == ord('F'):
+            for i in range(onTime):
+                thrusters.append(thrusterHigh)
+ 
+        if key == ord('b'):
+            for i in range(onTime):
+                thrusters.append(thrusterHigh)
+ 
+        if key == ord('B'):
+            for i in range(onTime):
+                thrusters.append(thrusterHigh)
+
+        thrustersVert.thruster0 = thrusters.popleft()
+        thrustersVert.thruster1 = thrustersVert.thruster0
+        thrustersHori.thruster0 = thrustersVert.thruster0
+        thrustersHori.thruster1 = thrustersVert.thruster0
+
+
+        pubThrusterVert.publish(thrustersVert)
+        pubThrusterHori.publish(thrustersHori)
+
+        rate.sleep()
+
+
+            
+################################################################
+
+
+if __name__ == '__main__':
+    try:
+        pubThrusterVert = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
+        pubThrusterHori = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
+        rospy.init_node('test_thrusters', anonymous=True)
+        rcLoop()
+    except rospy.ROSInterruptException:
+        pass
