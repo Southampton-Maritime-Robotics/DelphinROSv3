@@ -50,7 +50,7 @@ timeLastCommunicationMax = 1
 b_zero = 95 # [pwm]
 c_zero = 75 # [pwm]
 d_zero = 75 # [pwm]
-e_zero = 75 # [pwm]
+e_zero = 75 # [pwm] #
 finsDemand_lim = 30 # [deg], the magnet inside tail section may intercept if the bigger limit is used.
 prop_zero = 94
 
@@ -113,16 +113,18 @@ def getTailFeedback():
     except:
         pass
         
-    if data[0] != -1:
-        data[0] = -setpointToAngle(data[0],b_zero)
     if data[1] != -1:
-        data[1] = setpointToAngle(data[1],c_zero)
-    if data[2] != -1:
-        data[2] = setpointToAngle(data[2],d_zero)
+        print(data[1]) # DDD
+        data[1] = -setpointToAngle(data[1],b_zero)
     if data[3] != -1:
-        data[3] = -setpointToAngle(data[3],e_zero)
-    if data[4] != -1:
-        data[4] = data[4]/19. # gearbox ratio
+        data[3] = setpointToAngle(data[3],c_zero)
+    if data[5] != -1:
+        data[5] = setpointToAngle(data[5],d_zero)
+    if data[7] != -1:
+        data[7] = -setpointToAngle(data[7],e_zero)
+    if data[9] != -1:
+        data[9] = data[9]/19. # gearbox ratio
+
     return data
 
 ################################################################################
@@ -216,7 +218,7 @@ def tail_section_loop(status):
                     d_ack = d_arduino,
                     d_fb = d_feedback,
                     e_sp = e_demand,
-                    e_ack = d_arduino,
+                    e_ack = e_arduino,
                     e_fb = e_feedback,
                     prop_sp = prop_demand,
                     prop_ack = prop_arduino,
