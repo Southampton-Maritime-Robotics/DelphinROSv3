@@ -9,6 +9,7 @@ from mtdef import MID
 from mtdef import XDIGroup
 from mtdef import Scenarios
 from sensor_msgs.msg import Imu
+from hardware_interfaces.msg import compass
 
 
 def print_hex(s):  # TODO: this module is to be removed
@@ -19,6 +20,7 @@ class MTDevice(object):
     """XSens MT device communication object."""
     def __init__(self, device, br, timeout=0.02):
         """Open device."""
+        self.nodeID = 6
         self.device = serial.Serial(port=device,
                                     baudrate=br,
                                     bytesize=8,
@@ -205,11 +207,13 @@ class MTDevice(object):
         if not data == -1:
             self.parse_MTData2(data)
         else:
+            self.pubStatus.publish(nodeID = self.nodeID, status = False)
             print data
 
     def parse_MTData2(self, data):
         """Parse a new MTData2 message"""
         # Functions to parse each type of packet
+        # TODO: set status to false if the message parsing failed
         def parse_orientation(data_id, content):
             o = struct.unpack('!'+3*self._ffmt, content)
 
@@ -217,8 +221,8 @@ class MTDevice(object):
             The initial yaw reading is zero, when a scenario_id is 54, vru_general.
             Otherwise, the yaw reading indicates 0 when facing east.
             """
-            self._compass.heading = o[2]  # [deg], rotation around z axis
-            self._compass.roll = o[0]     # [deg], rotation around x axis
+            self._compass.heading = -o[2]  # [deg], rotation around z axis
+            self._compass.roll = -o[0]     # [deg], rotation around x axis
             self._compass.pitch = o[1]    # [deg], rotation around y axis
 
             # convert from [deg] to [rad] then [qua]
@@ -234,9 +238,9 @@ class MTDevice(object):
 
         def parse_angular_velocity(data_id, content):
             o = struct.unpack('!'+3*self._ffmt, content)
-            self._compass.agular_velocity_x = o[0]*180/np.pi  # [deg/s]
-            self._compass.agular_velocity_y = o[1]*180/np.pi  # [deg/s]
-            self._compass.agular_velocity_z = o[2]*180/np.pi  # [deg/s]
+            self._compass.angular_velocity_x = -o[0]*180/np.pi  # [deg/s]
+            self._compass.angular_velocity_y = o[1]*180/np.pi  # [deg/s]
+            self._compass.angular_velocity_z = -o[2]*180/np.pi  # [deg/s]
             self._imu.angular_velocity.x = o[0]  # [rad/s]
             self._imu.angular_velocity.y = o[1]  # [rad/s]
             self._imu.angular_velocity.z = o[2]  # [rad/s]
@@ -244,9 +248,9 @@ class MTDevice(object):
 
         def parse_acceleration(data_id, content):
             o = struct.unpack('!'+3*self._ffmt, content)
-            self._compass.ax = o[0]  # [m/s2]
+            self._compass.ax = -o[0]  # [m/s2]
             self._compass.ay = o[1]  # [m/s2]
-            self._compass.az = o[2]  # [m/s2]
+            self._compass.az = -o[2]  # [m/s2]
             self._imu.linear_acceleration.x = o[0]  # [m/s2]
             self._imu.linear_acceleration.y = o[1]  # [m/s2]
             self._imu.linear_acceleration.z = o[2]  # [m/s2]
