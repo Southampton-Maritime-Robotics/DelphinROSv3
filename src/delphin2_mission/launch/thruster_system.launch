@@ -1,9 +1,4 @@
 <launch>
-    <param name="thruster0-setpoint-max" value="2300" />	<!-- Maximum setpoint for thruster 0 -->
-    <param name="thruster1-setpoint-max" value="2300" />	<!-- Maximum setpoint for thruster 1 -->
-    <param name="thruster2-setpoint-max" value="2300" />	<!-- Maximum setpoint for thruster 2 -->
-    <param name="thruster3-setpoint-max" value="2300" />	<!-- Maximum setpoint for thruster 3 -->
-
     <!-- NODES ################################################ -->   
     
     <node name="tsl_customer_mission" pkg="hardware_interfaces" type="thruster_arduino.py" output = "screen"/>
