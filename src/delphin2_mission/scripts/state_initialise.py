@@ -71,8 +71,8 @@ class Initialise(smach.State):
         str= 'tail status = %r' % self.__controller.getTailStatus()
         pub.publish(str)
         rospy.loginfo(str)
-        str= 'alt status = unloaded!!!!!!!!!!' # FIXME: load the altimeter when needed
-##      str= 'alt status = %r' % self.__controller.getAltimeterStatus()
+        #str= 'alt status = unloaded!!!!!!!!!!' # FIXME: load the altimeter when needed
+        str= 'alt status = %r' % self.__controller.getAltimeterStatus()
         pub.publish(str)
         rospy.loginfo(str)
         str= 'gps status = %r' % self.__controller.getGPSStatus()
