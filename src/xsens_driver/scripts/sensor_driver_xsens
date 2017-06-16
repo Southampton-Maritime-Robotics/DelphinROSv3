@@ -39,6 +39,7 @@ import rospy
 import time
 import struct
 from sensor_msgs.msg import Imu
+from hardware_interfaces.msg import status
 from hardware_interfaces.msg import compass
 from xsens_driver.mtdevice import MTDevice
 
@@ -46,6 +47,8 @@ from xsens_driver.mtdevice import MTDevice
 # request data packets
 class XSensDriver(object):
     def __init__(self):
+        self.statusTiming = rospy.get_param("status_timing")
+        self.lastStatus = time.time()
         self._device = '/dev/usbxsens'
         self._ReqPacket = {'linAcc', 'angVel', 'ori'}
         
@@ -77,6 +80,7 @@ class XSensDriver(object):
         self.enableICC = False
 
         self.config()
+        self.pubStatus = rospy.Publisher('status', status, queue_size = 10)
         self.pubSensorIMU_deg = rospy.Publisher('compass_out', compass, queue_size=10)
         self.pubSensorIMU = rospy.Publisher('imu/data', Imu, queue_size=10)
 
@@ -118,16 +122,30 @@ class XSensDriver(object):
         self.mt.GoToMeasurement()
 
     def mainloop(self):
+        read_errors = 0 # counter for failed attempts of reading the xsens sensor
+
         while not rospy.is_shutdown():
-            self.mt.read_measurement()
-            if self.mt._getAll:
-                self.mt._imu_deg.header.stamp = rospy.Time.now()
-                self.mt._imu_deg.header.frame_id = 'base_link'
-                self.pubSensorIMU_deg.publish(self.mt._compass)
-                self.mt._imu.header.stamp = rospy.Time.now()
-                self.mt._imu.header.frame_id = 'base_link'  # does this need to be done every time
-                self.pubSensorIMU.publish(self.mt._imu)
-            self.mt._getAll = False
+            try:
+                self.mt.read_measurement()
+                if self.mt._getAll:
+                    self.pubSensorIMU_deg.publish(self.mt._compass)
+                    self.mt._imu.header.stamp = rospy.Time.now()
+                    self.mt._imu.header.frame_id = 'base_link'  # does this need to be done every time
+                    self.pubSensorIMU.publish(self.mt._imu)
+                self.mt._getAll = False
+
+                read_errors = 0  # reset the read errors, since a successful read has been achieved
+                if time.time() - self.lastStatus > self.statusTiming:
+                    self.pubStatus.publish(nodeID=6, status=True)
+                    self.lastStatus = time.time()
+            except:
+                # if there has been a read error multiple times in a row, publish node status False
+                # in this case, disregard the timing of the status
+                read_errors += 1
+                if read_errors > 5:
+                    self.pubStatus.publish(nodeID=6, status=False)
+
+
             self._r.sleep()
 
 if __name__ == '__main__':

@@ -207,13 +207,11 @@ class MTDevice(object):
         if not data == -1:
             self.parse_MTData2(data)
         else:
-            self.pubStatus.publish(nodeID = self.nodeID, status = False)
             print data
 
     def parse_MTData2(self, data):
         """Parse a new MTData2 message"""
         # Functions to parse each type of packet
-        # TODO: set status to false if the message parsing failed
         def parse_orientation(data_id, content):
             o = struct.unpack('!'+3*self._ffmt, content)
 
