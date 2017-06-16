@@ -6,7 +6,7 @@
     <param name="RC/prop" value="15" />
     <param name="RC/onTime" value="1" />
 
-    <rosparam file="$(find delphin2_mission)/launch/parameters/default_sonar.yaml" command="load"/>
+    <rosparam file="$(find delphin2_mission)/launch/parameters/sonar.yaml" command="load"/>
     <param name="sonar/LLim" value ="315" />  
     <param name="sonar/RLim" value ="90" />
     <param name="sonar/Step" value ="32" />

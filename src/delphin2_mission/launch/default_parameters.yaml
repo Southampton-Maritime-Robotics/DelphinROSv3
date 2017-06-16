@@ -26,7 +26,7 @@ mission-timeout: 5              # Mission timeout (minutes)
 #######################################
 
 lat_orig: 50.957024             # Origin Latitude
-long_orig: -1.366769            # Origin Longitude
+lon_orig: -1.366769            # Origin Longitude
   # useful positions
   # Eastleigh North Pier: (50.957024,-1.366769)
   # Eastleigh South Pier: (50.956473,-1.366835)
@@ -78,17 +78,17 @@ xsens/filter_profile: 42
 # for more information see delphin2_xsens datasheet
 
 # Soft reset (does not overwrite calibration, but resets all user settings
-xsens/SoftResetOnStart: True
+xsens/SoftResetOnStart: False
 # xsens data format (can be float or double; double never tested)
 xsens/DataFormat: 'f'
 # xsens rate (needs to be one of the supported) in [Hz]
 xsens/Rate: 20
 
 ### THRUSTERS
-thruster/SetpointMax:  130      # Max thruster setpoint
+thruster/SetpointMax:  250.      # Max thruster setpoint
                                 # in water: 2500
                                 # on land: 145
-thruster/SetpointMin: 145.
+thruster/SetpointMin: 130.
 thruster/ArduinoMax: 255.
 
 ### SONAR
