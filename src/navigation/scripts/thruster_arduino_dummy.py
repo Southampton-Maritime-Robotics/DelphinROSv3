@@ -1,9 +1,14 @@
 #!/usr/bin/python
 
 """
-A node that subscribe to the thruster demand.
-These will get published to the TSL_feedback topic and recorded by the logger.
+Node subscribes to thruster demand
+These will get published to the TSL_feedback topic as the setpoint and current feedback
+and recorded by the logger.
 
+
+TODO: 
+- updates thruster setting at given max change rate
+- broken thruster can be simulated by reducing change rate of that thruster
 """
 
 import rospy
@@ -25,7 +30,7 @@ thrust_dr_ref = [0,0,0,1] # a vector to correct thrust_direction
 global timeLastDemand_sat
 timeLastDemand_sat = 1 # [sec] associated thruster will be stopped if there is no new demand for longer than this many second
 
-############################# MAIN LOOP ############################################    
+############################# MAIN LOOP ############################################
 def motor_control():
 
     global onOff_horiz
@@ -116,10 +121,10 @@ def motor_control():
         setpoint2= onOff_horiz*thrust_sp_arduino[2]
         setpoint3= onOff_horiz*thrust_sp_arduino[3]
                 
-        speed0 = 0
-        speed1 = 0
-        speed2 = 0
-        speed3 = 0
+        speed0 = thrust_sp[0]
+        speed1 = thrust_sp[1] 
+        speed2 = thrust_sp[2] 
+        speed3 = thrust_sp[3]
         
         pub.publish(setpoint0 = thrust_sp[0], 
                     setpoint1 = thrust_sp[1], 
@@ -166,6 +171,7 @@ def shutdown():
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     rospy.init_node('Arduino_Thruster')
+    rospy.logwarn(">>>>>>>>>>>>>> CAUTION USING DUMMY THRUSTERS instead of actual thrusters")
     
     global current_data
     current_data = {'thruster0':0,'thruster1':0,'thruster2':0,'thruster3':0}
