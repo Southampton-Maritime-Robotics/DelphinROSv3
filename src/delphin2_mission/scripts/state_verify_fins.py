@@ -31,26 +31,26 @@ class verify_fins(smach.State):
                 self.__controller.setControlSurfaceAngle(a,a,a,a)
             
             if numpy.abs(self.__controller.getCS_b() - a) > self.__fin_error_tol:
-                str = "Problem with top control surface. Feedback = %d" %self.__controller.getCS_b()
-                rospy.logerr(str)
+                print_msg = "Problem with top control surface. Feedback = %d" %self.__controller.getCS_b()
+                rospy.logerr(print_msg)
                 return 'aborted' 
             if numpy.abs(self.__controller.getCS_c() - a) > self.__fin_error_tol:
-                str = "Problem with starboard control surface. Feedback = %d" %self.__controller.getCS_C()
-                rospy.logerr(str)
+                print_msg = "Problem with starboard control surface. Feedback = %d" %self.__controller.getCS_C()
+                rospy.logerr(print_msg)
                 return 'aborted' 
             if numpy.abs(self.__controller.getCS_d() - a) > self.__fin_error_tol:
-                str = "Problem with bottom control surface. Feedback = %d" %self.__controller.getCS_d()
-                rospy.logerr(str)
+                print_msg = "Problem with bottom control surface. Feedback = %d" %self.__controller.getCS_d()
+                rospy.logerr(print_msg)
                 return 'aborted' 
             if numpy.abs(self.__controller.getCS_e() - a) > self.__fin_error_tol:
-                str = "Problem with port control surface. Feedback = %d" %self.__controller.getCS_e()
-                rospy.logerr(str)
+                print_msg = "Problem with port control surface. Feedback = %d" %self.__controller.getCS_e()
+                rospy.logerr(print_msg)
                 return 'aborted'
         
         # set fins to a neutral position
         self.__controller.setControlSurfaceAngle(0,0,0,0)
-        str = "Control surfaces - working"
-        rospy.loginfo(str)
+        print_msg = "Control surfaces - working"
+        rospy.loginfo(print_msg)
         time.sleep(self.__timeHold) # allow the control surfaces to get back to the neutral position
         
         return 'succeeded'
