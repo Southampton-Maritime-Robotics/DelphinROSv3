@@ -364,32 +364,28 @@ def main_control_loop():
             
                 Xfo = Xfo_high
                 Xf  = Xf_high
-            else:
-                if flag_cp==0:
-                    y_low   = [[velX],[depth],[pitch*np.pi/180.0],[velP]]
-                    Xfo_low = np.dot(A_o_low,Xfo_low) + np.dot(K_ob_low,(y_low - np.dot(C_o_low,Xfo_low)))+ np.dot(B_o_low,Delta_u_low[0:3])
-                    Xf_low  = Xfo_low[0:n_low]
-
-                    Xfo = Xfo_low
-                    Xf  = Xf_low
-                else:
-                    if flag_cp== -1:
-                        y   = [[velX],[depth],[pitch*np.pi/180.0],[velP]]
-                        Xfo = np.dot(A_o,Xfo) + np.dot(K_ob,(y - np.dot(C_o,Xfo)))+ np.dot(B_o,Delta_u[0:4])
-                        Xf  = Xfo[0:n_combine]
-                        Xfo_high =  Xfo
-                        Xf_high = Xf
-                        Xfo_low =  Xfo
-                        Xf_low = Xf
-                    else:
-                        if flag_cp == -2:
-                            y   = [[velX],[depth],[pitch*np.pi/180.0],[velP]]
-                            Xfo = np.dot(A_o,Xfo) + np.dot(K_ob,(y - np.dot(C_o,Xfo)))+ np.dot(B_o,Delta_u[0:4])
-                            Xf  = Xfo[0:n_combine]
-                            Xfo_high =  Xfo
-                            Xf_high = Xf
-                            Xfo_low =  Xfo
-                            Xf_low = Xf
+            elif flag_cp==0:
+                y_low   = [[velX],[depth],[pitch*np.pi/180.0],[velP]]
+                Xfo_low = np.dot(A_o_low,Xfo_low) + np.dot(K_ob_low,(y_low - np.dot(C_o_low,Xfo_low)))+ np.dot(B_o_low,Delta_u_low[0:3])
+                Xf_low  = Xfo_low[0:n_low]
+                Xfo = Xfo_low
+                Xf  = Xf_low
+            elif flag_cp== -1:
+                y   = [[velX],[depth],[pitch*np.pi/180.0],[velP]]
+                Xfo = np.dot(A_o,Xfo) + np.dot(K_ob,(y - np.dot(C_o,Xfo)))+ np.dot(B_o,Delta_u[0:4])
+                Xf  = Xfo[0:n_combine]
+                Xfo_high =  Xfo
+                Xf_high = Xf
+                Xfo_low =  Xfo
+                Xf_low = Xf
+            elif flag_cp == -2:
+                y   = [[velX],[depth],[pitch*np.pi/180.0],[velP]]
+                Xfo = np.dot(A_o,Xfo) + np.dot(K_ob,(y - np.dot(C_o,Xfo)))+ np.dot(B_o,Delta_u[0:4])
+                Xf  = Xfo[0:n_combine]
+                Xfo_high =  Xfo
+                Xf_high = Xf
+                Xfo_low =  Xfo
+                Xf_low = Xf
 
 #######problem?????
             #if velX > 0.4 and T0<1.25:
