@@ -34,7 +34,7 @@ def get_sonar(msgData):
     plotData.add_data(ping)
     # update obstacle detection
     targetDetection = analyseData.detect_obstacle(ping)
-    plotData.targetRange.append(targetDetection[2])
+    plotData.targetRange.append(targetDetection[1])
 
 
 def draw_figures():
