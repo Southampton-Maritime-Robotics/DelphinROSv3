@@ -57,6 +57,12 @@ class SonarPing(object):
             self.ADInterval = float(self.header[33]+(self.header[34]*256))
             self.pingRange = self.ADInterval * 0.000000640 * self.NBins * 1500. /2
             self.pingPower = data[44:-1]
+            for idx, intensity in enumerate(self.pingPower):
+                # try to reduce blanking distance by applying negative offset at 1m radius
+                # TODO: is this really an improvement? -> compare two more complex maps!
+                self.pingPower[idx] = int(intensity + numpy.log((idx+1)*self.pingRange/100.))
+                #self.pingPower[idx] = intensity
+
         else:
             self.hasBins = 0
 
