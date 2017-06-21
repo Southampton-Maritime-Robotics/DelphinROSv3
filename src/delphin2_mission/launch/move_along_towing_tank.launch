@@ -1,0 +1,21 @@
+<launch>
+  
+    <!-- System Parameters! -->
+    <rosparam file="$(find delphin2_mission)/launch/default_parameters.yaml" command ="load"/>
+    <rosparam file="$(find delphin2_mission)/launch/parameters/sonar.yaml" command ="load"/>
+
+    <param name="xsens/filter_profile" value="43" />
+    <param name="mission/Heading1" value="0" />
+    <param name="mission/Heading2" value="180" />
+    <param name="mission/Depth" value="0.0" />
+    <param name="mission/Altitude" value="0.0"/>
+    <param name="mission/Prop" value="0.0" /> 
+
+    <!-- Load AUV System! -->
+    <include file="$(find delphin2_mission)/launch/system_loader.txt" />
+ 
+   
+    <!-- Mission File! -->
+    <node name="mission_script" pkg="delphin2_mission" type="mission_script_along_towing_tank_at_altitude.py"  output="screen" required="true" />
+    <node pkg="rosbag" type="record" name="rosbag_record_all" args="record -a -O lamont-test.bag"/>
+</launch>

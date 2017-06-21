@@ -8,17 +8,18 @@ sonar/Driftoffset: 0
 
 # Left limit for Heading
 # in degrees, from 0 to 359
-sonar/LLim: 0
+sonar/LLim: 270
 
 # Right limit for Heading
 # in degrees, from 0 to 359
-sonar/RLim: 301
+# try 90 first
+sonar/RLim: 359
 
 # 300 bins is about the upper limit of the visualisation
 sonar/NBins: 200
 
 # Range in [metres]
-sonar/Range: 5
+sonar/Range: 2
 
 # Step resolution of scanning motor in [16th of a gradian]
 # defaults: 32=1.8 degrees, 16, 8, 4
@@ -33,7 +34,7 @@ sonar/Step: 64
 sonar/analyse/GlitchCount: 1
 
 # Power level (0 to 250) above which sonar 'sees' a target
-sonar/analyse/Threshold: 80
+sonar/analyse/Threshold: 70
 
 # This shold be smaller or equal to sonar/Range
 sonar/analyse/ObstacleRange: 4

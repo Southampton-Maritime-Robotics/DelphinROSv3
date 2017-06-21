@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 
 '''
-Possibly, a state to get the AUV to the certain altitude.
+Usage1 - stabilising: if stable_time is specified
+Get the AUV to a desired altitude and stay steady for some many seconds.
+@return: preempted: the backSeatErrorFlag has been raised
+@return: succeeded: stable at the altitude long enough withing the timeout
+@return: aborted: not stable at the altitude long enough withing the timeout
 
-May not functioning!
-TODO:
-- check sensor reading
-- check loop structure
-- add loop timing control
+Usage2 - reaching: if stable_time is -1
+Keep publishing depth demand until a timeout criteria has been reached.
+@return: preempted: the backSeatErrorFlag has been raised
+@return: succeeded: the altitude has been reached withing the timeout
+@return: aborted: the altitude has not been reached withing the timeout, or if other node that has a higher priority and running in paraller has finished
 
 '''
 
@@ -19,96 +23,98 @@ from std_msgs.msg import String
 
 
 class GoToAltitude(smach.State):
-    def __init__(self, lib, altitude_demand, altitude_tolerance, stable_time, timeout, heading_demand, speed_demand):
-            smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
-            self.__controller           = lib
-            self.__altitude_demand      = altitude_demand
-            self.__tolerance            = altitude_tolerance
-            self.__stable_time          = stable_time
-            self.__timeout              = timeout
-            self.__at_altitude_time     = time.time()
-            self.__heading_demand       = heading_demand
-            self.__speed_demand         = speed_demand
+    def __init__(self, lib, demandAltitude, stable_time, timeout):
+        smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
+        self.__controller           = lib
+        self.__altitude_demand      = demandAltitude
+        self.__tolerance            = 0.2             # [m] a band that accounts as the AUV is at a desired altitude
+        self.__stable_time          = stable_time     # [sec] AUV must stay at a desired altitude for this many seconds
+        self.__timeout              = timeout         # [sec] abort criteria
+        self.__controlRate          = 5               # [Hz]
+        self.__at_altitude_time        = None
             
     def execute(self,userdata):
         
-        ######## SETUP PUBLISHER FOR MISSION LOG ################
-            global pub
-            #Set Up Publisher for Mission Control Log
-            pub = rospy.Publisher('MissionStrings', String)
+        #Set Up Publisher for Mission Control Log
+        pubMissionLog = rospy.Publisher('MissionStrings', String)
+
+        # Set Up Loop Timing Control
+        r = rospy.Rate(self.__controlRate)
         
         ######## START OPERATION ################################
             
-            time_zero = time.time()
-            
-            str= 'Entered goTo Altitude State Initialise'
-            pub.publish(str)
-            rospy.loginfo(str)
-            
-            str= 'Altitude demand = %s, Heading demand = %s, Speed demand = %s'  %(self.__altitude_demand, self.__heading_demand, self.__speed_demand)
-            pub.publish(str)
-            rospy.loginfo(str)
-            
-            altitude = self.__controller.getAltitude() 
-
-            str= 'Current Altitude =%sm' %altitude
-            pub.publish(str)
-            rospy.loginfo(str)            
+        time_zero = time.time()
         
-            at_altitude = False
-            self.__at_altitude_time = time.time()
+        str= 'Execute GoToAltitude State: Altitude demand = %s, stable time = %s.' %(self.__altitude_demand, self.__stable_time)
+        pubMissionLog.publish(str)
+        rospy.loginfo(str)
         
-            self.__controller.setHeading(self.__heading_demand)
-            self.__controller.setSpeed(self.__speed_demand)
+        self.__at_altitude_time = time.time()   # a reference time for altitude steady
+        timeStart = time.time()              # a reference time for state timeout
+        
+        ##### Main loop #####
+        at_altitude_reached, at_altitude_stable, depth_demand = self.check_Altitude() # initialise, in case timeout = 0
+        while (time.time()-time_zero < self.__timeout) and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
+            if self.preempt_requested():
+                str = "Force Exit GoToAltitude!!!"
+                pubMissionLog.publish(str)
+                rospy.loginfo(str)
+                self.service_preempt()
+                return 'aborted'
+                
+            # check altitude and update depth demand
+            at_altitude_reached, at_altitude_stable, depth_demand = self.check_Altitude()
+            self.__controller.setDepth(depth_demand)
             
-            ##### Main loop #####
-            while (time.time()-time_zero < self.__timeout) and self.__controller.getBackSeatErrorFlag() == 0:
+            if self.__stable_time != -1 and at_altitude_stable:
+                str= 'goToAltitude - stabilising: succeeded'
+                pubMissionLog.publish(str)
+                rospy.loginfo(str)
+                return 'succeeded'
                 
-                #get current depth and altitude
-                depth= self.__controller.getDepth()
-                altitude = self.__controller.getAltitude() 
-                
-                #determine new depth demand
-                if altitude> 0.5:                    
-                    alt_error       = altitude - self.__altitude_demand
-                    depth_demand    = depth + alt_error
-                else:
-                    depth_demand=depth-0.1
-                
-                self.__controller.setDepth(depth_demand)
-                #str= 'Altitude demand = %s, Altitude =%s, Depth Demand=%s, Depth = %s'  %(self.__altitude_demand, altitude, depth_demand,depth)
-                #pub.publish(str)
-                #rospy.loginfo(str) 
-                
-                at_altitude = self.check_altitude()
-                
-                
-                if at_altitude == True:
-                    str= 'goToAltitude succeeded'
-                    pub.publish(str)
+            r.sleep()
+            
+        if self.__controller.getBackSeatErrorFlag() == 1:
+            str= 'goToAltitude preempted'   
+            pubMissionLog.publish(str)
+            rospy.loginfo(str)
+            return 'preempted'
+        else:
+            if self.__stable_time == -1: # TODO: add a condition to clarify whether the altitude has been reached or not
+                if at_altitude_reached:
+                    str= 'goToAltitude - reaching: succeeded'
+                    pubMissionLog.publish(str)
+                    rospy.loginfo(str)
                     return 'succeeded'
-                
-                time.sleep(0.05)
-                
-            ##### Main loop #####
-            str= 'backSeatErrorFlag = %s' %(self.__controller.getBackSeatErrorFlag())
-            pub.publish(str)
-            
-            if self.__controller.getBackSeatErrorFlag() == 1:
-                str= 'goToAltitude preempted'   
-                pub.publish(str)
-                return 'preempted'
+                else:
+                    str= 'goToAltitude - reaching: aborted'
+                    pubMissionLog.publish(str)
+                    rospy.loginfo(str)
+                    return 'aborted'
             else:
-                str= 'goToAltitude timed-out'
-                pub.publish(str)
-                return 'aborted'  
+                str= 'goToAltitude - stabilising: timed-out'
+                pubMissionLog.publish(str)
+                rospy.loginfo(str)
+                return 'aborted'
             
-    def check_altitude(self):                
+    def check_Altitude(self):
+        
+        depthNow = self.__controller.getDepth()
+        altitudeNow = self.__controller.getAltitude()
+        errAltitude = altitudeNow - self.__altitude_demand
+        depth_demand = depthNow + errAltitude
+        
+        # verify if the depth has been reached
+        if abs(errAltitude) > self.__tolerance:
+            self.__at_altitude_time = time.time()
+            at_altitude_reached = False
+        else:
+            at_altitude_reached = True
             
-            if (abs(self.__controller.getAltitude() - self.__altitude_demand) >= self.__tolerance):
-                self.__at_altitude_time = time.time()
-                
-            if time.time()-self.__at_altitude_time > self.__stable_time:
-                return True
-            else:
-                return False
+        # verify if the altitude is stable long enough
+        if time.time()-self.__at_altitude_time <= self.__stable_time:
+            at_altitude_stable = False
+        else:
+            at_altitude_stable = True
+            
+        return at_altitude_reached, at_altitude_stable, depth_demand

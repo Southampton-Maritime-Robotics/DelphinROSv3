@@ -52,6 +52,7 @@ class GoToDepth(smach.State):
         timeStart = time.time()              # a reference time for state timeout
         
         ##### Main loop #####
+        at_depth_reached, at_depth_stable = self.check_depth() # initialise, in case timeout = 0
         while (time.time()-time_zero < self.__timeout) and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
             if self.preempt_requested():
                 str = "Force Exit GoToDepth!!!"

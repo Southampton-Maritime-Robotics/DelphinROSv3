@@ -86,13 +86,14 @@ class construct_stateContainer(object):
         
         return sm_con
         
-    def track_altitude_while_keeping_heading_and_going_forward(self, demandProp, demandHeading, demandAltitude, timeout): # TODO: need to verify the code
+    def track_altitude_while_keeping_heading_and_going_forward(self, demandProp, demandHeading, demandAltitude, time_steady, timeout): # TODO: need to verify the code
         '''
         Track a altitude while maintaining at a desired heading and execute a constant propeller demand.
         return:
             - succeeded: when time-out is reached
             - preempted: when backSeatDriver flag is raised
-            - aborted: not in used
+            - aborted: when timeout before reaching a desired altitude, or when none of above conditions satisfied
+        timeout must be larger than time steady, and allow time to complete task
         '''
         
         def child_term_cb(outcome_map):
@@ -114,8 +115,8 @@ class construct_stateContainer(object):
         # Open the container
         with sm_con:
             # Add states to the container
-            smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, -1, timeout))
-            smach.Concurrence.add('GoToAltitude', GoToAltitude(self._lib, demandAltitude, 1, 1, timeout+2, 1, 1)) # FIXME: GoToAltitude is not ready yet
+            smach.Concurrence.add('GoToHeading', GoToHeading(self._lib, self._myUti, demandHeading, -1, timeout+2))
+            smach.Concurrence.add('GoToAltitude', GoToAltitude(self._lib, demandAltitude, time_steady, timeout))
             smach.Concurrence.add('GoForwards', GoForwards(self._lib, demandProp, timeout+2))
         
         return sm_con

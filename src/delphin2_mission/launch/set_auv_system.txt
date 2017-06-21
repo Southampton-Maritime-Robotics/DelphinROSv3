@@ -1,14 +1,14 @@
 <launch>
     
     <!-- Load Actual AUV system -->
+    <node name="imu_xsens" pkg="xsens_driver" type="sensor_driver_xsens"/>
     <node name="back_seat_driver" pkg="navigation" type="BackSeatDriver.py" required="true"/>
     <node name="depth_transducer" pkg="hardware_interfaces" type="depth_transducer.py"/>
     <node name="altimeter" pkg="hardware_interfaces" type="altimeter_micron.py" />
     <node name="gps" pkg="hardware_interfaces" type="gps_nmea2.py"/>
     <include file="$(find delphin2_mission)/launch/thruster_system.launch"/>
     <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py"/>
-    <node name="imu_xsens" pkg="xsens_driver" type="sensor_driver_xsens"/>
-    <!-- <include file="$(find delphin2_mission)/launch/sonar_system.launch"/> -->
+    <include file="$(find delphin2_mission)/launch/sonar_system.launch"/>
     <node name="energy_monitor" pkg="hardware_interfaces" type="energy_monitor.py"/>
     <node name="dead_reckoner" pkg="navigation" type="dead_reckoner.py" required="true"/>
 
