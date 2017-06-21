@@ -1,3 +1,6 @@
+# ALL PARAMETERS except mission parameters need to be defined in here
+# mission parameters change too often/are too specific, 
+# so they should be defined in the launch file like the parameters that are re-set in the launch file
 ###################################
 # LIMITS
 ###################################
