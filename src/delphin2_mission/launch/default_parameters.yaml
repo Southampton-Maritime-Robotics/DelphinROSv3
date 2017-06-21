@@ -72,7 +72,7 @@ status_timing: 2.               # Publishing interval of node status (sec)
 ######### HARDWARE SPECIFIC
 
 ### XSENS
-xsens/filter_profile: 42
+xsens/filter_profile: 43
 # available xsens filter options {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
 # use vru_general with AHSOn when the magnetic reading can not be thrusted at all.
 # for more information see delphin2_xsens datasheet
@@ -85,7 +85,7 @@ xsens/DataFormat: 'f'
 xsens/Rate: 20
 
 ### THRUSTERS
-thruster/SetpointMax:  250.      # Max thruster setpoint
+thruster/SetpointMax:  2500.      # Max thruster setpoint
                                 # in water: 2500
                                 # on land: 145
 thruster/SetpointMin: 130.
@@ -99,7 +99,7 @@ sonar/ZPosition: 0.0
 # to stay flexible for horizontal and vertical scanning,
 # choose axis around which rotation happens
 sonar/rotation/Axis: [0.0, 1.0, 0.0] # choose axis for sonar rotation, [x, y, z]
-sonar/rotation/Direction: -1  # -1 if the sonar transducer angle moves in opposite direction of Eurler Angle Convention
+sonar/rotation/Direction: 1  # -1 if the sonar transducer angle moves in opposite direction of Eurler Angle Convention
 # depending on the mounting, the zero angle might not be somewhere meaningful
 # this offset helps to adjust so the zero of the angle is the correct position for the rotation around the given axis
 # Note: there is a separate parameter to achieve a drift offset, in case of (temporary) sonar head drift!
@@ -111,6 +111,7 @@ sonar/analyse/GlitchCount: 1
 
 # Power level (0 to 250) above which sonar 'sees' a target
 # Value above which something is considered an object of interest
+# Lamont: 50
 sonar/analyse/Threshold: 100
 
 # Blanking distance to remove returns from the sonar mount

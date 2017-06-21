@@ -7,7 +7,7 @@
     <param name="RC/onTime" value="1" />
 
     <rosparam file="$(find delphin2_mission)/launch/parameters/sonar.yaml" command="load"/>
-    <param name="sonar/LLim" value ="315" />  
+    <param name="sonar/LLim" value ="270" />  
     <param name="sonar/RLim" value ="90" />
     <param name="sonar/Step" value ="32" />
 
@@ -19,6 +19,7 @@
     <!-- ADDITIONAL NODES 
     -->
     <node name="sonar_node" pkg="hardware_interfaces" type="sonar_node" />
+    <node name="sonar_detect" pkg="hardware_interfaces" type="sonar_detect" />
     <node name="remote_control" pkg="hardware_interfaces" type="remote_control" required="true"/>
 
 </launch>

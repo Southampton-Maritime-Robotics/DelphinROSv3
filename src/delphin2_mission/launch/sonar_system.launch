@@ -1,8 +1,4 @@
 <launch>
-    <rosparam file="$(find delphin2_mission)/launch/default_parameters.yaml" command="load"/>
-    <rosparam file="$(find delphin2_mission)/launch/parameters/sonar.yaml" command="load"/>
-
-
     <!-- NODES 
     -->
 
