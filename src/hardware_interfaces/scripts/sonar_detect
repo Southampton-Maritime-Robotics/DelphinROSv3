@@ -113,6 +113,7 @@ if __name__ == '__main__':
     #rospy.init_node('sonar_detect', log_level=rospy.DEBUG)
     pub = rospy.Publisher('sonar_processed', sonar_data)
     pubSonarScan = rospy.Publisher('sonar_mapping', PointCloud2, queue_size=10)
+    pubPseudo = rospy.Publisher('pseudo_altitude', Float32, queue_size=10)
     br = tf2_ros.TransformBroadcaster()
     br_swapped = tf2_ros.TransformBroadcaster() # the normal projected map is for x-y plane, but I need x-z-plane
 

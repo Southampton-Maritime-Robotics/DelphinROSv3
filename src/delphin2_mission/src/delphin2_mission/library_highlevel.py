@@ -54,6 +54,7 @@ class library_highlevel(object):
         rospy.Subscriber('depth_out', depth, self.callback_depth)                         #compass data
         rospy.Subscriber('position_dead', position, self.callback_position)                     #position (dead reckoning)
         rospy.Subscriber('altimeter_out', altitude, self.callback_altitude)
+        rospy.Subscriber('pseudo_altitude', Float32, self.callback_pseudo_altitude)
         rospy.Subscriber('back_seat_flag', Int8, self.callback_back_seat_flag)
         rospy.Subscriber('TSL_feedback', tsl_feedback, self.callback_tsl_feedback)
         rospy.Subscriber('status', status, self.callback_status)
@@ -72,7 +73,8 @@ class library_highlevel(object):
         self.__compass = compass()
         self.__depth = depth()
         self.__position = position()
-        self.__altitude = altitude()
+        self.__altitude = altitude()    # QUESTION SOPHIA: altitude is initialised twice?!
+        self.__pseudo_altitude = 0.0
         self.__sonar_range = 0
         self.__back_seat_flag = 0 #back_seat_flag is 0 when no errors are present
         
@@ -282,6 +284,9 @@ class library_highlevel(object):
     
     def getAltitude(self):
         return self.__altitude
+
+    def getPseudoAltitude(self):
+        return self.__pseudo_altitude
     
     def getSonarRange(self):
         return self.__sonar_range
@@ -456,6 +461,9 @@ class library_highlevel(object):
 
     def callback_altitude(self, altitude):
         self.__altitude = altitude.altitude_filt
+
+    def callback_pseudo_altitude(self, pseudo_altitude):
+        self.__pseudo_altitude = pseudo_altitude
            
     def callback_sonar_range(self, sonar):
         self.__sonar_range = sonar.TargetRange
