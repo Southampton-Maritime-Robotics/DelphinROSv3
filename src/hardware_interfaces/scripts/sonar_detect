@@ -4,6 +4,8 @@ Analyse raw data from mechanical scanning sonar
 
 Current features:
 - detect the nearest obstacle/wall in the beam
+- publish sonar tf and sonartf with y-z swapped;
+  the y-z swapped is needed for exporting a map projection of the xz plane instead of the xy plane
 
 ######################################################
 # TODO
@@ -27,15 +29,17 @@ import signal
 import tf
 import tf2_ros
 import geometry_msgs.msg
-
-
+import sensor_msgs.point_cloud2 as pcl2
 
 from std_msgs.msg import String
 from std_msgs.msg import Float32
+from sensor_msgs.msg import PointCloud2
 from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import sonar	
 
 from hardware_interfaces import sonar_analyse
+
+sonarMapping = PointCloud2()
 
 ################################################################
 
@@ -46,20 +50,55 @@ def get_sonar(msgData):
     :param msgData: sonar ping in string format
     """
     result = sonar.detect_obstacle(sonar_analyse.SonarPing(msgData))
+
+    ### Publishers
     pub.publish(transBearing=result[0], pitch=0, TargetRange=result[1], meanIntinsity=result[2])  # TODO get rid of pitch entry in this message
 
+    sonarMapping.header.stamp =rospy.Time.now()
+    sonarMapping.header.frame_id = "mechScanningSonar_zy_swapped"
+    if result[1] > 0:
+        p = pcl2.create_cloud_xyz32(sonarMapping.header, [(result[1], 0, 0)])
+    else:
+        # no obstacle was detected, a large range beyond the max range of the sonar is published
+        # TODO: this should use the parameter for the sonar max range, to be compatible with
+        # other devices that might have a larger range
+        p = pcl2.create_cloud_xyz32(sonarMapping.header, [(100, 0, 0)])
+    sonarMapping.fields = p.fields
+    sonarMapping.data = p.data
+    sonarMapping.height = p.height
+    sonarMapping.width = p.width
+    sonarMapping.is_bigendian = p.is_bigendian
+    sonarMapping.point_step = p.point_step
+    sonarMapping.row_step = p.row_step
+    sonarMapping.is_dense = p.is_dense
+    pubSonarScan.publish(sonarMapping)
+
+
+    ### Transforms
     [sonartf.transform.rotation.x,
      sonartf.transform.rotation.y,
      sonartf.transform.rotation.z,
      sonartf.transform.rotation.w] = tf.transformations.quaternion_about_axis(np.deg2rad(result[0]), [sonar_axis.x,
                                                                                               sonar_axis.y,
                                                                                               sonar_axis.z])
-
     sonartf.header.stamp = rospy.Time.now()
     sonartf.header.frame_id = "delphin2"
     sonartf.child_frame_id = "mechScanningSonar"
     #transform.rotation.w] = tf.transformations.quaternion_from_euler(0, np.deg2rad(result[0]), 0)
     br.sendTransform(sonartf)
+
+    [sonartf_swapped.transform.rotation.x,
+     sonartf_swapped.transform.rotation.y,
+     sonartf_swapped.transform.rotation.z,
+     sonartf_swapped.transform.rotation.w] = tf.transformations.quaternion_about_axis(np.deg2rad(result[0]), [sonar_axis.x,
+                                                                                              sonar_axis.z,
+                                                                                              sonar_axis.y])
+    sonartf_swapped.header.stamp = rospy.Time.now()
+    sonartf_swapped.header.frame_id = "delphin2_zy_swapped"
+    sonartf_swapped.child_frame_id = "mechScanningSonar_zy_swapped"
+    br_swapped.sendTransform(sonartf_swapped)
+
+
 
 
 ################################################################
@@ -73,13 +112,20 @@ if __name__ == '__main__':
     # Uncomment to run this node in debug mode:
     #rospy.init_node('sonar_detect', log_level=rospy.DEBUG)
     pub = rospy.Publisher('sonar_processed', sonar_data)
+    pubSonarScan = rospy.Publisher('sonar_mapping', PointCloud2, queue_size=10)
     br = tf2_ros.TransformBroadcaster()
+    br_swapped = tf2_ros.TransformBroadcaster() # the normal projected map is for x-y plane, but I need x-z-plane
+
     sonar_axis = geometry_msgs.msg.Vector3()
     [sonar_axis.x, sonar_axis.y, sonar_axis.z] = rospy.get_param("/sonar/rotation/Axis")
     sonartf = geometry_msgs.msg.TransformStamped()
     sonartf.transform.translation.x = rospy.get_param("/sonar/XPosition")
     sonartf.transform.translation.y = rospy.get_param("/sonar/YPosition")
     sonartf.transform.translation.z = rospy.get_param("/sonar/ZPosition")
+
+    sonartf_swapped = geometry_msgs.msg.TransformStamped()
+    sonartf_swapped.transform.translation = sonartf.transform.translation
+
     sonar = sonar_analyse.SonarEvaluate()
     rospy.Subscriber('sonar_output', String, get_sonar)
     rospy.spin()

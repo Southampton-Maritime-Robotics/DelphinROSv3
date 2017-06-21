@@ -15,8 +15,9 @@ note3: the tf currently goes with the ros convention: the z axis is going upward
 
 # TODO:
 # - get altitude from altimater and publish to the position topic
-# - get depth from the pressure sensor and publish to the posotion topic
+# - get depth from the pressure sensor and publish to the posotion topic (it is already used in tf)
 # - may implement kalman filter to fuse the gps-reading with the position estimation from deadreckoner
+# - fix too strong drift in y direction
 
 from __future__ import division
 import numpy as np
@@ -153,6 +154,11 @@ class delphin2_AUV(object):
         # tf broadcaster
         self.tfBroadcast = tf2_ros.TransformBroadcaster()
         self.delphintf = geometry_msgs.msg.TransformStamped()
+        self.delphintf_swapped = geometry_msgs.msg.TransformStamped()
+        # initialise y value, since this one is not always updated
+        self.delphintf.transform.translation.y = 0
+        self.delphintf_swapped.transform.translation.z = 0
+
 
         # create subscribers and parameters for callback functions
         rospy.Subscriber('gps_out', gps, self.gps_callback)
@@ -438,9 +444,11 @@ class delphin2_AUV(object):
             self.delphintf.header.frame_id = "world"
             self.delphintf.child_frame_id = "delphin2"
             self.delphintf.transform.translation.x = X_pos
-            self.delphintf.transform.translation.y = Y_pos
+            # the dead reckoner estimate alone experiences too much drift, so unless a gps fix is available,
+            # the y position is not changed
+            if not self.gpsInfo.fix == 0 and self.gpsInfo.number_of_satelites >= 5:
+                self.delphintf.transform.translation.y = Y_pos
             self.delphintf.transform.translation.z = - self.depthInfo.depth_filt
-
 
             q = tf.transformations.quaternion_from_euler(self.roll_rad, self.pitch_rad, self.yaw_rad)
             self.delphintf.transform.rotation.x = q[0]
@@ -450,6 +458,22 @@ class delphin2_AUV(object):
 
             self.tfBroadcast.sendTransform(self.delphintf)
 
+            self.delphintf_swapped.header.stamp = rospy.Time.now()
+            self.delphintf_swapped.header.frame_id = "world"
+            self.delphintf_swapped.child_frame_id = "delphin2_zy_swapped"
+            self.delphintf_swapped.transform.translation.x = X_pos
+            # the dead reckoner estimate alone experiences too much drift, so unless a gps fix is available,
+            # the y position is not changed
+            if not self.gpsInfo.fix == 0 and self.gpsInfo.number_of_satelites >= 5:
+                self.delphintf_swapped.transform.translation.z = Y_pos
+            self.delphintf_swapped.transform.translation.y = - self.depthInfo.depth_filt
+            q = tf.transformations.quaternion_from_euler(self.roll_rad, self.yaw_rad, self.pitch_rad)
+            self.delphintf_swapped.transform.rotation.x = q[0]
+            self.delphintf_swapped.transform.rotation.y = q[1]
+            self.delphintf_swapped.transform.rotation.z = q[2]
+            self.delphintf_swapped.transform.rotation.w = q[3]
+
+            self.tfBroadcast.sendTransform(self.delphintf_swapped)
             
             ## Verify and maintain loop timing
             timeElapse = time.time()-timeRef
