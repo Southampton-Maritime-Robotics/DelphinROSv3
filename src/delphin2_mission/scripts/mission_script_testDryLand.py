@@ -48,7 +48,7 @@ def construct_smach_top():
     
     # Open the container, add state and define state transition
     with sm_top:
-        smach.StateMachine.add('INITIALISE', Initialise(_lib,15),
+        smach.StateMachine.add('INITIALISE', Initialise(_lib,20),
             transitions={'succeeded':'DRY_LAND_TEST', 'aborted':'STOP','preempted':'STOP'})
         smach.StateMachine.add('DRY_LAND_TEST', construct_smach_sequence(),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
