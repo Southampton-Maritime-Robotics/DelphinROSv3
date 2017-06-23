@@ -114,9 +114,9 @@ class pathFollowingLOS(smach.State):
         idx_wp = 1      # waypoint index (index for the first point in the list is denoted as 0)
         verboseFlag = 1 # a flag used for displaying a targeting waypoint
 
-        str = 'Executing pathFollowingLOS state with demandProp = %s' %self.__propDemand
-        rospy.loginfo(str)
-        self.pubMissionLog.publish(str)
+        text = 'Executing pathFollowingLOS state with demandProp = %s' %self.__propDemand
+        rospy.loginfo(text)
+        self.pubMissionLog.publish(text)
         
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
             ## Determine AUV state
@@ -125,9 +125,9 @@ class pathFollowingLOS(smach.State):
             
             # Say out loud what is the current targeting waypoint - do this only once for each target.
             if verboseFlag:
-                str = 'targeting waypoint: %s' %wp[:,idx_wp]
-                rospy.loginfo(str)
-                self.pubMissionLog.publish(str)
+                text = 'targeting waypoint: %s' %wp[:,idx_wp]
+                rospy.loginfo(text)
+                self.pubMissionLog.publish(text)
                 verboseFlag = 0
                 
             ## Update the index for the targeting waypoint
@@ -135,9 +135,9 @@ class pathFollowingLOS(smach.State):
 
             ## Check if the final target has been reached
             if idx_wp+1>n: # If arrive to the last waypoint, terminate the mission with outcome succeeded
-                str = 'pathFollowingLOS succeeded \n current location: %s' %(p)
-                rospy.loginfo(str)
-                self.pubMissionLog.publish(str)
+                text = 'pathFollowingLOS succeeded \n current location: %s' %(p)
+                rospy.loginfo(text)
+                self.pubMissionLog.publish(text)
                 return 'succeeded'
             else: # Otherwise, compute line-of-sight parameters and publish a heading and propeller demand.
                 _, los_a = self.compute_LOS_parameters(wp[:,idx_wp-1], wp[:,idx_wp], p)
@@ -150,12 +150,12 @@ class pathFollowingLOS(smach.State):
             r.sleep()
                         
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'pathFollowingLOS preempted'    
-            rospy.loginfo(str)
-            self.pubMissionLog.publish(str)
+            text= 'pathFollowingLOS preempted'    
+            rospy.loginfo(text)
+            self.pubMissionLog.publish(text)
             return 'preempted'
         else:
-            str= 'time-out: pathFollowingLOS aborted'
-            rospy.loginfo(str)
-            self.pubMissionLog.publish(str)
+            text= 'time-out: pathFollowingLOS aborted'
+            rospy.loginfo(text)
+            self.pubMissionLog.publish(text)
             return 'aborted'

@@ -46,36 +46,36 @@ class verboseLocation(smach.State):
             Py = self.__wp[1]
             rang, bear = self.__uti.rangeBearing([X,Y], [Px, Py])
 
-            str = 'Current location: %s' %[X,Y]
-            rospy.loginfo(str)
-            pubMissionLog.publish(str)
+            text = 'Current location: %s' %[X,Y]
+            rospy.loginfo(text)
+            pubMissionLog.publish(text)
             
-            str = 'Target location: %s' %self.__wp
-            rospy.loginfo(str)
-            pubMissionLog.publish(str)
+            text = 'Target location: %s' %self.__wp
+            rospy.loginfo(text)
+            pubMissionLog.publish(text)
             
-            str = 'Range to the point: %s m' %rang
-            rospy.loginfo(str)
-            pubMissionLog.publish(str)
+            text = 'Range to the point: %s m' %rang
+            rospy.loginfo(text)
+            pubMissionLog.publish(text)
             
-            str = 'Bearing to the point: %s deg' %bear
-            rospy.loginfo(str)
-            pubMissionLog.publish(str)
+            text = 'Bearing to the point: %s deg' %bear
+            rospy.loginfo(text)
+            pubMissionLog.publish(text)
             
-            str = '##################################'
-            rospy.loginfo(str)
-            pubMissionLog.publish(str)
+            text = '##################################'
+            rospy.loginfo(text)
+            pubMissionLog.publish(text)
             
             if self.__controlRate > 0:
                 r.sleep()
 
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'manoeuvreSway preempted at time = %s' %(time.time())    
-            rospy.loginfo(str)
-            pubMissionLog.publish(str)
+            text= 'manoeuvreSway preempted at time = %s' %(time.time())    
+            rospy.loginfo(text)
+            pubMissionLog.publish(text)
             return 'preempted'
         else: # this will never be used
-            str= 'manoeuvreSway succeed at time = %s' %(time.time())    
-            rospy.loginfo(str)
-            pubMissionLog.publish(str)
+            text= 'manoeuvreSway succeed at time = %s' %(time.time())    
+            rospy.loginfo(text)
+            pubMissionLog.publish(text)
             return 'succeeded'

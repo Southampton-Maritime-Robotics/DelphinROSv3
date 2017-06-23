@@ -50,18 +50,18 @@ class GoToHeading(smach.State):
         else:
             self.__demandHeading = self.__demandHeading%360
 
-        str='Execute GoToHeading State: heading demand = %.3f deg, stable time = %s, timeout = %s.' %(self.__demandHeading, self.__time_steady, self.__timeout)
-        pubMissionLog.publish(str)
-        rospy.loginfo(str)
+        text='Execute GoToHeading State: heading demand = %.3f deg, stable time = %s, timeout = %s.' %(self.__demandHeading, self.__time_steady, self.__timeout)
+        pubMissionLog.publish(text)
+        rospy.loginfo(text)
         
         self.__at_heading_time = time.time() # a reference time for heading stady
         timeStart = time.time()              # a reference time for state timeout
         
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
             if self.preempt_requested():
-                str = "Force Exit GoToHeading!!!"
-                pubMissionLog.publish(str)
-                rospy.loginfo(str)
+                text = "Force Exit GoToHeading!!!"
+                pubMissionLog.publish(text)
+                rospy.loginfo(text)
                 self.service_preempt()
                 return 'aborted'
                 
@@ -69,34 +69,34 @@ class GoToHeading(smach.State):
             self.__controller.setHeading(self.__demandHeading)
             
             if self.__time_steady != -1 and at_heading_stable:
-                str= 'goToHeading - stabilising: succeeded'
-                pubMissionLog.publish(str)
-                rospy.loginfo(str)
+                text= 'goToHeading - stabilising: succeeded'
+                pubMissionLog.publish(text)
+                rospy.loginfo(text)
                 return 'succeeded'
                 
             r.sleep()
 
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'goToHeading preempted'
-            pubMissionLog.publish(str)
-            rospy.loginfo(str)
+            text= 'goToHeading preempted'
+            pubMissionLog.publish(text)
+            rospy.loginfo(text)
             return 'preempted'
         else:
             if self.__time_steady == -1:
                 if at_heading_reached:
-                    str= 'goToHeading - reaching: succeeded'
-                    pubMissionLog.publish(str)
-                    rospy.loginfo(str)
+                    text= 'goToHeading - reaching: succeeded'
+                    pubMissionLog.publish(text)
+                    rospy.loginfo(text)
                     return 'succeeded'
                 else:
-                    str= 'goToHeading - reaching: aborted'
-                    pubMissionLog.publish(str)
-                    rospy.loginfo(str)
+                    text= 'goToHeading - reaching: aborted'
+                    pubMissionLog.publish(text)
+                    rospy.loginfo(text)
                     return 'aborted'
             else:
-                str= 'goForwards - stabilising: aborted'
-                pubMissionLog.publish(str)
-                rospy.loginfo(str)
+                text= 'goForwards - stabilising: aborted'
+                pubMissionLog.publish(text)
+                rospy.loginfo(text)
                 return 'aborted'
             
     def check_heading(self):

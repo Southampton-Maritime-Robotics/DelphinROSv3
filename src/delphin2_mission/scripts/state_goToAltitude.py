@@ -45,9 +45,9 @@ class GoToAltitude(smach.State):
             
         time_zero = time.time()
         
-        str= 'Execute GoToAltitude State: Altitude demand = %s, stable time = %s.' %(self.__altitude_demand, self.__stable_time)
-        pubMissionLog.publish(str)
-        rospy.loginfo(str)
+        text= 'Execute GoToAltitude State: Altitude demand = %s, stable time = %s.' %(self.__altitude_demand, self.__stable_time)
+        pubMissionLog.publish(text)
+        rospy.loginfo(text)
         
         self.__at_altitude_time = time.time()   # a reference time for altitude steady
         timeStart = time.time()              # a reference time for state timeout
@@ -56,9 +56,9 @@ class GoToAltitude(smach.State):
         at_altitude_reached, at_altitude_stable, depth_demand = self.check_Altitude() # initialise, in case timeout = 0
         while (time.time()-time_zero < self.__timeout) and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
             if self.preempt_requested():
-                str = "Force Exit GoToAltitude!!!"
-                pubMissionLog.publish(str)
-                rospy.loginfo(str)
+                text = "Force Exit GoToAltitude!!!"
+                pubMissionLog.publish(text)
+                rospy.loginfo(text)
                 self.service_preempt()
                 return 'aborted'
                 
@@ -67,34 +67,34 @@ class GoToAltitude(smach.State):
             self.__controller.setDepth(depth_demand)
             
             if self.__stable_time != -1 and at_altitude_stable:
-                str= 'goToAltitude - stabilising: succeeded'
-                pubMissionLog.publish(str)
-                rospy.loginfo(str)
+                text= 'goToAltitude - stabilising: succeeded'
+                pubMissionLog.publish(text)
+                rospy.loginfo(text)
                 return 'succeeded'
                 
             r.sleep()
             
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'goToAltitude preempted'   
-            pubMissionLog.publish(str)
-            rospy.loginfo(str)
+            text= 'goToAltitude preempted'   
+            pubMissionLog.publish(text)
+            rospy.loginfo(text)
             return 'preempted'
         else:
             if self.__stable_time == -1: # TODO: add a condition to clarify whether the altitude has been reached or not
                 if at_altitude_reached:
-                    str= 'goToAltitude - reaching: succeeded'
-                    pubMissionLog.publish(str)
-                    rospy.loginfo(str)
+                    text= 'goToAltitude - reaching: succeeded'
+                    pubMissionLog.publish(text)
+                    rospy.loginfo(text)
                     return 'succeeded'
                 else:
-                    str= 'goToAltitude - reaching: aborted'
-                    pubMissionLog.publish(str)
-                    rospy.loginfo(str)
+                    text= 'goToAltitude - reaching: aborted'
+                    pubMissionLog.publish(text)
+                    rospy.loginfo(text)
                     return 'aborted'
             else:
-                str= 'goToAltitude - stabilising: timed-out'
-                pubMissionLog.publish(str)
-                rospy.loginfo(str)
+                text= 'goToAltitude - stabilising: timed-out'
+                pubMissionLog.publish(text)
+                rospy.loginfo(text)
                 return 'aborted'
             
     def check_Altitude(self):

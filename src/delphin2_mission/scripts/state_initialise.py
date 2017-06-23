@@ -43,8 +43,8 @@ class Initialise(smach.State):
                         
         time_zero = time.time()
         all_online = False
-        str= 'Entered State Initialise'
-        pub.publish(str)
+        text= 'Entered State Initialise'
+        pub.publish(text)
 
         r = rospy.Rate(2) # [Hz] for controlling the loop timing
         while (time.time()-time_zero < self.__timeout) and not(all_online) and not rospy.is_shutdown():
@@ -62,83 +62,83 @@ class Initialise(smach.State):
                 and self.__controller.getEnergyMonitorStatus())
            r.sleep()
 
-        str = "\n ############################################################################### \n ############################################### CRITICAL NODE STATUS ########## \n ###############################################################################"
-        rospy.loginfo(str)
-        pub.publish(str)
-        str = 'thruster status = %r' % self.__controller.getThrusterStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str= 'tail status = %r' % self.__controller.getTailStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        #str= 'alt status = unloaded!!!!!!!!!!' # FIXME: load the altimeter when needed
-        str= 'alt status = %r' % self.__controller.getAltimeterStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str= 'gps status = %r' % self.__controller.getGPSStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str='depthTranducer status = %r' %self.__controller.getDepthTransducerStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str='xsens status = %r' %self.__controller.getXsensStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str = "###########################################"
-        rospy.loginfo(str)
-        pub.publish(str)
-        str='heading ctrl status = %r' %self.__controller.getHeadingCtrlStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str='depth ctrl status = %r' %self.__controller.getDepthCtrlStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str='deadreckoner status = %r' %self.__controller.getDeadreckonerStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str='logger status = %r' %self.__controller.getLoggerStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str='backSeatDriver status = %r' %self.__controller.getBackSeatDriverStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str='energyMonitor status = %r' %self.__controller.getEnergyMonitorStatus()
-        pub.publish(str)
-        rospy.loginfo(str)
-        str = "###########################################"
-        rospy.loginfo(str)
-        pub.publish(str)
+        text = "\n ############################################################################### \n ############################################### CRITICAL NODE STATUS ########## \n ###############################################################################"
+        rospy.loginfo(text)
+        pub.publish(text)
+        text = 'thruster status = %r' % self.__controller.getThrusterStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text= 'tail status = %r' % self.__controller.getTailStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        #text= 'alt status = unloaded!!!!!!!!!!' # FIXME: load the altimeter when needed
+        text= 'alt status = %r' % self.__controller.getAltimeterStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text= 'gps status = %r' % self.__controller.getGPSStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text='depthTranducer status = %r' %self.__controller.getDepthTransducerStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text='xsens status = %r' %self.__controller.getXsensStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text = "###########################################"
+        rospy.loginfo(text)
+        pub.publish(text)
+        text='heading ctrl status = %r' %self.__controller.getHeadingCtrlStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text='depth ctrl status = %r' %self.__controller.getDepthCtrlStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text='deadreckoner status = %r' %self.__controller.getDeadreckonerStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text='logger status = %r' %self.__controller.getLoggerStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text='backSeatDriver status = %r' %self.__controller.getBackSeatDriverStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text='energyMonitor status = %r' %self.__controller.getEnergyMonitorStatus()
+        pub.publish(text)
+        rospy.loginfo(text)
+        text = "###########################################"
+        rospy.loginfo(text)
+        pub.publish(text)
         
         #if timeout...                
         if all_online == False:    
-            str="One or more critical systems have not come online within the timeout (%ss)" %self.__timeout 
-            rospy.logerr(str)
-            pub.publish(str)          
-            str='Initialise State Aborted' 
-            pub.publish(str)                      
+            text="One or more critical systems have not come online within the timeout (%ss)" %self.__timeout 
+            rospy.logerr(text)
+            pub.publish(text)          
+            text='Initialise State Aborted' 
+            pub.publish(text)                      
             return 'aborted'
 
         voltage = self.__controller.getVoltage()
-        str = "Battery voltage: %smV" %(voltage)
-        rospy.loginfo(str)
-        pub.publish(str)
-        str='time elapsed = %s s' %(time.time()-time_zero)
-        pub.publish(str)
-        rospy.loginfo(str)
-        str = "\n ################################################################################# \n #################################################################################"
-        rospy.loginfo(str)
-        pub.publish(str)
+        text = "Battery voltage: %smV" %(voltage)
+        rospy.loginfo(text)
+        pub.publish(text)
+        text='time elapsed = %s s' %(time.time()-time_zero)
+        pub.publish(text)
+        rospy.loginfo(text)
+        text = "\n ################################################################################# \n #################################################################################"
+        rospy.loginfo(text)
+        pub.publish(text)
         
         if voltage < voltage_min:
             "Initial battery voltage, %smV < 20,000mV" %voltage
-            rospy.logerr(str)  
-            pub.publish(str)       
-            str='Initialise State Preempted' 
-            pub.publish(str)                             
+            rospy.logerr(text)  
+            pub.publish(text)       
+            text='Initialise State Preempted' 
+            pub.publish(text)                             
             return 'preempted'
         else:
-            str="All critical systems have come online within the timeout (%ss)" %self.__timeout
-            rospy.loginfo(str) 
-            str='Initialise State Succeded' 
-            pub.publish(str)  
+            text="All critical systems have come online within the timeout (%ss)" %self.__timeout
+            rospy.loginfo(text) 
+            text='Initialise State Succeded' 
+            pub.publish(text)  
             return 'succeeded'

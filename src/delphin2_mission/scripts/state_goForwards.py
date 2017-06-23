@@ -31,16 +31,16 @@ class GoForwards(smach.State):
         # Set Up Loop Timing Control
         r = rospy.Rate(self.__controlRate)
 
-        str='Execute GoForwards State: propDemand = %s; action hold %ss' %(self.__propDemand, self.__timeout)
-        pubMissionLog.publish(str)
-        rospy.loginfo(str)
+        text='Execute GoForwards State: propDemand = %s; action hold %ss' %(self.__propDemand, self.__timeout)
+        pubMissionLog.publish(text)
+        rospy.loginfo(text)
         
         timeStart = time.time()
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
             if self.preempt_requested():
-                str = "Force Exit GoForwards!!!"
-                pubMissionLog.publish(str)
-                rospy.loginfo(str)
+                text = "Force Exit GoForwards!!!" + str(self.__controller.getBackSeatErrorFlag()) + "preemept requested:" + str(self.preempt_requested())
+                pubMissionLog.publish(text)
+                rospy.loginfo(text)
                 self.service_preempt()
                 return 'aborted'
             self.__controller.setRearProp(self.__propDemand)
@@ -49,12 +49,12 @@ class GoForwards(smach.State):
             self.__controller.setRearProp(0)
 
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'goForwards preempted'
-            pubMissionLog.publish(str)
-            rospy.loginfo(str)
+            text= 'goForwards preempted'
+            pubMissionLog.publish(text)
+            rospy.loginfo(text)
             return 'preempted'
         else: # timeout means succeed in this state
-            str= 'goForwards succeeded'
-            pubMissionLog.publish(str)
-            rospy.loginfo(str)
+            text= 'goForwards succeeded'
+            pubMissionLog.publish(text)
+            rospy.loginfo(text)
             return 'succeeded'

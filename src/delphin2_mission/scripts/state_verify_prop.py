@@ -39,10 +39,10 @@ class verify_prop(smach.State):
         self.__controller.setRearProp(0)
         
         if prop_rps_avg > self.__prop_rps_min:
-            str = "Rear prop - working"
-            rospy.loginfo(str)
+            text = "Rear prop - working"
+            rospy.loginfo(text)
             return 'succeeded'
         else:
-            str = "Problem with rear prop - average rps = %s" %prop_rps_avg
-            rospy.logerr(str)
+            text = "Problem with rear prop - average rps = %s" %prop_rps_avg
+            rospy.logerr(text)
             return 'aborted'

@@ -28,8 +28,8 @@ class Stop(smach.State):
         #Set Up Publisher for Mission Control Log
         pub = rospy.Publisher('MissionStrings', String)
         
-        str= 'Delphin2 STOP state started at time = %s' %(time.time())
-        pub.publish(str)
+        text= 'Delphin2 STOP state started at time = %s' %(time.time())
+        pub.publish(text)
         
         self.__controller.stop()
         return 'succeeded'

@@ -56,25 +56,25 @@ class actions(smach.State):
         controlPeriod = 1./self.__controlRate
         r = rospy.Rate(self.__controlRate)
 
-        str = 'Execute state actions and hold for %ss' %self.__actionHold
-        rospy.loginfo(str)
-        pubMissionLog.publish(str)        
-        str = 'prop demand: %s' %self.__prop
-        rospy.loginfo(str)
-        pubMissionLog.publish(str)
-        str = 'thruster demand: [%s, %s, %s, %s]' %(self.__th_0,self.__th_1,self.__th_2,self.__th_3)
-        rospy.loginfo(str)
-        pubMissionLog.publish(str)
-        str = 'fins demand: [ver=%s, hor=%s]' %(self.__cs_ver, self.__cs_hor)
-        rospy.loginfo(str)
-        pubMissionLog.publish(str)
+        text = 'Execute state actions and hold for %ss' %self.__actionHold
+        rospy.loginfo(text)
+        pubMissionLog.publish(text)        
+        text = 'prop demand: %s' %self.__prop
+        rospy.loginfo(text)
+        pubMissionLog.publish(text)
+        text = 'thruster demand: [%s, %s, %s, %s]' %(self.__th_0,self.__th_1,self.__th_2,self.__th_3)
+        rospy.loginfo(text)
+        pubMissionLog.publish(text)
+        text = 'fins demand: [ver=%s, hor=%s]' %(self.__cs_ver, self.__cs_hor)
+        rospy.loginfo(text)
+        pubMissionLog.publish(text)
         
         timeStart = time.time()
         while not rospy.is_shutdown() and time.time()-timeStart < self.__actionHold:
             if self.__controller.getBackSeatErrorFlag() == 1:
-                str= 'state_actions preempted'   
-                rospy.loginfo(str)
-                pubMissionLog.publish(str)
+                text= 'state_actions preempted'   
+                rospy.loginfo(text)
+                pubMissionLog.publish(text)
                 return 'preempted'
             else:
                 # Demands may interfere the controllers or other states. Publish only the ones that are required.
@@ -93,7 +93,7 @@ class actions(smach.State):
 
             r.sleep()
             
-        str= 'state_actions succeeded'  
-        rospy.loginfo(str)
-        pubMissionLog.publish(str)
+        text= 'state_actions succeeded'  
+        rospy.loginfo(text)
+        pubMissionLog.publish(text)
         return 'succeeded' # exit with a flag of 'succeeded'

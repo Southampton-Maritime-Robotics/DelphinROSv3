@@ -41,17 +41,17 @@ class verify_thrusters(smach.State):
             rpmT1_avg = sum(rpmT1)/float(self.__list_length)
             
             if (rpmT0_avg < self.__limitRPM_thruster):
-                str = "Problem with thruster 0. Average speed = %s" %rpmT0_avg
-                rospy.logerr(str)
+                text = "Problem with thruster 0. Average speed = %s" %rpmT0_avg
+                rospy.logerr(text)
                 return 'aborted'
             if (rpmT1_avg < self.__limitRPM_thruster):
-                str = "Problem with thruster 1. Average speed = %s" %rpmT1_avg
-                rospy.logerr(str)
+                text = "Problem with thruster 1. Average speed = %s" %rpmT1_avg
+                rospy.logerr(text)
                 return 'aborted'
-            str = "Thruster 0 - working"
-            rospy.loginfo(str)
-            str = "Thruster 1 - working"
-            rospy.loginfo(str)
+            text = "Thruster 0 - working"
+            rospy.loginfo(text)
+            text = "Thruster 1 - working"
+            rospy.loginfo(text)
             
             #### Thruster 2 and 3: horizontal thruster ####
             rpmT2 = [0]*self.__list_length # create a list of zero with a length N
@@ -67,16 +67,16 @@ class verify_thrusters(smach.State):
             rpmT3_avg = sum(rpmT3)/float(self.__list_length)
             
             if (rpmT2_avg < self.__limitRPM_thruster):
-                str = "Problem with thruster 2. Average speed = %s" %rpmT2_avg
-                rospy.logerr(str)
+                text = "Problem with thruster 2. Average speed = %s" %rpmT2_avg
+                rospy.logerr(text)
                 return 'aborted'
             if (rpmT3_avg < self.__limitRPM_thruster):
-                str = "Problem with thruster 3. Average speed = %s" %rpmT3_avg
-                rospy.logerr(str)
+                text = "Problem with thruster 3. Average speed = %s" %rpmT3_avg
+                rospy.logerr(text)
                 return 'aborted'
-            str = "Thruster 2 - working"
-            rospy.loginfo(str)
-            str = "Thruster 3 - working"
-            rospy.loginfo(str)
+            text = "Thruster 2 - working"
+            rospy.loginfo(text)
+            text = "Thruster 3 - working"
+            rospy.loginfo(text)
             
             return 'succeeded'

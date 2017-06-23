@@ -35,16 +35,16 @@ class GoTurning(smach.State):
         # Set Up Loop Timing Control
         r = rospy.Rate(self.__controlRate)
 
-        str='Execute GoTurning State: th_hor = %s; rudder = %s; action hold %ss' %(self.__th_hor_frt, self.__rudder, self.__timeout)
-        pubMissionLog.publish(str)
-        rospy.loginfo(str)
+        text='Execute GoTurning State: th_hor = %s; rudder = %s; action hold %ss' %(self.__th_hor_frt, self.__rudder, self.__timeout)
+        pubMissionLog.publish(text)
+        rospy.loginfo(text)
         
         timeStart = time.time()
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
             if self.preempt_requested():
-                str = "Force Exit GoTurning!!!"
-                pubMissionLog.publish(str)
-                rospy.loginfo(str)
+                text = "Force Exit GoTurning!!!"
+                pubMissionLog.publish(text)
+                rospy.loginfo(text)
                 self.service_preempt()
                 return 'aborted'
                 
@@ -58,12 +58,12 @@ class GoTurning(smach.State):
             self.__controller.setRudderAngle(0)
             
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'GoTurning preempted'
-            pubMissionLog.publish(str)
-            rospy.loginfo(str)
+            text= 'GoTurning preempted'
+            pubMissionLog.publish(text)
+            rospy.loginfo(text)
             return 'preempted'
         else: # timeout means succeed in this state
-            str= 'GoTurning succeeded'
-            pubMissionLog.publish(str)
-            rospy.loginfo(str)
+            text= 'GoTurning succeeded'
+            pubMissionLog.publish(text)
+            rospy.loginfo(text)
             return 'succeeded'

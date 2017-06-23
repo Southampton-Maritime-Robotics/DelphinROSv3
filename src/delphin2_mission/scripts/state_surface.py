@@ -32,9 +32,9 @@ class Surface(smach.State):
             
         time_zero = time.time()
         
-        str= 'Entered Surface State, started at time = %s' %(time_zero)
-        pubMissionLog.publish(str)
-        rospy.loginfo(str)
+        text= 'Entered Surface State, started at time = %s' %(time_zero)
+        pubMissionLog.publish(text)
+        rospy.loginfo(text)
         time.sleep(0.1)
         
         #Set Depth Demand and Speed Demand To Zero and turn off heading control
@@ -42,18 +42,18 @@ class Surface(smach.State):
         time.sleep(0.1)
         self.__controller.setSpeed(0.0)
         time.sleep(0.1)
-        str= 'Setting depth demand and foward speed to zero and turning heading control off' 
-        pubMissionLog.publish(str)
-        rospy.loginfo(str)            
+        text= 'Setting depth demand and foward speed to zero and turning heading control off' 
+        pubMissionLog.publish(text)
+        rospy.loginfo(text)            
         
         timer=time.time()
         
         ##### Main loop #####
         while (time.time()-time_zero < self.__timeout) and not rospy.is_shutdown():
                 
-            str= 'Waiting For Valid GPS FIX' 
-            pubMissionLog.publish(str)
-            rospy.loginfo(str)  
+            text= 'Waiting For Valid GPS FIX' 
+            pubMissionLog.publish(text)
+            rospy.loginfo(text)  
             
             fix=self.__controller.getGPSValidFix()
             
@@ -64,23 +64,23 @@ class Surface(smach.State):
             
                 X=self.__controller.getX()
                 Y=self.__controller.getY()
-                str = 'Surface Position is X=%sm and Y=%sm' %(X,Y)
-                rospy.loginfo(str)
-                pubMissionLog.publish(str)
+                text = 'Surface Position is X=%sm and Y=%sm' %(X,Y)
+                rospy.loginfo(text)
+                pubMissionLog.publish(text)
                 if self.__controller.getBackSeatErrorFlag() == 1:
-                    str ='Surface State has aquired new GPS fix, but backseat driver flag is set to 1'
-                    pubMissionLog.publish(str)
-                    rospy.loginfo(str)
+                    text ='Surface State has aquired new GPS fix, but backseat driver flag is set to 1'
+                    pubMissionLog.publish(text)
+                    rospy.loginfo(text)
                     return 'preempted'
                 else:
-                    str ='Surface State has succesfully aquired a new GPS fix'
-                    pubMissionLog.publish(str)
-                    rospy.loginfo(str)                            
+                    text ='Surface State has succesfully aquired a new GPS fix'
+                    pubMissionLog.publish(text)
+                    rospy.loginfo(text)                            
                     return 'succeeded'
                 
             r.sleep()
             
-        str= 'Surface State Failed to get a GPS fix within the timeout of %s s' %(self.__timeout)
-        pubMissionLog.publish(str)
-        rospy.loginfo(str)
+        text= 'Surface State Failed to get a GPS fix within the timeout of %s s' %(self.__timeout)
+        pubMissionLog.publish(text)
+        rospy.loginfo(text)
         return 'aborted'

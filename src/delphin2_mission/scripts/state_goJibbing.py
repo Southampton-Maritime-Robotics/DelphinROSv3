@@ -44,18 +44,18 @@ class GoJibbing(smach.State):
         cycleCount = userdata.cycleCount_in  # a counter to count how many time jibbing has been done.
         dirNow = userdata.dir_in        # direction of turning
 
-        str='Execute GoJibbing State: \n th_hor = %s \n rudder = %s \n heading = %s +- %s \n cycle = %s/%s' %(self.__th_hor, self.__rudder, self.__headingMean, self.__headingAmp, cycleCount, self.__cycleMax)
-        self.__pubMissionLog.publish(str)
-        rospy.loginfo(str)
+        text='Execute GoJibbing State: \n th_hor = %s \n rudder = %s \n heading = %s +- %s \n cycle = %s/%s' %(self.__th_hor, self.__rudder, self.__headingMean, self.__headingAmp, cycleCount, self.__cycleMax)
+        self.__pubMissionLog.publish(text)
+        rospy.loginfo(text)
         
         timeStart = time.time()
         # determine a heading reference and confine it within [0,360)
         headingRef = (self.__headingMean+dirNow*self.__headingAmp)%360
         while not rospy.is_shutdown() and self.__controller.getBackSeatErrorFlag() == 0 and time.time()-timeStart < self.__timeout:
             if self.preempt_requested():
-                str = "Force Exit GoJibbing!!!"
-                self.__pubMissionLog.publish(str)
-                rospy.loginfo(str)
+                text = "Force Exit GoJibbing!!!"
+                self.__pubMissionLog.publish(text)
+                rospy.loginfo(text)
                 self.service_preempt()
                 return 'aborted'
             
@@ -70,15 +70,15 @@ class GoJibbing(smach.State):
                 if cycleCount > self.__cycleMax:
                     self.__controller.setArduinoThrusterHorizontal(0,0) # (FrontVer,RearVer)
                     self.__controller.setRudderAngle(0)
-                    str = "goJibbing succeeded"
-                    self.__pubMissionLog.publish(str)
-                    rospy.loginfo(str)
+                    text = "goJibbing succeeded"
+                    self.__pubMissionLog.publish(text)
+                    rospy.loginfo(text)
                     self.service_preempt()
                     return 'succeeded'
                 else:
-                    str = "goJibbing reached a heading reference: switch a direction and continue"
-                    self.__pubMissionLog.publish(str)
-                    rospy.loginfo(str)
+                    text = "goJibbing reached a heading reference: switch a direction and continue"
+                    self.__pubMissionLog.publish(text)
+                    rospy.loginfo(text)
                     return 'continue'
             else:
                 self.__controller.setArduinoThrusterHorizontal(self.__th_hor*dirNow,-self.__th_hor*dirNow)
@@ -87,12 +87,12 @@ class GoJibbing(smach.State):
             self.__r.sleep()
 
         if self.__controller.getBackSeatErrorFlag() == 1:
-            str= 'GoTurning preempted'
-            self.__pubMissionLog.publish(str)
-            rospy.loginfo(str)
+            text= 'GoTurning preempted'
+            self.__pubMissionLog.publish(text)
+            rospy.loginfo(text)
             return 'preempted'
         else:
-            str= 'time-out - GoTurning aborted'
-            self.__pubMissionLog.publish(str)
-            rospy.loginfo(str)
+            text= 'time-out - GoTurning aborted'
+            self.__pubMissionLog.publish(text)
+            rospy.loginfo(text)
             return 'aborted'

@@ -22,8 +22,8 @@ class verify_lights(smach.State):
         self.__controller = lib
 
     def execute(self, userdata):
-        str = "Flashing lights now"
-        rospy.loginfo(str)
+        text = "Flashing lights now"
+        rospy.loginfo(text)
         timeDelay = 0.2 # sec
         for a in range(10):
             self.__controller.lightOnOff(True)
