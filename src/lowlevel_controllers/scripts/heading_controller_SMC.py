@@ -27,7 +27,7 @@ class controller_SMC(object):
 ################################################################################
     def __init__(self):
         ### loop timing control ###
-        self.controlRate = 5. # [Hz]
+        self.controlRate = rospy.get_param("heading/ControlRate") # typically 5 [Hz]
         self.dt = 1./self.controlRate
         
         ### controller parameter ###
@@ -37,10 +37,10 @@ class controller_SMC(object):
         h1 = 1                          # gain to compute sliding variable
         h2 = 0.01*h1                    # gain to compute sliding variable
         self.h = np.array([h1,h2])      # gain to compute sliding variable
-        self.k_s_1 = 0.5                # gain for a sliding term
-        self.k_s_2 = 0.015               # gain for an integral sliding term
+        self.k_s_1 = rospy.get_param("control/heading/SMC/K1") # gain for a sliding term
+        self.k_s_2 = rospy.get_param("control/heading/SMC/K2") # gain for an integral sliding term
         self.bound_int = 1.2*self.dt   # bound on the integral sliding term
-        self.sw_bl = 0.2            # boundary layer thickness for tanh function
+        self.sw_bl = rospy.get_param("control/heading/SMC/Sigma") # boundary layer thickness for tanh function
         
         ### AUV model parameters ###
         ## rigid-gody parameter

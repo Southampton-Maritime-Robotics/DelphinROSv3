@@ -16,7 +16,7 @@ depth/Tolerance: 0.2            # acceptable error for the depth (inn m)
 depth/ControlRate: 5            # rate of heading control in [Hz]
 
 ### LIMITS CAUSING ABORT
-over-depth: 3                   # Maximum depth (m)
+over-depth: 0.9                   # Maximum depth (m)
 over-pitch: 45                  # Maximum pitch (deg) 
 over-roll: 20                   # Maximum roll (deg) 
 max-internal-temp: 45           # Maximum internal pressure vessel temp (deg)
@@ -45,6 +45,17 @@ max-speed: 1                    # maximum surge speed (in m/s) of the AUV
 ################################
 # CONTROLLERS
 ################################
+ # gain for sliding term
+ # 0.5 verified at Eastleigh Lakes, at surface (Tanakitkorn, sSTA)
+ # lower value to reduce oscillation
+control/heading/SMC/K1: 0.5    
+# gain for sliding term
+# 0.015 verified at Eastleigh Lakes, at surface (Tanakitkorn, sSTA)
+# lower value to reduce oscillation
+control/heading/SMC/K2: 0.015  
+# boundary layer thicknes for tanh function
+# 0.2 verified at Eastleigh Lakes, at surface (Tanaktikorn, sSTA)
+control/heading/SMC/Sigma: 0.2
 
 horizontal/thruster/Pgain: 40000.0
 horizontal/thruster/Igain: 0.0
