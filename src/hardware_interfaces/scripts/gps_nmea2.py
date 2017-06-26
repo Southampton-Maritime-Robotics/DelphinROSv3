@@ -56,9 +56,9 @@ class gpsDriver(object):
         self._getAll = False
 
         #Define Publishers
-        self.pubStatus = rospy.Publisher('status', status)
-        self.pub = rospy.Publisher('gps_out', gps)
-        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
+        self.pubStatus = rospy.Publisher('status', status, queue_size=10)
+        self.pub = rospy.Publisher('gps_out', gps, queue_size=10)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
         
         self.serialPort = self.openSerialPort()
         rospy.on_shutdown(self.onShutdownEvents)

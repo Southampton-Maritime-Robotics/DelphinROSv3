@@ -86,11 +86,11 @@ class controller_SMC(object):
         
         ### ros communication ###
         # create publishers and messages to be published
-        self.pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
-        self.pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
-        self.pub_HC   = rospy.Publisher('Heading_controller_values_SMC', heading_control_SMC)
-        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
-        self.pubStatus = rospy.Publisher('status', status)
+        self.pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints, queue_size=10)
+        self.pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints, queue_size=10)
+        self.pub_HC   = rospy.Publisher('Heading_controller_values_SMC', heading_control_SMC, queue_size=10)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+        self.pubStatus = rospy.Publisher('status', status, queue_size=10)
         self.HC = heading_control_SMC()
         
         # create subscribers and parameters for callback functions

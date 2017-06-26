@@ -37,7 +37,7 @@ class GoJibbing(smach.State):
         self.__r = rospy.Rate(self.__controlRate)    
 
         #Set Up Publisher for Mission Control Log
-        self.__pubMissionLog = rospy.Publisher('MissionStrings', String)
+        self.__pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
 
     def execute(self,userdata):
         

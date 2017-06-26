@@ -150,9 +150,9 @@ def shutdown():
 if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     
-    pub = rospy.Publisher('tail_output', tail_feedback)
-    pubStatus = rospy.Publisher('status', status)
-    pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pub = rospy.Publisher('tail_output', tail_feedback, queue_size=10)
+    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
     
     rospy.init_node('tail_section')
     rospy.on_shutdown(shutdown)

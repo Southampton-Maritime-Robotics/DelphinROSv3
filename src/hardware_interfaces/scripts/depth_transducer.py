@@ -180,10 +180,10 @@ if __name__ == '__main__':
     global depth_msg
     depth_msg = depth()
     
-    pub = rospy.Publisher('depth_out', depth)
-    pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pub = rospy.Publisher('depth_out', depth, queue_size=10)
+    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
     rospy.Subscriber('compass_out', compass, compass_callback) 
-    pubStatus = rospy.Publisher('status', status)
+    pubStatus = rospy.Publisher('status', status, queue_size=10)
     
     rospy.on_shutdown(shutdown)
     

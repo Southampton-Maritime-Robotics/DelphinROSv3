@@ -146,9 +146,9 @@ class delphin2_AUV(object):
 
         ### ros communication ###
         # create publishers and messages to be published
-        self.pubPosition = rospy.Publisher('position_dead', position)
-        self.pubStatus = rospy.Publisher('status', status)
-        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
+        self.pubPosition = rospy.Publisher('position_dead', position, queue_size=10)
+        self.pubStatus = rospy.Publisher('status', status, queue_size=10)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
         self.posOut = position()
 
         # tf broadcaster

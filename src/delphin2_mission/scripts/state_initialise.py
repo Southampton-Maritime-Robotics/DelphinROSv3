@@ -39,7 +39,7 @@ class Initialise(smach.State):
             voltage_min = 19000 # [mV]
         	
         #Set Up Publisher for Mission Control Log
-        pub = rospy.Publisher('MissionStrings', String)
+        pub = rospy.Publisher('MissionStrings', String, queue_size=10)
                         
         time_zero = time.time()
         all_online = False

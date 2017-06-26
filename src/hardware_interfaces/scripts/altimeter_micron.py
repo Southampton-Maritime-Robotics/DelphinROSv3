@@ -142,9 +142,9 @@ if __name__ == '__main__':
     rospy.init_node('MicronEchoSounder')
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour
     
-    pub = rospy.Publisher('altimeter_out', altitude)
-    pubMissionLog = rospy.Publisher('MissionStrings', String)
-    pubStatus = rospy.Publisher('status', status)
+    pub = rospy.Publisher('altimeter_out', altitude, queue_size=10)
+    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+    pubStatus = rospy.Publisher('status', status, queue_size=10)
     
     global array_length
     global Dx

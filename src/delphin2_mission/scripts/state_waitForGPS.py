@@ -23,7 +23,7 @@ class waitForGPS(smach.State):
         self.__timeout              = timeout   # [sec] timeout to check if the GPS comes online
         
         #Set Up Publisher for Mission Control Log
-        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
         
     def execute(self,userdata):
         ######## START OPERATION ################################            

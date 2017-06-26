@@ -117,10 +117,10 @@ def rcLoop():
 
 if __name__ == '__main__':
     try:
-        pubThrusterV = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
-        pubThrusterH = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
-        pubTailV = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
-        pubTailH = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
+        pubThrusterV = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints, queue_size=10)
+        pubThrusterH = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints, queue_size=10)
+        pubTailV = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints, queue_size=10)
+        pubTailH = rospy.Publisher('tail_setpoints_vertical', tail_setpoints, queue_size=10)
         pubProp = rospy.Publisher('prop_demand', Int8)
 
         rospy.init_node('test_thrusters', anonymous=True)

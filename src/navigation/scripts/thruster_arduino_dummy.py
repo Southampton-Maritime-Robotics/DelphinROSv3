@@ -179,9 +179,9 @@ if __name__ == '__main__':
     rospy.Subscriber('TSL_setpoints_horizontal', tsl_setpoints, horiz_callback)
     rospy.Subscriber('TSL_setpoints_vertical', tsl_setpoints, vert_callback)
     
-    pub = rospy.Publisher('TSL_feedback', tsl_feedback)
-    pubStatus = rospy.Publisher('status', status)
-    pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pub = rospy.Publisher('TSL_feedback', tsl_feedback, queue_size=10)
+    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
     
     rospy.on_shutdown(shutdown) #Defining shutdown behaviour
 

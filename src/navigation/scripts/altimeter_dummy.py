@@ -70,9 +70,9 @@ if __name__ == '__main__':
     estimate = AltitudeEstimate()
     rospy.Subscriber('depth_out', depth, estimate.altitude_update)
 
-    pub_altitude = rospy.Publisher('altitude_out', altitude)
-    pub_missionlog = rospy.Publisher('MissionStrings', String)
-    pub_status = rospy.Publisher('status', status)
+    pub_altitude = rospy.Publisher('altitude_out', altitude, queue_size=10)
+    pub_missionlog = rospy.Publisher('MissionStrings', String, queue_size=10)
+    pub_status = rospy.Publisher('status', status, queue_size=10)
     
     rospy.on_shutdown(shutdown)
     

@@ -35,7 +35,7 @@ class GoToDepth(smach.State):
     def execute(self,userdata):
         
         #Set Up Publisher for Mission Control Log
-        pubMissionLog = rospy.Publisher('MissionStrings', String)
+        pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
 
         # Set Up Loop Timing Control
         r = rospy.Rate(self.__controlRate)

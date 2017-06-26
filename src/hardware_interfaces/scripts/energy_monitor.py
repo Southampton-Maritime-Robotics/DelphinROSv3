@@ -236,9 +236,9 @@ if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     rospy.init_node('Energy_Monitor')
     
-    pubStatus = rospy.Publisher('status', status)
-    pubOutput = rospy.Publisher('EnergyConsumed', energy_consumed)
-    pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pubOutput = rospy.Publisher('EnergyConsumed', energy_consumed, queue_size=10)
+    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
 
     rospy.on_shutdown(shutdown) # Defining shutdown behaviour
     _r = rospy.Rate(5) # Hz
