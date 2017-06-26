@@ -110,8 +110,8 @@ if __name__ == '__main__':
     rospy.logwarn(">>>>> USING DUMMY DEPTH TRANSDUCER instead of actual depth sensor")
     pub = rospy.Publisher('depth_out', depth, queue_size=10)
     pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
-    rospy.Subscriber('depth_demand', Float32, depth_demand_cb)
     pubStatus = rospy.Publisher('status', status, queue_size=10)
+    rospy.Subscriber('depth_demand', Float32, depth_demand_cb)
     
     rospy.on_shutdown(shutdown)
     
