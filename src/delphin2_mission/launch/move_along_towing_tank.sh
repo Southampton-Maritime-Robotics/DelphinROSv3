@@ -3,12 +3,14 @@
 fileprefix="test-logger"
 
 # on my computer
-logpath="/home/sophia/simulation/delphin2/"
+logpath="/home/sophia/simulation/delphin2/MPC-tests/"
 parampath="/home/sophia/delphin/private/src/delphin2_mission/launch/"
+delphinlogpath="/home/sophia/.ros/logFiles/"
 # on delphin
-#logpath="/home/delphin2/sophia"
-#parampath="/home/delphin2/????"
- 
+#logpath="/home/delphin2/sophia/test/"
+#parampath="/home/delphin2/DelphinROSv3/src/delphin2_mission/launch/"
+#delphinlogpath="/home/delphin2/.ros/logFiles/"
+
 # test if date is set on delphin2
 # (BIOS battery runs empty regularly, this is a short test to catch that)
 if [ "$(date +%Y)" -lt 2015 ]
@@ -34,11 +36,13 @@ sleep 2
 # load parameters
 rosparam load ${parampath}default_parameters.yaml
 rosparam load ${parampath}parameters/sonar.yaml
-rosparam set xsens/filter_profile 39
+rosparam set xsens/filter_profile 42
+# 270 for filter profile 43; 290 otherwise
 rosparam set mission/Heading1 290
-rosparam set mission/Depth 0.0
-rosparam set mission/Altitude 0.0
+rosparam set mission/Depth 0.5
+rosparam set mission/Altitude 0.5
 rosparam set mission/Prop 22.0 
+rosparam set mission/ForwardsTime 5.0 # 15 is good for all of lamont
 
 # start mapping
 roslaunch map-octomap.launch &
@@ -59,12 +63,17 @@ roslaunch delphin2_mission system_loader.launch
 
 # ... everything below here will run at the end of the mission ...
 # save map
-rosrun octomap_server octomap_saver -f ${logpath}${filepath}${fileprefix}${timestamp}.bt
+rosrun octomap_server octomap_saver -f ${logpath}${fileprefix}${timestamp}.bt
 
 # save parameters
 # saving parameters at the end helps finding if rogue launch scripts are setting paramters
 # in unexpected ways
 rosparam dump ${logpath}${fileprefix}${timestamp}_PARAM
+
+
+# start remote control
+# this won't work with mosh, since it doesn't do x forwarding
+#roslaunch delphin2_mission remote_control.launch
 
 # rosbag is hard to kill, so lets get rid of that one first
 # (SIGINT doesn't work, and kill will not convert .bag.active to .bag)
@@ -73,3 +82,12 @@ rosnode kill $rosbagnode
 # stop rosbag, mapping, and roscore with a sigint
 kill -INT $mapID
 kill -INT $roscoreID
+
+echo "bla bla bla"
+sleep 5
+echo "blaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+# get the name of the most recent file
+recentlog="$(ls -t ${delphinlogpath} | head -n1)"
+echo ${delphinlogpath}${recentlog}
+cp -r ${delphinlogpath}${recentlog} ${logpath}${fileprefix}${timestamp}_delphinLog
+cp ${parampath}system_loader.launch ${logpath}${fileprefix}${timestamp}_system_loader
