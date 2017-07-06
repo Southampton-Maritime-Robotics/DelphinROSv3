@@ -62,8 +62,7 @@ def filter(altitude):
     global Dy
     
     Dy[1:array_length] = Dy[0:(array_length-1)]
-    if altitude > 0.5:
-        Dy[0] = altitude
+    Dy[0] = altitude
         
     [der, altitude_filt] = numpy.polyfit(Dx, Dy, 1)
     altitude_der = -der
@@ -142,9 +141,9 @@ if __name__ == '__main__':
     rospy.init_node('MicronEchoSounder')
     rospy.on_shutdown(shutdown)         #Defining shutdown behaviour
     
-    pub = rospy.Publisher('altimeter_out', altitude, queue_size=10)
-    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pub = rospy.Publisher('altimeter_out', altitude)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pubStatus = rospy.Publisher('status', status)
     
     global array_length
     global Dx
