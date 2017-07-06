@@ -4,6 +4,7 @@
 A driver for an altertude w.r.t. to the sea bottom.
 
 The sensor is very noisy, therefore, filterred by the Polynomial-Type (PT) filtering technique.
+Note: The altitude measurement is only accurate up to ~0.3 m! After this value it seems to often jump to 0.
 
 #######################################################
 # TODO
