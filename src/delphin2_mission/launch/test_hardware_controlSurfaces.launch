@@ -1,0 +1,12 @@
+<launch>
+
+    <!-- System Parameters! -->
+    <rosparam file="$(find delphin2_mission)/launch/default_parameters.yaml" command ="load"/>
+ 
+    <!-- ADDITIONAL NODES 
+    -->
+    <node name="test_script_control_surfaces" pkg="delphin2_mission" type="test_script_control_surfaces" required="true"/>
+    <node name="tail_section" pkg="hardware_interfaces" type="tail_section.py" required="true"/>
+
+
+</launch>

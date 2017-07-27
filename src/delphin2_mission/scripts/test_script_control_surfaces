@@ -1,0 +1,43 @@
+#!/usr/bin/python
+"""
+Test script for checking control surfaces positions and adjusting them with dynamic parameters
+"""
+import rospy
+import numpy
+
+from dynamic_reconfigure.server import Server
+
+from hardware_interfaces.msg import tail_setpoints
+from delphin2_mission.cfg import ControlSurfaceConfig
+
+def adjust_loop():
+    
+    pubHorizontal = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
+    pubVertical = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
+    rate = rospy.Rate(rospy.get_param("/maxRate"))
+    while not rospy.is_shutdown():
+        pubHorizontal.publish(cs0 = adjust.horizontal_stbd, cs1 = adjust.horizontal_port)
+        pubVertical.publish(cs0 = adjust.vertical_top, cs1 = adjust.vertical_bottom)
+        rate.sleep()
+
+class CSAdjust(object):
+    def __inti__(self):
+        self.horizontal_port = 0
+        self.horizontal_stbd = 0
+        self.vertical_top = 0
+        self.vertical_bottom = 0
+
+def callback(config, level):
+    adjust.horizontal_port = config.horizontal_port
+    adjust.horizontal_stbd = config.horizontal_starbord
+    adjust.vertical_top = config.vertical_top
+    adjust.vertical_bottom = config.vertical_bottom
+    return config
+
+
+if __name__ == '__main__':
+    rospy.init_node('adjust_control_surfaces', log_level=rospy.DEBUG)
+    adjust = CSAdjust()
+    srv = Server(ControlSurfaceConfig, callback)
+    adjust_loop()
+

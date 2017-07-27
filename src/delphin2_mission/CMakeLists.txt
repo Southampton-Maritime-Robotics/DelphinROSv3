@@ -9,8 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
-  #actionlib
-  #actionlib_msgs
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -69,11 +68,16 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
+# generate_messages(
+#   DEPENDENCIES
    #actionlib_msgs  
-   std_msgs
- )
+#   std_msgs
+# )
+
+ generate_dynamic_reconfigure_options(  
+   cfg/ControlSurface.cfg  
+   #...
+   )
 
 ###################################
 ## catkin specific configuration ##
