@@ -86,7 +86,7 @@ status_timing: 2.               # Publishing interval of node status (sec)
 ######### HARDWARE SPECIFIC
 
 ### XSENS
-xsens/filter_profile: 43
+xsens/filter_profile: 42
 # available xsens filter options {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
 # use vru_general with AHSOn when the magnetic reading can not be thrusted at all.
 # for more information see delphin2_xsens datasheet
@@ -104,6 +104,15 @@ thruster/SetpointMax:  2500.      # Max thruster setpoint
                                 # on land: 145
 thruster/SetpointMin: 130.
 thruster/ArduinoMax: 255.
+
+### CONTROL SURFACES
+# Controlsurfaces have an offset on the arduino side, however to change that the pressure hull needs to be opened, so now it can also be adjusted as a parameter here
+# b: top; c: stbd; d: bottom; e: port
+control_surface/offset/top: 10.
+control_surface/offset/bottom: 6.
+control_surface/offset/stbd: 14.
+control_surface/offset/port: -5.
+
 
 ### SONAR
 sonar/XPosition: 0.8   # in [m], relative to CoB

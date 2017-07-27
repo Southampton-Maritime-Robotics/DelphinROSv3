@@ -54,6 +54,14 @@ e_zero = 75 # [pwm] #
 finsDemand_lim = 30 # [deg], the magnet inside tail section may intercept if the bigger limit is used.
 prop_zero = 94
 
+class CS_config(object):
+    def __init__(self):
+        self.limit = 30  # [degrees]
+        self.offset_port = rospy.get_param("/control_surface/offset/port")
+        self.offset_stbd = rospy.get_param("/control_surface/offset/stbd")
+        self.offset_top = rospy.get_param("/control_surface/offset/top")
+        self.offset_bottom = rospy.get_param("/control_surface/offset/bottom")
+
 def setupSerial():
     global serialPort
     serialPort = serial.Serial(port='/dev/usbtail', baudrate='9600', timeout=0.2)
@@ -171,7 +179,13 @@ def tail_section_loop(status):
             [b_demand, d_demand] = [0, 0]
         if time.time()-timeLastDemandProp>timeLastDemandMax:
             prop_demand = 0
-            
+        
+        # apply offsets first
+        b_demand += cs_cfg.offset_top
+        c_demand += cs_cfg.offset_stbd
+        d_demand += cs_cfg.offset_bottom
+        e_demand += cs_cfg.offset_port
+
         # apply limit to the fin angle demands
         b_demand = limits(b_demand,-finsDemand_lim,finsDemand_lim)
         c_demand = limits(c_demand,-finsDemand_lim,finsDemand_lim)
@@ -343,12 +357,13 @@ if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online
     global serialPort
     
-    pub = rospy.Publisher('tail_output', tail_feedback, queue_size=10)
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
-    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+    pub = rospy.Publisher('tail_output', tail_feedback)
+    pubStatus = rospy.Publisher('status', status)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     
     rospy.init_node('tail_section')
     rospy.on_shutdown(shutdown)
+    cs_cfg = CS_config()
     
     port_status = setupSerial()
     str = "Tailsection serial port status = %s. Port = %s" %(port_status, serialPort.portstr)
@@ -361,7 +376,7 @@ if __name__ == '__main__':
     if port_status == True:    
         status = True
         pubStatus.publish(nodeID = 2, status = status)
-        rospy.loginfo("Tail section now online")
+        #rospy.loginfo("Tail section now online")
     else:
         status = False
         pubStatus.publish(nodeID = 2, status = status)
