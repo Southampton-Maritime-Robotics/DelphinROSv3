@@ -18,6 +18,13 @@ prop: propeller
 --send: $R#
 --receive: $b_feedback@c_feedback@d_feedback@e_feedback@prop_rps@#
 
+#### Offset
+to account for mechanical offsets of the sternplanes, a sofware offset is applied via ros parameters
+In the published message it is applied in the setpoint.
+In the feedback the offset is removed to represent the demand that was originally received in this node.
+This is necessary in case other nodes check if the sternplane angle is reached.
+
+
 ###################################################
 # TODO
 - test if 5 sec delay to wait for other systems is necessary
@@ -222,6 +229,12 @@ def tail_section_loop(status):
             rospy.logwarn('arduino read error')
                
         ############################# PUBLISH THE INFORMATION ######################################
+        # remove offsets in the feedback
+        b_feedback -= cs_cfg.offset_top
+        c_feedback -= cs_cfg.offset_stbd
+        d_feedback -= cs_cfg.offset_bottom
+        e_feedback -= cs_cfg.offset_port
+
         pub.publish(b_sp = b_demand,
                     b_ack = b_arduino,
                     b_fb = b_feedback,
