@@ -21,16 +21,17 @@ over-pitch: 45                  # Maximum pitch (deg)
 over-roll: 20                   # Maximum roll (deg) 
 max-internal-temp: 45           # Maximum internal pressure vessel temp (deg)
 min-motor-voltage: 19000        # Minimum Motor voltage (mV) 
-mission-timeout: 5              # Mission timeout (minutes) 
+mission-timeout: 50              # Mission timeout (minutes) 
 
 
 #######################################
 # MISSION SETTINGS
 #######################################
 
-lat_orig: 50.957024             # Origin Latitude
-lon_orig: -1.366769            # Origin Longitude
+lat_orig: 50.93664083          # Origin Latitude
+long_orig: -1.50766432          # Origin Longitude
   # useful positions
+  # Testwood lakes slipway: (50.93664083, -1.50766432)
   # Eastleigh North Pier: (50.957024,-1.366769)
   # Eastleigh South Pier: (50.956473,-1.366835)
 
@@ -86,7 +87,7 @@ status_timing: 2.               # Publishing interval of node status (sec)
 ######### HARDWARE SPECIFIC
 
 ### XSENS
-xsens/filter_profile: 42
+xsens/filter_profile: 39
 # available xsens filter options {general:39, high_mag_dep:40, dynamic:41, low_mag_dep:42, vru_general:43}
 # use vru_general with AHSOn when the magnetic reading can not be thrusted at all.
 # for more information see delphin2_xsens datasheet
@@ -162,11 +163,11 @@ sonar/Driftoffset: 0
 
 # Left limit for Heading
 # in degrees, from 0 to 359
-sonar/LLim: 0
+sonar/LLim: 260
 
 # Right limit for Heading
 # in degrees, from 0 to 359
-sonar/RLim: 301
+sonar/RLim: 300
 
 # Number of sample bins over scan-line
 # Max for SeaKing/SeaPrince/MiniKing/Micron: 800
@@ -184,7 +185,7 @@ sonar/ADInterval: 5
 # Range
 # used to calculate the ADInterval
 # in [metres]
-sonar/Range: 5
+sonar/Range: 11
 
 # Speed of sound in water, to calculate the ADInterval correctly
 # in seawater ~: 1500. m/s
@@ -196,7 +197,8 @@ sonar/SoundspeedWater: 1484.
 sonar/ADSpan:  210
 sonar/ADLow: 0
 
-# Initial gain for channel 1
+# Initial gain for channel 1, in units of 0 to 210 = 0 to +80 dB = 0% to 100%
+# default is 40% = 84
 sonar/IGainB1: 84
 # Initial gain for channel 2
 sonar/IGainB2: 84
