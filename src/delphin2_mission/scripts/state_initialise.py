@@ -39,7 +39,7 @@ class Initialise(smach.State):
             voltage_min = 19000 # [mV]
         	
         #Set Up Publisher for Mission Control Log
-        pub = rospy.Publisher('MissionStrings', String, queue_size=10)
+        pub = rospy.Publisher('MissionStrings', String)
                         
         time_zero = time.time()
         all_online = False
@@ -53,6 +53,7 @@ class Initialise(smach.State):
                 and True # self.__controller.getAltimeterStatus() # FIXME: remove "True" and uncomment me when loading the altimeter
                 and self.__controller.getGPSStatus()
                 and self.__controller.getDepthTransducerStatus()
+                and self.__controller.getAltimeterStatus()
                 and self.__controller.getXsensStatus()
                 and self.__controller.getHeadingCtrlStatus()
                 and self.__controller.getDepthCtrlStatus()
