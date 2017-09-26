@@ -21,8 +21,8 @@ class verify_fins(smach.State):
         smach.State.__init__(self, outcomes=['succeeded','aborted','preempted'])
         self.__controller = lib
         self.__timeHold = 3 # time that actuator will be active [sec]
-        self.__angles = [-30.0, 0.0, 30.0]
-        self.__fin_error_tol = 3.0
+        self.__angles = [-20.0, 0.0, 20.0]
+        self.__fin_error_tol = 3.0 
 
     def execute(self, userdata):    
         for a in self.__angles:
@@ -35,7 +35,7 @@ class verify_fins(smach.State):
                 rospy.logerr(text)
                 return 'aborted' 
             if numpy.abs(self.__controller.getCS_c() - a) > self.__fin_error_tol:
-                text = "Problem with starboard control surface. Feedback = %d" %self.__controller.getCS_C()
+                text = "Problem with starboard control surface. Feedback = %d" %self.__controller.getCS_c()
                 rospy.logerr(text)
                 return 'aborted' 
             if numpy.abs(self.__controller.getCS_d() - a) > self.__fin_error_tol:

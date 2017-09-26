@@ -188,10 +188,11 @@ def tail_section_loop(status):
             prop_demand = 0
         
         # apply offsets first
-        b_demand += cs_cfg.offset_top
+        # b and e get signs swapped in callback
+        b_demand -= cs_cfg.offset_top
         c_demand += cs_cfg.offset_stbd
         d_demand += cs_cfg.offset_bottom
-        e_demand += cs_cfg.offset_port
+        e_demand -= cs_cfg.offset_port
 
         # apply limit to the fin angle demands
         b_demand = limits(b_demand,-finsDemand_lim,finsDemand_lim)
@@ -230,6 +231,7 @@ def tail_section_loop(status):
                
         ############################# PUBLISH THE INFORMATION ######################################
         # remove offsets in the feedback
+        # b and e get signs swapped in callback
         b_feedback -= cs_cfg.offset_top
         c_feedback -= cs_cfg.offset_stbd
         d_feedback -= cs_cfg.offset_bottom
