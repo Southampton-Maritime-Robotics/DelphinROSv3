@@ -283,6 +283,20 @@ def altimeter_callback(altimeter):
         except ValueError:
             print 'writerow error'
 
+def pseudo_altitude_callback(data):
+    """
+    log pseudo altitude to file
+    """
+    stringtime = time.time()-time_zero
+    pseudoAltitudeList=[stringtime, 
+                        data.data]
+    with open('%s/pseudoAltitudeLog.csv' %(dirname), "a") as f:
+        try:
+            Writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            Writer.writerow(pseudoAltitudeList)
+        except ValueError:
+            print 'writerow error'
+ 
 ##############################################################
 
 def sonar_callback(sonar): ## Problem with logging raw data
@@ -584,9 +598,9 @@ if __name__ == '__main__':
     stringtime = datetime.now()
     stringtime = stringtime.strftime('%Y-%m-%d_%H-%M-%S')
     rospy.loginfo('Logger started at %s.'%(stringtime))
-    pub_folder = rospy.Publisher('folder', String, queue_size=10)
-    pub_vidfolder = rospy.Publisher('vidfolder', String, queue_size=10)
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pub_folder = rospy.Publisher('folder', String)
+    pub_vidfolder = rospy.Publisher('vidfolder', String)
+    pubStatus = rospy.Publisher('status', status)
     
     global heading_demand
     global depth_demand
@@ -687,6 +701,7 @@ if __name__ == '__main__':
     rospy.Subscriber('position_dead', position, position_callback)
     rospy.Subscriber('gps_out', gps, gps_callback)
     rospy.Subscriber('altimeter_out',altitude, altimeter_callback)
+    rospy.Subscriber('pseudo_altitude', Float32, pseudo_altitude_callback)
     rospy.Subscriber('sonar_processed', sonar_data, sonar_callback)
     rospy.Subscriber('MissionStrings', String, mission_callback)
     
