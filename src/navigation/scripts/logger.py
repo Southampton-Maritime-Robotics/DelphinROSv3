@@ -47,32 +47,32 @@ from lowlevel_controllers.msg import depthandspeed_MPC
 
 from hardware_interfaces.msg import ForcesAndMoments    #Only temporary
 
-global tempWriter
-global tempFile
-global compassWriter
-global compassFile
-global tslHorzWriter
-global tslHorzFile
-global tslHorz
-global tslVertWriter
-global tslVertFile
-global tslVert
+global tempWriter      # not used
+global tempFile        # not used
+global compassWriter   # not used
+global compassFile     # not used
+global tslHorzWriter   # not used
+global tslHorzFile     # not used
+global tslHorz         # not used
+global tslVertWriter   # not used
+global tslVertFile     # not used
+global tslVert         # not used
 global tsl_feedback
 global heading_demand
 global depth_demand
 global prop_demand
-global tailFile
-global tailWriter
-global tail_sp
-global positionFile
-global positionWriter
-global gpsFile
-global altimeterFile
-global sonarFile
-global sonarWriter
+global tailFile        # not used
+global tailWriter      # not used
+global tail_sp         # not used
+global positionFile    # not used
+global positionWriter  # not used
+global gpsFile         # not used
+global altimeterFile   # not used
+global sonarFile       # not used
+global sonarWriter     # not used
 global time_zero
-global pathFile
-global log_folder
+global pathFile        # not used
+global log_folder      # not used
 
 ##############################################################
 
