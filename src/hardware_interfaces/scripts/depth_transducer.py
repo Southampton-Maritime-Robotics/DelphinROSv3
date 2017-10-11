@@ -68,11 +68,8 @@ def listenForData(status):
     
     # to control a timing for status publishing
     timeZero_status = time.time()
-    try:
-        dt_status = rospy.get_param('status_timing')
-    except:
-        dt_status = 2.
-        
+    dt_status = rospy.get_param('status_timing')
+
     depth_base = None # for calibrating the depth sensor: ensuring zero depth when launch at surface
     
     while not rospy.is_shutdown():    
@@ -180,10 +177,10 @@ if __name__ == '__main__':
     global depth_msg
     depth_msg = depth()
     
-    pub = rospy.Publisher('depth_out', depth, queue_size=10)
-    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+    pub = rospy.Publisher('depth_out', depth)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
     rospy.Subscriber('compass_out', compass, compass_callback) 
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pubStatus = rospy.Publisher('status', status)
     
     rospy.on_shutdown(shutdown)
     
