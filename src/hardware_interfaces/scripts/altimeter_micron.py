@@ -86,10 +86,7 @@ def listenForData(status):
     
     # to control a timing for status publishing
     timeZero_status = time.time()
-    try:
-        dt_status = rospy.get_param('status_timing')
-    except:
-        dt_status = 2.
+    dt_status = rospy.get_param('status_timing')
 
     altitude_glitch_delta = rospy.get_param('altimeter/GlitchDelta')
 
