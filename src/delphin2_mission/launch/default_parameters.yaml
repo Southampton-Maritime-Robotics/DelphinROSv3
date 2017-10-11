@@ -16,12 +16,12 @@ depth/Tolerance: 0.2            # acceptable error for the depth (inn m)
 depth/ControlRate: 5            # rate of heading control in [Hz]
 
 ### LIMITS CAUSING ABORT
-over-depth: 0.9                   # Maximum depth (m)
+over-depth: 0.5                 # Maximum depth (m)
 over-pitch: 45                  # Maximum pitch (deg) 
 over-roll: 20                   # Maximum roll (deg) 
 max-internal-temp: 45           # Maximum internal pressure vessel temp (deg)
 min-motor-voltage: 19000        # Minimum Motor voltage (mV) 
-mission-timeout: 50              # Mission timeout (minutes) 
+mission-timeout: 8              # Mission timeout (minutes) 
 
 
 #######################################
@@ -109,10 +109,24 @@ thruster/ArduinoMax: 255.
 ### CONTROL SURFACES
 # Controlsurfaces have an offset on the arduino side, however to change that the pressure hull needs to be opened, so now it can also be adjusted as a parameter here
 # b: top; c: stbd; d: bottom; e: port
-control_surface/offset/top: 10.
-control_surface/offset/bottom: 6.
-control_surface/offset/stbd: 14.
-control_surface/offset/port: -5.
+control_surface/offset/top: -10.  #-8 10.
+control_surface/offset/bottom: 0.  #0 6.
+control_surface/offset/stbd: 17.   #25 14.
+control_surface/offset/port: 15.    #17 -5.
+
+### DEPTH SENSOR
+# The depth sensor occasionally glitches to a too large value
+# this is filtered out by comparing to a previous value
+# it is assumed that the vehicle cannot dive more than 0.5m within 0.1 second
+#
+
+depth/GlitchDelta: 0.5
+
+### ALTIMETER
+# The altimeter occasionally glitches to a too small value,
+# especially when operated at the surface
+# however it also is currently opperated at a rate of only 
+altimeter/GlitchDelta: 1.0
 
 
 ### SONAR
@@ -136,7 +150,7 @@ sonar/analyse/GlitchCount: 1
 # Power level (0 to 250) above which sonar 'sees' a target
 # Value above which something is considered an object of interest
 # Lamont: 50
-sonar/analyse/Threshold: 100
+sonar/analyse/Threshold: 110
 
 # Blanking distance to remove returns from the sonar mount
 # Distance from sonar head withing which returns are ignored
@@ -167,7 +181,7 @@ sonar/LLim: 260
 
 # Right limit for Heading
 # in degrees, from 0 to 359
-sonar/RLim: 300
+sonar/RLim: 350
 
 # Number of sample bins over scan-line
 # Max for SeaKing/SeaPrince/MiniKing/Micron: 800
@@ -199,9 +213,9 @@ sonar/ADLow: 0
 
 # Initial gain for channel 1, in units of 0 to 210 = 0 to +80 dB = 0% to 100%
 # default is 40% = 84
-sonar/IGainB1: 84
+sonar/IGainB1: 140
 # Initial gain for channel 2
-sonar/IGainB2: 84
+sonar/IGainB2: 140
 
 # High-speed limit of scanning motor
 # in [10 microseconds]
