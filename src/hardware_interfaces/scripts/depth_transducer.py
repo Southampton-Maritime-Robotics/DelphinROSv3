@@ -69,11 +69,13 @@ def listenForData(status):
     # to control a timing for status publishing
     timeZero_status = time.time()
     dt_status = rospy.get_param('status_timing')
+    depth_glitch_delta = rospy.get_param('depth/GlitchDelta')
 
     depth_base = None # for calibrating the depth sensor: ensuring zero depth when launch at surface
     
     while not rospy.is_shutdown():    
         timeRef = time.time()
+        previous_depth = 0  # for removing glitches, compare current sensor read to previous
         try:
 #            time.sleep(0.01)  # Prevents node from using 100% CPU!!
             while serialPort.inWaiting() > 0 and serialPort.read(1) == '$':     #while there is data to be read - read the line...
@@ -89,11 +91,18 @@ def listenForData(status):
                     if depth_base == None:
                         #Convert ADC value to depth value: the last term is for calibration
                         depth_base = (data[4]*42.045) - 0.15 # assume that the auv is already submerge by 0.15m
-                        depth = 0
+                        depth_read = 0
                     else:
                         #Convert ADC value to depth value: the last term is for calibration
-                        depth = (data[4]*42.045) - depth_base
-                    
+                        depth_read = (data[4]*42.045) - depth_base
+
+                    # check if a glitch to a too large value happened
+                    # only a step *up* to a *larger* depth value will be detected
+                    if (depth_read - previous_depth) > depth_glitch_delta:
+                        depth = previous_depth
+                    else:
+                        depth = depth_read
+                    previous_depth = depth_read  # use read value, in case of actual change it will be used next time
                     depth_calib = depth - L_shift*math.sin(pitch_callback*math.pi/180.)# depth that takes into account the pitch angle of the AUV
 
                     #### DEPTH FILTER ####
