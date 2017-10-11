@@ -19,6 +19,7 @@ import numpy
 from std_msgs.msg import String
 from hardware_interfaces.msg import altitude
 from hardware_interfaces.msg import status
+ALTITUDE_GLITCH_DELTA = 1.0
 
 ################################################################
 def setUpSerial(): # set up the serial port
@@ -92,6 +93,7 @@ def listenForData(status):
         dt_status = 2.
         
     while not rospy.is_shutdown():
+        previous_altitude = 0.
     
         while serialPort.inWaiting() > 8:
             # to control a timing for status publishing
@@ -103,9 +105,16 @@ def listenForData(status):
                 data = serialPort.readline()
                 if data[6:7] == 'm':
                     print 'data = ',data[0:6]
-                    
+
                     altitude =  float(data[0:6])
-                    [altitude_filt, altitude_der] = filter(altitude)
+                    if previous_altitude - altitude < ALTITUDE_GLITCH_DELTA:
+                        [altitude_filt, altitude_der] = filter(altitude)
+                    else:
+                        # use previous altitude to ignore altitude glitch to too low altitude
+                        # if there was actually a 1 m jump in altitude, the next measurement will
+                        # not be ignored as well, since the current altitude is still used as previous altitude
+                        [altitude_filt, altitude_der] = filter(previous_altitude)
+                    previous_altitude = altitude
 
                     print 'altitude = ',altitude
                     pub.publish(altitude = altitude, altitude_filt = altitude_filt, altitude_der = altitude_der)
