@@ -3,12 +3,20 @@
 """
 A driver for an altertude w.r.t. to the sea bottom.
 
-The sensor is very noisy, therefore, filterred by the Polynomial-Type (PT) filtering technique.
+- tritech micron altimeter at baud rate 9600, using 3P2 message type ("xxx.xxm")
+- the tritech micron has a fixed factory set rate which cannot be changed
+- the maximum rate was determined by increasing the rate until the elapsed time becomes too large;
+  at a rate of ~5 Hz the rate can no longer be kept, probably due to the fixed sensor rate
+- 4 Hz was selected as a feasible, reasonable rate.
+The sensor is very noisy, therefore, filtered by the Polynomial-Type (PT) filtering technique.
 Note: The altitude measurement is only accurate up to ~0.3 m! After this value it seems to often jump to 0.
 
 #######################################################
 # TODO
-- must include a pitch angle of the AUV into the altitude measurement.
+- include a pitch angle of the AUV into the altitude measurement;
+  though depending on the purpose of the altitude measurement this may make more or less sense:
+  the altimeter is currently right next to the camera, so controlling for a camera altitude based
+  on the altimeter distance rather than an altitude compensated for pitch may make more sense
 
 """
 
@@ -80,9 +88,9 @@ def listenForData(status):
     timeout   = 2
     time_zero = time.time()
     
-    controlRate = 1. # Hz
-    controlPeriod = 1/controlRate
-    r = rospy.Rate(controlRate)
+    control_rate = 4.  # Hz
+    controlPeriod = 1/control_rate
+    r = rospy.Rate(control_rate)
     
     # to control a timing for status publishing
     timeZero_status = time.time()
@@ -102,7 +110,7 @@ def listenForData(status):
             try:                       # while there is data to be read - read the line
                 data = serialPort.readline()
                 if data[6:7] == 'm':
-                    print 'data = ',data[0:6]
+                    print 'data = ', data[0:6]
 
                     altitude = float(data[0:6])
                     if previous_altitude - altitude < altitude_glitch_delta:
@@ -114,8 +122,8 @@ def listenForData(status):
                         [altitude_filt, altitude_der] = filter(previous_altitude)
                     previous_altitude = altitude
 
-                    print 'altitude = ',altitude
-                    pub.publish(altitude = altitude, altitude_filt = altitude_filt, altitude_der = altitude_der)
+                    print 'altitude = ', altitude
+                    pub.publish(altitude=altitude, altitude_filt=altitude_filt, altitude_der=altitude_der)
                     time_zero = time.time()
             except:
                 print 'passed'
@@ -125,13 +133,15 @@ def listenForData(status):
             pubStatus.publish(nodeID = 3, status = False)
             rospy.loginfo("Altimeter has gone offline")
         
-        timeElapse = time.time()-time_zero
-        if timeElapse<controlPeriod:
+        time_elapsed = time.time()-time_zero
+        print("time elapsed: " + str(time_elapsed))
+
+        if time_elapsed < controlPeriod:
             r.sleep()
         else:
-            str = "Altimeter_micron rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
-            rospy.logwarn(str)
-            pubMissionLog.publish(str)
+            print_txt = "Altimeter_micron rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(control_rate,1/time_elapsed)
+            rospy.logwarn(print_txt)
+            pubMissionLog.publish(print_txt)
         
 ################################################################
 def shutdown():
@@ -162,12 +172,12 @@ if __name__ == '__main__':
     
     port_status = setUpSerial()
 
-    str = "Altimeter port status = %s. Port = %s" %(port_status, serialPort.portstr)
-    rospy.loginfo(str)
+    output_str = "Altimeter port status = %s. Port = %s" %(port_status, serialPort.portstr)
+    rospy.loginfo(output_str)
     time.sleep(0.3)
-    string_status=validDataCheck()
+    string_status = validDataCheck()
     
-    if (port_status and string_status) == True:    
+    if (port_status and string_status) is True:
         status = True
         pubStatus.publish(nodeID = 3, status = status)
         rospy.loginfo("Altimeter online")
