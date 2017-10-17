@@ -5,7 +5,7 @@ Driver for a pressure transducer to measure depth
 
 keys parameters 
 -depth: the raw measurement from the pressure transducer
--depth_calib: the depth calibrated with the pitch angle of the AUV
+-depth_calib: the depth filtered for glitches and calibrated with the pitch angle of the AUV
 -depth_filt: the depth reading that is filtered by the polynomial-type (PT) filter
 -depth_der: the derivative of depth that is determined from the gradient of PT filter
 
@@ -116,10 +116,10 @@ def listenForData(status):
                     [der, depth_filt] = numpy.polyfit(Dx_real, Dy, 1)
                     depth_der = -der
                     
-                    depth_msg.depth = depth # the depth that is directly determined from a static pressure.
-                    depth_msg.depth_calib = depth_calib # the depth with pitch angle correction
-                    depth_msg.depth_filt = depth_filt # depth_calib that is filtered by PT-filter.
-                    depth_msg.depth_der = depth_der # derivative of depth_calib: a by-product of the PT-filter.
+                    depth_msg.depth = depth_read   # the depth that is directly determined from a static pressure.
+                    depth_msg.depth_calib = depth_calib   # the depth with filtered glitches and pitch angle correction
+                    depth_msg.depth_filt = depth_filt   # depth_calib that is filtered by PT-filter.
+                    depth_msg.depth_der = depth_der   # derivative of depth_calib: a by-product of the PT-filter.
                     
                     #Publish data
                     pub.publish(depth_msg)
