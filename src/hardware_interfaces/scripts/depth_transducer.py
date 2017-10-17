@@ -57,7 +57,6 @@ def listenForData(status):
     for i in range(0,depth_array_length): 
         Dx[i] = i
     
-    depth_old = 0.0
     rateOK = True
     
     L_sensor    = 1.2   # a location of the depth sensor w.r.t. AUV nose. [m] measured
@@ -84,9 +83,9 @@ def listenForData(status):
                     timeZero_status = time.time()
                     pubStatus.publish(nodeID = 5, status = True)
                 
-                dataRaw = serialPort.readline()
+                data_raw = serialPort.readline()
                                 
-                data = numpy.array((findall('[-]*\d+.\d+',dataRaw)), numpy.float)
+                data = numpy.array((findall('[-]*\d+.\d+', data_raw)), numpy.float)
                 try:
                     if depth_base == None:
                         #Convert ADC value to depth value: the last term is for calibration
