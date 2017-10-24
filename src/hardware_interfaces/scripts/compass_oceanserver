@@ -115,16 +115,43 @@ def listen_for_data(node_status):
                     previous_depth = depth_read  # use read value, in case of actual change it will be used next time
                     depth_calib = depth - L_shift*math.sin(pitch_callback*math.pi/180.)# depth that takes into account the pitch angle of the AUV
 
+                    #### DEPTH FILTER ####
+                    if rate_ok:
+                        T = control_period
+                    else:
+                        T = time_elapsed
+                    Dx_real = Dx * T
+
+                    Dy[1:depth_array_length] = Dy[0:(depth_array_length-1)]
+                    Dy[0] = depth_calib
+                    [der, depth_filt] = numpy.polyfit(Dx_real, Dy, 1)
+                    depth_der = -der
+                    # depth_filt = depth  # DEBUGGING
+
+                    depth_msg.depth = depth_read   # the depth that is directly determined from a static pressure.
+                    depth_msg.depth_calib = depth_calib   # the depth with filtered glitches and pitch angle correction
+                    depth_msg.depth_filt = depth_filt   # depth_calib that is filtered by PT-filter.
+                    depth_msg.depth_der = depth_der   # derivative of depth_calib: a by-product of the PT-filter.
+
+                    # Publish data
+                    pub_depth.publish(depth_msg)
+
+                except ValueError:
+                    print 'trying to read depth: not a float'
+
+                # separate try for reading other, non-depth data, so this doesn't break the existing functioning depth
+                try:
+
                     pitch_raw = data[2]
                     pitch = pitch_raw-180
                     if pitch <-180:
                         pitch=pitch%360
-                    #pitch = pitch_raw
+                    # pitch = pitch_raw  # DEBUGGING
                     
                     roll_raw = data[1]
                     roll = - roll_raw
                     
-                    #roll = roll_raw
+                    # roll = roll_raw
                               
                     temperature = data[3]          
                                         
@@ -148,19 +175,7 @@ def listen_for_data(node_status):
                     ay          =-data[10]
                     az          =-data[12]
                                         
-                    #### DEPTH FILTER ####
-                    if rate_ok:
-                        T = control_period
-                    else:
-                        T = time_elapsed
-                    Dx_real = Dx * T
-                    
-                    Dy[1:depth_array_length] = Dy[0:(depth_array_length-1)]
-                    Dy[0] = depth_calib
-                    [der, depth_filt] = numpy.polyfit(Dx_real, Dy, 1)
-                    depth_der = -der
-                    #depth_filt = depth
-                                      
+
                     #### PITCH FILTER ####
                     Px_real = Px * T
                     Py[1:pitch_array_length] = Py[0:(pitch_array_length-1)]
@@ -187,13 +202,6 @@ def listen_for_data(node_status):
 #                    print 'ay %f' %(ay)
 #                    print 'az %f' %(az)
      
-                    depth_msg.depth = depth_read   # the depth that is directly determined from a static pressure.
-                    depth_msg.depth_calib = depth_calib   # the depth with filtered glitches and pitch angle correction
-                    depth_msg.depth_filt = depth_filt   # depth_calib that is filtered by PT-filter.
-                    depth_msg.depth_der = depth_der   # derivative of depth_calib: a by-product of the PT-filter.
-                    
-                    #Publish data
-                    pub_depth.publish(depth_msg)
 
                     oceanserver_compass_msg.heading = heading
                     oceanserver_compass_msg.pitch = pitch
@@ -206,7 +214,7 @@ def listen_for_data(node_status):
                     pub_oceanserver_compass.publish(oceanserver_compass_msg)
 
                 except ValueError: 
-                    print 'not a float'
+                    print 'Processing oceanserver compass data: not a float'
                 
         except:
             print 'read error'
