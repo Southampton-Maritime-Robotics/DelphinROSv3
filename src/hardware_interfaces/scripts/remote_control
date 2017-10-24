@@ -1,4 +1,4 @@
-#, queue_size=10!/usr/bin/python
+#!/usr/bin/python
 """
 Node for basic remote controlling of the AUV
 every key press will lead to an actuator action of a given time
@@ -88,8 +88,8 @@ def rcLoop():
 
 if __name__ == '__main__':
     try:
-        pubThruster = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints, queue_size=10)
-        pubProp = rospy.Publisher('prop_demand', Int8, queue_size=10)
+        pubThruster = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints, queue_size=1)
+        pubProp = rospy.Publisher('prop_demand', Int8, queue_size=1)
         rospy.init_node('remote_control', anonymous=True)
         rcLoop()
     except rospy.ROSInterruptException:

@@ -16,7 +16,7 @@ from hardware_interfaces import sonar_interface
 
 ################################################################
 def sonarLoop():
-    pub = rospy.Publisher('sonar_output', String, queue_size=10)
+    pub = rospy.Publisher('sonar_output', String)
     # Main operational loop #
     # it is unlikely that the sonar can keep up with the maximum rate,
     # but it should go as fast as possible, so the maximum rate is set
