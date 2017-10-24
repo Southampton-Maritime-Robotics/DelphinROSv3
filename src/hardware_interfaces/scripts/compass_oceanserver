@@ -1,7 +1,7 @@
-
-
+#!/usr/bin/python
 """
-Driver for pressure transducer to measure depth
+Driver for pressure transducer and oceanserver compass to measure depth and compass outputs
+(heading, pitch, roll, ...)
 
 keys parameters 
 -depth: the raw measurement from the pressure transducer
@@ -26,14 +26,20 @@ from hardware_interfaces.msg import depth
 from hardware_interfaces.msg import status
 
 global serialPort
+global pitch_callback
 
 
-    L_sensor    = 1.2   # a location of the depth sensor w.r.t. AUV nose. [m] measured
-    L_ref        = 0.65  # a reference point w.r.t. AUV nose [m] approximate
-    L_shift     = L_sensor-L_ref # [m]
+# Sensor positions
+L_sensor = 1.2   # a location of the depth sensor w.r.t. AUV nose. [m] measured
+L_ref = 0.65  # a reference point w.r.t. AUV nose [m] approximate
+L_shift = L_sensor - L_ref  # [m]
 
-################################################################
-def setUpSerial():
+
+def set_up_serial():
+    """
+    set up serial connection to ocean server device
+    :return: True if the serial connection was successfully opened
+    """
     global serialPort
     serialPort = serial.Serial(port='/dev/usboceanserver', baudrate='115200', timeout=0.01) # may need to change timeout if having issues!
     serialPort.bytesize = serial.EIGHTBITS
@@ -43,57 +49,49 @@ def setUpSerial():
     serialPort.flushInput()
     serialPort.flushOutput()
     return serialPort.isOpen()
-    
-################################################################
-def listenForData(status):
+
+
+def listen_for_data(node_status):
     global serialPort
     global pitch_callback
     
-    pitch_callback = 0.
-    
-    controlRate = 10. # [Hz]
-    controlPeriod = 1/controlRate
-    r = rospy.Rate(controlRate)
+    # rate settings and monitoring
+    control_rate = 10.  # [Hz]
+    control_period = 1/control_rate
+    r = rospy.Rate(control_rate)
     rate_ok = True
-    #### FILTER INFO ####
+    time_zero_status = time.time()  # control status publishing rate
+    dt_status = rospy.get_param('status_timing')
+
+
+    # Depth filtering and processing
     depth_array_length = 20
     Dx = numpy.zeros([depth_array_length],float) # time vector for PT filtering
     Dy = numpy.zeros([depth_array_length],float) # depth vector for PT filtering
     for i in range(0,depth_array_length): 
         Dx[i] = i
-    
-    oceanserver_pitch_array_length = 10
+    previous_depth = 0  # for removing glitches, compare current sensor read to previous
+    depth_glitch_delta = rospy.get_param('depth/GlitchDelta')
+    depth_base = None  # for calibrating the depth sensor: ensuring zero depth when launch at surface
+    pitch_callback = 0.  # use xsens pitch angle for pitch angle correction
+
+    # Oceanserver pitch filtering and processing
+    pitch_array_length = 10
     Px = numpy.zeros([pitch_array_length],float)
     Py = numpy.zeros([pitch_array_length],float)
     for i in range(0,pitch_array_length): 
         Px[i] = i
-        
-    depth_old = 0.0
-    
 
-    
-    #####################
-    
-    # to control a timing for status publishing
-    timeZero_status = time.time()
-    dt_status = rospy.get_param('status_timing')
-    depth_glitch_delta = rospy.get_param('depth/GlitchDelta')
-
-    depth_base = None # for calibrating the depth sensor: ensuring zero depth when launch at surface
-    
-    while not rospy.is_shutdown():    
-        timeRef = time.time()
-        previous_depth = 0  # for removing glitches, compare current sensor read to previous
+    while not rospy.is_shutdown():
+        time_ref = time.time()
         try:
-            # time.sleep(0.01)  # Prevents node from using 100% CPU!!
-            while serialPort.inWaiting() > 0 and serialPort.read(1) == '$':     #while there is data to be read - read the line...
-                # to control a timing for status publishing
-                if time.time()-timeZero_status > dt_status:
-                    timeZero_status = time.time()
-                    pubStatus.publish(nodeID = 5, status = True)
-                
-                pubStatus.publish(nodeID = 5, status = status)
-                
+            # todo: all below used to be encased in try... (see depth node) - is that needed?
+            while serialPort.inWaiting() > 0 and serialPort.read(1) == '$':  #while there is data to be read - read the line...
+                # publish status at status rate:
+                if time.time() - time_zero_status > dt_status:
+                    time_zero_status = time.time()
+                    pubStatus.publish(nodeID = 5, status = node_status) # status = True?
+
                 #data_raw = serialPort.readline(size = None, eol = '\n')
                 data_raw = serialPort.readline()
                                 
@@ -117,15 +115,14 @@ def listenForData(status):
                     previous_depth = depth_read  # use read value, in case of actual change it will be used next time
                     depth_calib = depth - L_shift*math.sin(pitch_callback*math.pi/180.)# depth that takes into account the pitch angle of the AUV
 
-                try:
-                    pitch_raw   = data[2]
-                    pitch       = pitch_raw-180
+                    pitch_raw = data[2]
+                    pitch = pitch_raw-180
                     if pitch <-180:
                         pitch=pitch%360
                     #pitch = pitch_raw
                     
-                    roll_raw    = data[1]    
-                    roll        =-roll_raw     
+                    roll_raw = data[1]
+                    roll = - roll_raw
                     
                     #roll = roll_raw
                               
@@ -133,8 +130,8 @@ def listenForData(status):
                                         
                     m           = data[5]
                     mx          = data[7]
-                    my          =-data[6]  
-                    mz          =-data[8]  
+                    my          =-data[6]
+                    mz          =-data[8]
                     
                     mx_raw      = data[6]
                     my_raw      = data[7]
@@ -152,10 +149,10 @@ def listenForData(status):
                     az          =-data[12]
                                         
                     #### DEPTH FILTER ####
-                    if rateOK:
-                        T = controlPeriod
+                    if rate_ok:
+                        T = control_period
                     else:
-                        T = timeElapse
+                        T = time_elapsed
                     Dx_real = Dx * T
                     
                     Dy[1:depth_array_length] = Dy[0:(depth_array_length-1)]
@@ -165,7 +162,7 @@ def listenForData(status):
                     #depth_filt = depth
                                       
                     #### PITCH FILTER ####
-                    Px_real = Px * dt
+                    Px_real = Px * T
                     Py[1:pitch_array_length] = Py[0:(pitch_array_length-1)]
                     Py[0] = pitch
                     [der, pitch_filt] = numpy.polyfit(Px_real, Py, 1)
@@ -190,59 +187,64 @@ def listenForData(status):
 #                    print 'ay %f' %(ay)
 #                    print 'az %f' %(az)
      
-                    #Publish data to compass_out
-                    pub.publish(heading=heading,pitch=pitch,roll=roll,temperature=temperature,depth=depth,m=m,mx=mx,my=my,mz=mz,a=a,ax=ax,ay=ay,az=az,depth_filt=depth_filt,depth_der=depth_der,pitch_filt=pitch_filt,pitch_der=pitch_der)
                     depth_msg.depth = depth_read   # the depth that is directly determined from a static pressure.
                     depth_msg.depth_calib = depth_calib   # the depth with filtered glitches and pitch angle correction
                     depth_msg.depth_filt = depth_filt   # depth_calib that is filtered by PT-filter.
                     depth_msg.depth_der = depth_der   # derivative of depth_calib: a by-product of the PT-filter.
                     
                     #Publish data
-                    pub.publish(depth_msg)
-                  
+                    pub_depth.publish(depth_msg)
+
+                    oceanserver_compass_msg.heading = heading
+                    oceanserver_compass_msg.pitch = pitch
+                    oceanserver_compass_msg.roll = roll
+                    oceanserver_compass_msg.temperature = temperature
+                    oceanserver_compass_msg.ax = ax
+                    oceanserver_compass_msg.ay = ay
+                    oceanserver_compass_msg.az = az
+                    # currently unused values: m, mx,my,mz,a,pitch_filt, pitch_der
+                    pub_oceanserver_compass.publish(oceanserver_compass_msg)
+
                 except ValueError: 
                     print 'not a float'
                 
         except:
             print 'read error'
         
-        timeElapse = time.time()-timeRef
-        if timeElapse < controlPeriod:
-            rateOK = True
+        time_elapsed = time.time() - time_ref
+        if time_elapsed < control_period:
+            rate_ok = True
             r.sleep()
         else:
-            rateOK = False
-            str = "depth_transducer rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(controlRate,1/timeElapse) 
+            rate_ok = False
+            str = "depth_transducer rate does not meet the desired value of %.2fHz: actual control rate is %.2fHz" %(control_rate,1/time_elapsed)
             rospy.logwarn(str)
             pubMissionLog.publish(str)
+
 
 def compass_callback(data):
     global pitch_callback
     pitch_callback = data.pitch # pitch angle measured by xsens
+
 
 def calibrate(mx,my,mz, pitch, roll):
 
     pitch = numpy.radians(roll)
     roll  = numpy.radians(pitch)
 
-        
-    U = numpy.matrix([[0.00583711864398940, 0.000619779486949836, 9.27558703674774e-06],[0, 0.00478543996712305, -2.33933064978229e-06],[0, 0, 6.05590876286348e-05]])
+    U = numpy.matrix([[0.00583711864398940, 0.000619779486949836, 9.27558703674774e-06],
+                      [0, 0.00478543996712305, -2.33933064978229e-06],
+                      [0, 0, 6.05590876286348e-05]])
     
-    c = numpy.matrix([[-51.8129873735954],[-27.4232376953900],[13686.8142270094]])
-
-    
-    v = numpy.matrix([[mx],[my],[mz]])
-    
-    w = numpy.dot(U,(v - c))  #Normalised m terms
-    
+    c = numpy.matrix([[-51.8129873735954], [-27.4232376953900], [13686.8142270094]])
+    v = numpy.matrix([[mx], [my], [mz]])
+    w = numpy.dot(U, (v - c))  # Normalised m terms
     eqn22_topline = (w[2]*numpy.sin(roll) - w[1]*numpy.cos(roll))
-    
-    eqn22_botline = (w[0]*numpy.cos(pitch) + w[1]*numpy.sin(pitch)*numpy.sin(roll) + w[2]*numpy.sin(pitch)*numpy.cos(roll))
+    eqn22_botline = (w[0]*numpy.cos(pitch) + w[1]*numpy.sin(pitch)*numpy.sin(roll)
+                     + w[2]*numpy.sin(pitch)*numpy.cos(roll))
     
     heading2 = math.atan2(eqn22_topline,eqn22_botline)*180/numpy.pi
-    
     heading3 = (-heading2 + 90)%360
-    
     
     return heading3
     
@@ -286,17 +288,18 @@ if __name__ == '__main__':
     
     global pub
     global serialPort
-    global depth_msg
     depth_msg = depth()
+    oceanserver_compass_msg = compass()
     
-    pub = rospy.Publisher('depth_out', depth)
+    pub_depth = rospy.Publisher('depth_out', depth)
+    pub_oceanserver_compass = rospy.Publisher('oceanserver_compass', compass)
     pubMissionLog = rospy.Publisher('MissionStrings', String)
     rospy.Subscriber('compass_out', compass, compass_callback) 
     pubStatus = rospy.Publisher('status', status)
     
     rospy.on_shutdown(shutdown)
     
-    port_status = setUpSerial()
+    port_status = set_up_serial()
     log_str = "OceanServer port status = %s. Port = %s" %(port_status, serialPort.portstr)
     rospy.loginfo(log_str)
     time.sleep(0.3)
@@ -310,5 +313,8 @@ if __name__ == '__main__':
     else:
         status = False
         pubStatus.publish(nodeID = 5, status = status)
-    
-    listenForData(status)   #Main loop for receiving data
+
+    # TODO: at the moment this doesn't seem to deal with serial not being set-up?
+    # it will just listen for data, even though clearly nothing would happen?!
+
+    listen_for_data(status)   #Main loop for receiving data
