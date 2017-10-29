@@ -27,40 +27,63 @@ class pseudoAlt(object):
         # TODO add sonar message giving the trans bearing as a 16th gradians value
         # this way we can be closer to what the sonar actually works with
         # and it can be an INT!
-        self.angleStep_degrees = rospy.getParam("/sonar/Step")/16. * 0.9
-        self.LLim = rospy.getParam("/sonar/LLim")
-        self.RLim = rospy.getParam("/sonar/RLim")
-        self.number_of_angles = int((((self.LLim - self.RLim)%360) /self.angleStep_degrees) + 1)
-        self.sonarResultArray = [-1.] * number_of_angles
-        self.sonarPitchArray = [0] * number_of_angles
+        self.angleStep_degrees = rospy.get_param("/sonar/Step")/16. * 0.9
+        self.LLim = rospy.get_param("/sonar/LLim")
+        self.RLim = rospy.get_param("/sonar/RLim")
+        self.number_of_angles = int((((self.RLim - self.LLim)%360) /self.angleStep_degrees) + 1)
+        self.sonarResultArray = [-1.] * self.number_of_angles
+        self.sonarPitchArray = [0] * self.number_of_angles
 
     def callback_compass(self, compass_data):
         self.pitch = compass_data.pitch
 
     def callback_altimeter(self, altimeter_data):
-        self.pitch = altimeter_data.altitude_filt
+        self.altitude = altimeter_data.altitude_filt
 
     def generate_pseudo_altitude(self, sonar_result):
         """ calculate pseudo altitude
         """
-        current_array_position = int((self.LLim-sonar_result.transBearing)%360 / self.angleStep_degrees)
-        self.sonarResultArray[current_array_position] = sonar_result.TargetRange
-        self.sonarPitchArray[current_array_position] = self.pitch
-        horizonIdx = self.number_of_angles
-        while (self.sonarResultArray[horizonIdx] == -1) and (horizonIdx != 0) :
-            horizonIdx -= 1
-        if self.sonarResultArray[horizonIdx] == -1:
-            # all entries are invalid
-            pseudo_alt = self.altitude
+        # Calculate the sonar angle relative to the AUV,
+        # 0 degrees represents the sonar pointing parallel to the altimeter, along the positive direction (downwards)
+        sonar_bearing_from_pos_z = (-270. + sonar_result.transBearing) % 360
+        # Calculate sonar angle relative to smallest angle used
+        sonar_bearing_from_llim = (-self.LLim + sonar_result.transBearing) % 360
+        current_array_position = int(sonar_bearing_from_llim / self.angleStep_degrees)
+        
+        #if self.LLim < sonar_result.transBearing < self.RLim:
+
+        # check that the sonar is already set to the correct LLim and RLim, otherwise dismiss data
+        if 0 <= current_array_position < self.number_of_angles:
+            self.sonarPitchArray[current_array_position] = self.pitch
+
+
+            if 250 < (sonar_result.transBearing + self.pitch) < 340: # use only the area 'below'
+                self.sonarResultArray[current_array_position] = sonar_result.TargetRange
+            else:
+                self.sonarResultArray[current_array_position] = -1
+
+            horizonIdx = self.number_of_angles -1
+
+            while (self.sonarResultArray[horizonIdx] == -1) and (horizonIdx != 0) :
+                horizonIdx -= 1
+            if self.sonarResultArray[horizonIdx] == -1:
+                # all entries are invalid
+                pseudo_alt = self.altitude
+            else:
+                angle = (horizonIdx * self.angleStep_degrees) + self.sonarPitchArray[horizonIdx]
+                # floor parallel, below,  at max range should register at -90; corresponding pseudo alt = 1*range
+                # wall at max range should register at 0; corresponding pseudo alt = 0
+                # negative pseudo altitude for angles smaller than 
+                pseudo_alt = self.sonarResultArray[horizonIdx] * np.cos(np.radians(angle)) # TODO: make this offset a param
+                #pseudo_alt += 0.8
+                #pseudo_alt = min(self.altitude, pseudo_alt) 
+            pub.publish(pseudo_alt)
         else:
-            angle = (horizonIdx * self.angleStep_degrees - self.LLim) + self.sonarPitchArray[idx]
-            # floor parallel, below,  at max range should register at -90; corresponding pseudo alt = 1*range
-            # wall at max range should register at 0; corresponding pseudo alt = 0
-            # negative pseudo altitude for angles smaller than 
-            pseudo_alt = -sonarResultArray[horizonIdx] * np.sin(np.radians(angle))
-            pseudp_alt = min(self.altitude, pseudp_alt)
-                
-        pub.publish(pseudo_alt)
+            pass
+            #rospy.logwarn("Sonar angle likely out of LLim/RLim limit! \n" +
+            #               "RLim: " + str(self.RLim) +
+            #               ", LLim: " + str(self.LLim) +
+            #               ", current sonar angle: " + str(sonar_result.transBearing))
 
 ################################################################
 ################################################################
@@ -68,10 +91,10 @@ if __name__ == '__main__':
 
     rospy.init_node('sonar_pseudo_altitude')
     state = pseudoAlt()
-    pub = rospy.Publisher('pseudo_altitude', Float32, queue_size=10)
+    pub = rospy.Publisher('pseudo_altitude', Float32, queue_size=1)
     rospy.Subscriber('sonar_processed', sonar_data, state.generate_pseudo_altitude)
-    rospy.Subscriber('compass_out', compass, callback_compass)
-    rospy.Subscriber('altimeter_out', altitude, callback_altimeter)
+    rospy.Subscriber('compass_out', compass, state.callback_compass)
+    rospy.Subscriber('altimeter_out', altitude, state.callback_altimeter)
 
     rospy.spin()
 
