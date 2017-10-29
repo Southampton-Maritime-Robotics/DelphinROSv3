@@ -45,39 +45,50 @@ class pseudoAlt(object):
         """
         # Calculate the sonar angle relative to the AUV,
         # 0 degrees represents the sonar pointing parallel to the altimeter, along the positive direction (downwards)
-        sonar_bearing_from_pos_z = (-270. + sonar_result.transBearing) % 360
+        sonar_bearing_from_auv_pos_z = (-270. + sonar_result.transBearing) % 360
         # Calculate sonar angle relative to smallest angle used
         sonar_bearing_from_llim = (-self.LLim + sonar_result.transBearing) % 360
         current_array_position = int(sonar_bearing_from_llim / self.angleStep_degrees)
         
         #if self.LLim < sonar_result.transBearing < self.RLim:
 
-        # check that the sonar is already set to the correct LLim and RLim, otherwise dismiss data
+        # only calculate pseudo altitude if sonar is set to correct LLim and RLim, otherwise dismiss data
         if 0 <= current_array_position < self.number_of_angles:
+            # add new data
             self.sonarPitchArray[current_array_position] = self.pitch
-
-
-            if 250 < (sonar_result.transBearing + self.pitch) < 340: # use only the area 'below'
-                self.sonarResultArray[current_array_position] = sonar_result.TargetRange
+            # Avoid detecting the surface: In global KS, use only area from vertical to just above horizontal
+            # TODO: calculate upper limit based on depth and sonar range
+            if 0. < (sonar_bearing_from_auv_pos_z + self.pitch) < 100: 
+                self.sonarResultArray[current_array_position] = sonar_result.TargetRange * 3/2.5 # Add weird sonar correction factor (reason? TODO)
             else:
                 self.sonarResultArray[current_array_position] = -1
 
+            # find current horizon
             horizonIdx = self.number_of_angles -1
-
-            while (self.sonarResultArray[horizonIdx] == -1) and (horizonIdx != 0) :
+            while (self.sonarResultArray[horizonIdx] < 0) and (horizonIdx != 0) :
                 horizonIdx -= 1
-            if self.sonarResultArray[horizonIdx] == -1:
+
+            # calculate pseudo altitude
+            if self.sonarResultArray[horizonIdx] <0 :
                 # all entries are invalid
                 pseudo_alt = self.altitude
             else:
-                angle = (horizonIdx * self.angleStep_degrees) + self.sonarPitchArray[horizonIdx]
+                angle_from_llim = horizonIdx * self.angleStep_degrees
+                angle_from_global_z = self.LLim - 270. + angle_from_llim + self.sonarPitchArray[horizonIdx]
+                angle_from_current_auv_z = angle_from_global_z - self.pitch
                 # floor parallel, below,  at max range should register at -90; corresponding pseudo alt = 1*range
                 # wall at max range should register at 0; corresponding pseudo alt = 0
                 # negative pseudo altitude for angles smaller than 
-                pseudo_alt = self.sonarResultArray[horizonIdx] * np.cos(np.radians(angle)) # TODO: make this offset a param
-                #pseudo_alt += 0.8
-                #pseudo_alt = min(self.altitude, pseudo_alt) 
-            pub.publish(pseudo_alt)
+                global_pseudo_alt = self.sonarResultArray[horizonIdx] * np.cos(np.radians(angle_from_global_z)) 
+                pseudo_from_auv_z = self.sonarResultArray[horizonIdx] * np.cos(np.radians(angle_from_current_auv_z)) # TODO: make this offset a param
+                # use the pseudo altitude relative to the auv_z
+                pseudo_alt = min(self.altitude, pseudo_from_auv_z) 
+                pub_pseudo_from_auv_z.publish(pseudo_from_auv_z)
+                pub_pseudo_from_global_z.publish(global_pseudo_alt)
+                simplified_pseudo_alt = np.cos(np.radians(sonar_bearing_from_auv_pos_z)) * sonar_result.TargetRange
+                pub_simplified.publish(simplified_pseudo_alt)
+            pub_pseudo_alt.publish(pseudo_alt)
+
         else:
             pass
             #rospy.logwarn("Sonar angle likely out of LLim/RLim limit! \n" +
@@ -91,7 +102,10 @@ if __name__ == '__main__':
 
     rospy.init_node('sonar_pseudo_altitude')
     state = pseudoAlt()
-    pub = rospy.Publisher('pseudo_altitude', Float32)
+    pub_pseudo_alt = rospy.Publisher('pseudo_altitude', Float32)
+    pub_pseudo_from_auv_z = rospy.Publisher('pseudo_altitude_from_current_auv_z', Float32)
+    pub_pseudo_from_global_z = rospy.Publisher('pseudo_altitude_from_global_z', Float32)
+    pub_simplified = rospy.Publisher('simplified_pseudo_altitude', Float32)
     rospy.Subscriber('sonar_processed', sonar_data, state.generate_pseudo_altitude)
     rospy.Subscriber('compass_out', compass, state.callback_compass)
     rospy.Subscriber('altimeter_out', altitude, state.callback_altimeter)
