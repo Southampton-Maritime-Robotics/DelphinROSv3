@@ -9,6 +9,8 @@ A node to monitor
 - current cunsumed by fins (all together)
 - current consumed by propeller
 
+The battery voltage is given in Millivolts, the current is given in Milliampere.
+
 # thruster numbering
     0 vert_front
     1 vert_rear
@@ -89,7 +91,7 @@ def getVoltage():
                                     msg+=_in
                                 timeElapse = time.time()-timeStart # elapsed time for getting the rest of data packet
                         try :
-                            vol = int(float(msg)*1000)
+                            vol = int(float(msg)*1000)  # convert the arduino output in Volts to Millivolts
                         except :
                             pass
                         
