@@ -207,12 +207,12 @@ def main_loop():
             timeStart_vol = time.time()
             
         ############################# PUBLISH INFO. ######################################
-        
+        # current to thrusters is inverted since the current monitor was mounted the wrong way round, leading to negative current
         pubOutput.publish(batteryVol = voltage, 
-                          thruster_0 = amp[0], 
-                          thruster_1 = amp[1], 
-                          thruster_2 = amp[2],
-                          thruster_3 = amp[3], 
+                          thruster_0 = -amp[0], 
+                          thruster_1 = -amp[1], 
+                          thruster_2 = -amp[2],
+                          thruster_3 = -amp[3], 
                           fins = amp[4], 
                           prop = amp[5])
 
