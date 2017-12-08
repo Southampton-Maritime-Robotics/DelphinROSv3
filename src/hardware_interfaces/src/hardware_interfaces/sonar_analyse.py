@@ -12,7 +12,7 @@ sonarPlotData: collection onf sonar Pings and further things for plotting, e.g. 
 sonarEvaluate: Further data that is needed for sonar evaluation, e.g. pitch and evaluation results
 """
 
-import numpy
+import numpy as np
 import rospy
 import warnings
 
@@ -43,7 +43,7 @@ class SonarPing(object):
         global driftOffset
         self.bins =[]
         self.header = []
-        data = numpy.fromstring(rawData.data, dtype=numpy.uint8)
+        data = np.fromstring(rawData.data, dtype=np.uint8)
         # only fill the dataset, if the packet contains bins
         if len(data) > 200:
             self.hasBins = 1
@@ -131,7 +131,7 @@ class SonarEvaluate(object):
         # The blanking distance is applied pre re-scaling, but estimated based on scaled data
         self.BlankDist = rospy.get_param("/sonar/analyse/BlankDist")/self.RangeFudgeFactor  
         self.UseSlidingThreshold = rospy.get_param("/sonar/analyse/UseSlidingThreshold")
-        self.MaxThreshold = rospy.get_param("/sonar/analyse/Threshold")
+        self.MaxThreshold = rospy.get_param("/sonar/analyse/MaxThreshold")
         self.BaseThreshold = rospy.get_param("/sonar/analyse/BaseThreshold")
         self.SlideThreshold = rospy.get_param("/sonar/analyse/ThresholdSlope")
         self.SoundspeedInWater = rospy.get_param("/sonar/SoundspeedWater")
@@ -168,15 +168,15 @@ class SonarEvaluate(object):
         """
         if sonarPing.hasBins:
             BinLength = sonarPing.ADInterval / float(self.SoundspeedInWater)/2.    # Make sure the division is by float
-            StartBin = int(numpy.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
+            StartBin = int(np.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
             thresholds = self.get_thresholds(sonarPing)
 
 
 
             # return indices of bins with value above threshold:
-            ReturnIndexes = numpy.flatnonzero(numpy.greater(sonarPing.pingPower, thresholds))
-            detections = numpy.greater(sonarPing.pingPower, thresholds)
-            detections = numpy.multiply(detections, thresholds)
+            ReturnIndexes = np.flatnonzero(np.greater(sonarPing.pingPower, thresholds))
+            detections = np.greater(sonarPing.pingPower, thresholds)
+            detections = np.multiply(detections, thresholds)
 
             target_range = -1
             # calculate target range in metres
@@ -202,7 +202,7 @@ class SonarEvaluate(object):
                     
             # mean intensity of bins beyond the blanking disance
             # may be of interest in identifying areas of interest
-            meanIntensity = numpy.mean(sonarPing.pingPower[StartBin:-1])
+            meanIntensity = np.mean(sonarPing.pingPower[StartBin:-1])
 
             # apply offsets so the bearing angle can be turned into rotation around a given axis
             # in the Delphin2 Coordinate system

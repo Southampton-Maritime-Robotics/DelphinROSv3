@@ -37,9 +37,9 @@ def get_sonar(msgData):
     ping = sonar_analyse.SonarPing(msgData)
     plotData.add_data(ping)
     # update obstacle detection
-    targetDetection, thresholds = analyseData.detect_obstacle(ping, depth)
+    targetDetection, detections = analyseData.detect_obstacle(ping, depth)
     plotData.targetRange.append(targetDetection[1])
-    plotData.Thresholds = thresholds
+    plotData.Detections.append(detections)
 
 
 def draw_figures():
@@ -117,17 +117,18 @@ def draw_figures():
             obstacle_detection.plot(plotData.targetRange)
             last_pings.clear()
             last_pings.setYRange(0,120)
-            # HERE
 
-            last_pings.plot(plotData.bins[-8], pen=(0,   0,  50))
-            last_pings.plot(plotData.bins[-7], pen=(0,   0, 100))
-            last_pings.plot(plotData.bins[-6], pen=(0,   0, 150))
-            last_pings.plot(plotData.bins[-5], pen=(0,   0, 200))
-            last_pings.plot(plotData.bins[-4], pen=(0,  50, 200))
-            last_pings.plot(plotData.bins[-3], pen=(0, 100, 200))
-            last_pings.plot(plotData.bins[-2], pen=(0, 150, 200))
-            last_pings.plot(plotData.bins[-1], pen=(0, 250, 250))
-            last_pings.plot(plotData.Thresholds, pen='r')
+            if len(plotData.bins) > 7:
+                last_pings.plot(plotData.bins[-8], pen=(0,   0,  50))
+                last_pings.plot(plotData.bins[-7], pen=(0,   0, 100))
+                last_pings.plot(plotData.bins[-6], pen=(0,   0, 150))
+                last_pings.plot(plotData.bins[-5], pen=(0,   0, 200))
+                last_pings.plot(plotData.bins[-4], pen=(0,  50, 200))
+                last_pings.plot(plotData.bins[-3], pen=(0, 100, 200))
+                last_pings.plot(plotData.bins[-2], pen=(0, 150, 200))
+                last_pings.plot(plotData.bins[-1], pen=(0, 250, 250))
+ 
+                last_pings.plot(plotData.Detections[-1], pen='r')
  
 
 
@@ -140,12 +141,10 @@ def draw_figures():
 
 def callback(config, level):
     rospy.logwarn(config)
-    analyseData.Threshold = config.threshold
     analyseData.BlankDist = config.blanking_dist
-    analyseData.LogStretch = config.log_stretch
-    analyseData.LogWeight = config.log_weight
     analyseData.SlideThreshold = config.slide_threshold
     analyseData.BaseThreshold = config.base_threshold
+    analyseData.MaxThreshold = config.max_threshold
     return config
 
 def depth_callback(data):
