@@ -35,11 +35,13 @@ class SonarPing(object):
     NOTE: the unprocessed information is published since it is more useful for debugging purposes
     TODO: Is it really???
     """
-    def __init__(self, rawData):
+    def __init__(self, rawData, log_stretch=1, log_weight=0):
         """
         Read one dataset from string as published by sonar
         :param rawData: 
         """
+        log_stretch = 50 # DDD make this a param!
+        log_weight = 0 # DDD make this a param!
         global driftOffset
         self.bins =[]
         self.header = []
@@ -49,19 +51,21 @@ class SonarPing(object):
             self.hasBins = 1
             # now split the most recent dataset:
             self.header = data[0:52]   # 13 byte header are read from sonar
-            self.bins = data[52:]     # the rest is bins
+            self.bins = data[52:]     # the rest is bins (from 44? not from 52?
             self.NBins = float(self.header[42] + self.header[43]*256)
             self.transducerBearing = ((float(self.header[40]+(self.header[41]*256))/6400.0)*360 + driftOffset)%360
             self.LLim =  ((float(self.header[35]+(self.header[36]*256))/6400.0)*360)%360
             self.RLim =  ((float(self.header[37]+(self.header[38]*256))/6400.0)*360)%360
             self.ADInterval = float(self.header[33]+(self.header[34]*256))
             self.pingRange = self.ADInterval * 0.000000640 * self.NBins * 1500. /2
-            self.pingPower = data[44:-1]
-            for idx, intensity in enumerate(self.pingPower):
-                # try to reduce blanking distance by applying negative offset at 1m radius
-                # TODO: is this really an improvement? -> compare two more complex maps!
-                self.pingPower[idx] = int(intensity + numpy.log((idx+1)*self.pingRange/100.))
-                #self.pingPower[idx] = intensity
+            #self.pingPower = data[44:-1]
+            #TODODODODODO
+            self.pingPower=data[52:]
+            #for idx, intensity in enumerate(self.pingPower):
+            #    # try to reduce blanking distance by applying negative offset at 1m radius
+            #    # TODO: is this really an improvement? -> compare two more complex maps!
+            #     self.pingPower[idx] = int(intensity + log_weight * numpy.log((idx+1)*self.pingRange/log_stretch))
+            #    self.pingPower[idx] = intensity
 
         else:
             self.hasBins = 0
@@ -134,14 +138,34 @@ class SonarEvaluate(object):
     """
     def __init__(self):
         self.BlankDist = rospy.get_param("/sonar/analyse/BlankDist")
-        self.Threshold = rospy.get_param("/sonar/analyse/Threshold")
+        self.UseSlidingThreshold = rospy.get_param("/sonar/analyse/UseSlidingThreshold")
+        self.MaxThreshold = rospy.get_param("/sonar/analyse/Threshold")
+        self.BaseThreshold = rospy.get_param("/sonar/analyse/BaseThreshold")
+        self.SlideThreshold = rospy.get_param("/sonar/analyse/SlideThreshold")
+        self.LogWeight = 0 # DDD
+        self.LogStretch = 1 # DDD
         self.SoundspeedInWater = rospy.get_param("/sonar/SoundspeedWater")
         self.rotationDirection = rospy.get_param("/sonar/rotation/Direction")
         self.rotationOffset = rospy.get_param("/sonar/rotation/Offset")
 
 
+    def get_thresholds(self, sonarPing):
+        """
+        instead of one single threshold, use decreasing threshold
+        """
+        thresholds = []
+        length = len(sonarPing.pingPower)
+        if not self.UseSlidingThreshold:
+            thresholds = [self.MaxThreshold] * length
+        else:
+            reduction_per_bin = self.SlideThreshold * sonarPing.pingRange/sonarPing.NBins
+            for i in range(length):
+                next_threshold = max(30, (self.BaseThreshold - reduction_per_bin * i))
+                thresholds.append(next_threshold)
+        return thresholds
 
-    def detect_obstacle(self, sonarPing):
+    def detect_obstacle(self, sonarPing, depth):
+        depth = depth 
         """
         calculate distance at which obstacle is detected
         based on deprecated sonar_detectobstacle.py
@@ -152,19 +176,42 @@ class SonarEvaluate(object):
         though I am not sure if the micron is one of the sonar that can do repeats, and of course this looses time
         """
         if sonarPing.hasBins:
-            BinLength = sonarPing.ADInterval / float(self.SoundspeedInWater)    # Make sure the division is by float
+            sonar_scale = 3/2.5
+            BinLength = sonarPing.ADInterval / float(self.SoundspeedInWater)/2.    # Make sure the division is by float
+            # TODODODODODO divide blank dist by sonar_scale
             StartBin = int(numpy.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
+            thresholds = self.get_thresholds(sonarPing)
+
+
 
             # return indices of bins with value above threshold:
-            ReturnIndexes = numpy.flatnonzero(sonarPing.pingPower[StartBin:-1]>self.Threshold)
-            # include number of bins in blanking distance for true distance
-            ReturnIndexes = ReturnIndexes + StartBin
+            ReturnIndexes = numpy.flatnonzero(numpy.greater(sonarPing.pingPower, thresholds))
+            detections = numpy.greater(sonarPing.pingPower, thresholds)
+            detections = numpy.multiply(detections, thresholds)
+
+            target_range = -1
             # calculate target range in metres
             if ReturnIndexes != []:
-                # calculate distance to first bin that is above threshold
-                TargetRange = ReturnIndexes[0] * BinLength
-            else:
-                TargetRange = -1 # indicate no returns
+                # remove indeces that are continuous
+                ReturnIndexes = remove_continued(ReturnIndexes)
+ 
+                idx = 0
+                while ((idx < len(ReturnIndexes))
+                       and (ReturnIndexes[idx] < StartBin)):
+                    idx += 1
+                if idx < len(ReturnIndexes):
+                    target_range = ReturnIndexes[idx] * BinLength * sonar_scale
+
+                    # check if this is just a reflection of the surface
+                    if abs(target_range - depth) < 0.1:
+                        idx += 1
+                        print("depth ???")
+                        if len(ReturnIndexes) > idx:
+                            target_range = ReturnIndexes[idx] * BinLength * sonar_scale
+                        else:
+                            target_range = -1
+                    
+            print(target_range)
 
             # mean intensity of bins beyond the blanking disance
             # may be of interest in identifying areas of interest
@@ -173,9 +220,17 @@ class SonarEvaluate(object):
             # apply offsets so the bearing angle can be turned into rotation around a given axis
             # in the Delphin2 Coordinate system
             bearing_in_delphin2ks = (sonarPing.transducerBearing - self.rotationOffset) * self.rotationDirection
-            results = [bearing_in_delphin2ks, TargetRange, meanIntensity]
+            results = [bearing_in_delphin2ks, target_range, meanIntensity]
         else:
             results = [0, 0, 0]
-        return results
+        return results #, detections
 
+def remove_continued(index_list):
+    new_list = [index_list[0]]
+    previous = index_list[0]
+    for value in index_list:
+        if value - previous > 3:
+            new_list.append(value)
+        previous = value
+    return new_list
 

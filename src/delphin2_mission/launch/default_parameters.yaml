@@ -109,10 +109,10 @@ thruster/ArduinoMax: 255.
 ### CONTROL SURFACES
 # Controlsurfaces have an offset on the arduino side, however to change that the pressure hull needs to be opened, so now it can also be adjusted as a parameter here
 # b: top; c: stbd; d: bottom; e: port
-control_surface/offset/top: -10.  #-8 10.
-control_surface/offset/bottom: 0.  #0 6.
-control_surface/offset/stbd: 17.   #25 14.
-control_surface/offset/port: 15.    #17 -5.
+control_surface/offset/top: 0. 
+control_surface/offset/bottom: -10.  
+control_surface/offset/stbd: 6  
+control_surface/offset/port: -7.  
 
 ### DEPTH SENSOR
 # The depth sensor occasionally glitches to a too large value
