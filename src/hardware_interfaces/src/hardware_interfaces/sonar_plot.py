@@ -3,7 +3,6 @@ import rospy
 import time
 import collections
 
-from hardware_interfaces import sonar_analyse
 
 """
 VERSION AS OF 2016-04-26
@@ -23,10 +22,11 @@ class SonarPlot():
         self.transducerBearing = collections.deque(maxlen=self.memory)# angle at which measurement was made, in [degrees]
         self.pingRange = collections.deque([0], maxlen = self.memory)
         self.targetRange = collections.deque([0]*self.memory, self.memory)  # initialise for nicer plots at startup
-        self.fixedAngleTarget = collections.deque([0]*self.memory, self.memory)  #initialise for nicer plots at startup
+
         self.bins = collections.deque(maxlen=self.memory)
         self.polarResolution = 1
         self.angleStep = 0.1
+        self.Thresholds = [0, 1, 2]
 
     def add_data(self, sonarPing):
         """
@@ -40,7 +40,7 @@ class SonarPlot():
             # if the range changes, the plot needs to be updated
             if len(self.bins[-1])  != self.polarResolution:
                 # clear all but the current bins
-                self.bins = [self.bins[-1]]
+                self.bins = collections.deque([self.bins[-1]], maxlen=self.memory)
                 self.polarResolution = len(self.bins[-1])
                 self.polarImage = np.zeros((self.polarResolution * 2, self.polarResolution * 2))
                 # add grid for 0, 90, 180 and 270 degrees
@@ -53,7 +53,7 @@ class SonarPlot():
                     self.polarImage[self.polarResolution - 1, x] = 200
 
             self.update_polar()
-            self.update_angleOfInterest()
+            # self.update_last_pings()
 
 
     def update_polar(self):
@@ -86,7 +86,7 @@ class SonarPlot():
                 # polar plot around centre of plotting are, making sure the plotting area is not exceeded
                 # (rounding errors sometimes lead to
                 x_coord = int(idx * cosine) + self.polarResolution  # polar plot around centre of plotting area
-                y_coord = int(idx * sine) + self.polarResolution
+                y_coord = - int(idx * sine) + self.polarResolution
                 gridlines = [self.polarResolution, self.polarResolution + 1, self.polarResolution -1]
                 if (x_coord in gridlines) or (y_coord in gridlines):
                     self.polarImage[x_coord, y_coord] = 200
@@ -95,17 +95,12 @@ class SonarPlot():
 
 
 
-    def update_angleOfInterest(self):
-        """
-        keep track of one specific angle,
-        if a measurement at that angle was made, update plot
-        TODO surely this can be done more flexible to different angles
-        """
-        if ((self.transducerBearing[-1] - abs(self.angleStep/2.) < self.angleOfInterest) and 
-           (self.angleOfInterest < self.transducerBearing[-1] + abs(self.angleStep/2.))):
-            self.fixedAngleTarget.append(self.targetRange[-1])
-        else:
-            if len(self.fixedAngleTarget) > 1:
-                self.fixedAngleTarget.append(self.fixedAngleTarget[-1])
-            else:
-                self.fixedAngleTarget.append(-1)
+#    def update_last_pings(self):
+#        """
+#        show a plot of all returns of the last n angles
+#        HERE
+#        keep track of one specific angle,
+#        if a measurement at that angle was made, update plot
+#        TODO surely this can be done more flexible to different angles
+#        """
+#        self.lastPing1 = [1, 2, 3, 3, 4, 5, 8, 10, 2]

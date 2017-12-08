@@ -85,9 +85,9 @@ def draw_figures():
     label_range.setStyleSheet('color: orange')
 
 
-    grid.addWidget(label_270deg,         1, 4 * w, 4, 20)
+    grid.addWidget(label_90deg,         1, 4 * w, 4, 20)
     grid.addWidget(label_180deg,    2 * w, 2 * w + 5, 4, 20)
-    grid.addWidget(label_90deg,   4 * w - 5, 4 * w, 4, 20)
+    grid.addWidget(label_270deg,   4 * w - 5, 4 * w, 4, 20)
     grid.addWidget(label_0deg,   2 * w, 6 * w - 20, 4, 20)
     grid.addWidget(label_range, 1, 2*w + 1, 12, 20)
 
