@@ -36,6 +36,7 @@ from std_msgs.msg import Float32
 from sensor_msgs.msg import PointCloud2
 from hardware_interfaces.msg import sonar_data
 from hardware_interfaces.msg import sonar	
+from hardware_interfaces.msg import depth
 
 from hardware_interfaces import sonar_analyse
 
@@ -44,12 +45,13 @@ sonarMapping = PointCloud2()
 ################################################################
 
 def get_sonar(msgData):
+    global depth
     """
     currently the sonar is only read and an analysis of this ping is published, no sonar data is kept
     if needed, the SonarEvaluate object needs adapting
     :param msgData: sonar ping in string format
     """
-    result = sonar.detect_obstacle(sonar_analyse.SonarPing(msgData))
+    result, _ = sonar.detect_obstacle(sonar_analyse.SonarPing(msgData), depth)
 
     ### Publishers
     pub.publish(transBearing=result[0], pitch=0, TargetRange=result[1], meanIntinsity=result[2])  # TODO get rid of pitch entry in this message
@@ -99,6 +101,9 @@ def get_sonar(msgData):
     br_swapped.sendTransform(sonartf_swapped)
 
 
+def depth_callback(data):
+    global depth
+    depth = data.depth_filt
 
 
 ################################################################
@@ -106,7 +111,7 @@ def get_sonar(msgData):
 if __name__ == '__main__':
 
     global pub
-    global pitch
+    global depth
 
     rospy.init_node('sonar_detect')
     # Uncomment to run this node in debug mode:
@@ -129,6 +134,7 @@ if __name__ == '__main__':
 
     sonar = sonar_analyse.SonarEvaluate()
     rospy.Subscriber('sonar_output', String, get_sonar)
+    rospy.Subscriber('depth_out', depth, depth_callback)
     rospy.spin()
 
    

@@ -137,13 +137,13 @@ class SonarEvaluate(object):
     
     """
     def __init__(self):
-        self.BlankDist = rospy.get_param("/sonar/analyse/BlankDist")
+        self.RangeFudgeFactor = rospy.get_param("/sonar/analyse/RangeFudgeFactor")
+        # The blanking distance is applied pre re-scaling, but estimated based on scaled data
+        self.BlankDist = rospy.get_param("/sonar/analyse/BlankDist")/self.RangeFudgeFactor  
         self.UseSlidingThreshold = rospy.get_param("/sonar/analyse/UseSlidingThreshold")
         self.MaxThreshold = rospy.get_param("/sonar/analyse/Threshold")
         self.BaseThreshold = rospy.get_param("/sonar/analyse/BaseThreshold")
         self.SlideThreshold = rospy.get_param("/sonar/analyse/SlideThreshold")
-        self.LogWeight = 0 # DDD
-        self.LogStretch = 1 # DDD
         self.SoundspeedInWater = rospy.get_param("/sonar/SoundspeedWater")
         self.rotationDirection = rospy.get_param("/sonar/rotation/Direction")
         self.rotationOffset = rospy.get_param("/sonar/rotation/Offset")
@@ -151,7 +151,8 @@ class SonarEvaluate(object):
 
     def get_thresholds(self, sonarPing):
         """
-        instead of one single threshold, use decreasing threshold
+        Calculate array of threshold for the sonar return
+        If the sliding thresholding is not used, apply a constant threshold instead.
         """
         thresholds = []
         length = len(sonarPing.pingPower)
@@ -160,7 +161,7 @@ class SonarEvaluate(object):
         else:
             reduction_per_bin = self.SlideThreshold * sonarPing.pingRange/sonarPing.NBins
             for i in range(length):
-                next_threshold = max(30, (self.BaseThreshold - reduction_per_bin * i))
+                next_threshold = max(self.BaseThreshold, (self.MaxThreshold - reduction_per_bin * i))
                 thresholds.append(next_threshold)
         return thresholds
 
@@ -176,9 +177,7 @@ class SonarEvaluate(object):
         though I am not sure if the micron is one of the sonar that can do repeats, and of course this looses time
         """
         if sonarPing.hasBins:
-            sonar_scale = 3/2.5
             BinLength = sonarPing.ADInterval / float(self.SoundspeedInWater)/2.    # Make sure the division is by float
-            # TODODODODODO divide blank dist by sonar_scale
             StartBin = int(numpy.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
             thresholds = self.get_thresholds(sonarPing)
 
@@ -200,19 +199,17 @@ class SonarEvaluate(object):
                        and (ReturnIndexes[idx] < StartBin)):
                     idx += 1
                 if idx < len(ReturnIndexes):
-                    target_range = ReturnIndexes[idx] * BinLength * sonar_scale
+                    target_range = ReturnIndexes[idx] * BinLength * self.RangeFudgeFactor
 
                     # check if this is just a reflection of the surface
                     if abs(target_range - depth) < 0.1:
                         idx += 1
                         print("depth ???")
                         if len(ReturnIndexes) > idx:
-                            target_range = ReturnIndexes[idx] * BinLength * sonar_scale
+                            target_range = ReturnIndexes[idx] * BinLength * self.RangeFudgeFactor
                         else:
                             target_range = -1
                     
-            print(target_range)
-
             # mean intensity of bins beyond the blanking disance
             # may be of interest in identifying areas of interest
             meanIntensity = numpy.mean(sonarPing.pingPower[StartBin:-1])
@@ -223,7 +220,7 @@ class SonarEvaluate(object):
             results = [bearing_in_delphin2ks, target_range, meanIntensity]
         else:
             results = [0, 0, 0]
-        return results #, detections
+        return results, detections
 
 def remove_continued(index_list):
     new_list = [index_list[0]]
