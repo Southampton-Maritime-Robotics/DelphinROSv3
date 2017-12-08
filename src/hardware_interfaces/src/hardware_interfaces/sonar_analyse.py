@@ -133,7 +133,7 @@ class SonarEvaluate(object):
         self.UseSlidingThreshold = rospy.get_param("/sonar/analyse/UseSlidingThreshold")
         self.MaxThreshold = rospy.get_param("/sonar/analyse/Threshold")
         self.BaseThreshold = rospy.get_param("/sonar/analyse/BaseThreshold")
-        self.SlideThreshold = rospy.get_param("/sonar/analyse/SlideThreshold")
+        self.SlideThreshold = rospy.get_param("/sonar/analyse/ThresholdSlope")
         self.SoundspeedInWater = rospy.get_param("/sonar/SoundspeedWater")
         self.rotationDirection = rospy.get_param("/sonar/rotation/Direction")
         self.rotationOffset = rospy.get_param("/sonar/rotation/Offset")

@@ -147,10 +147,14 @@ sonar/rotation/Offset: 0 # offset [in degrees]
 # Number of repeated returns (+1 from SonarPing.m) to remove glitches
 sonar/analyse/GlitchCount: 1
 
+sonar/analyse/RangeFudgeFactor: 1.2  # For some reason there seems to be a range scaling factor different to the theoretical one!!!
 # Power level (0 to 250) above which sonar 'sees' a target
 # Value above which something is considered an object of interest
-# Lamont: 50
-sonar/analyse/Threshold: 110
+# Originally this was one simple threshold, now it changes with distance to the transducer
+sonar/analyse/UseSlidingThreshold: True  # Use MaxThreshold as constant threshold if False
+sonar/analyse/BaseThreshold: 40   # Lowest applied threshold
+sonar/analyse/MaxThreshold: 110   # Highest Threshold applied
+sonar/analyse/ThresholdSlope: 10  # Decrease of Threshold per metre scanned
 
 # Blanking distance to remove returns from the sonar mount
 # Distance from sonar head withing which returns are ignored
