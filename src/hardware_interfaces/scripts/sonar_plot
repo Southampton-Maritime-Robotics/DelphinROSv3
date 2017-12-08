@@ -21,20 +21,25 @@ from pyqtgraph.Qt import QtGui, QtCore
 import signal
 
 from std_msgs.msg import String
+from hardware_interfaces.msg import depth
+from dynamic_reconfigure.server import Server
 
 from hardware_interfaces import sonar_analyse
 from hardware_interfaces import sonar_plot
+from hardware_interfaces.cfg import SonarConfigConfig
 
 ################################################################
 
 def get_sonar(msgData):
+    global depth
     """ add sonar data to sonar object as it comes in from ROS messages as *msgData*
     """
     ping = sonar_analyse.SonarPing(msgData)
     plotData.add_data(ping)
     # update obstacle detection
-    targetDetection = analyseData.detect_obstacle(ping)
+    targetDetection, thresholds = analyseData.detect_obstacle(ping, depth)
     plotData.targetRange.append(targetDetection[1])
+    plotData.Thresholds = thresholds
 
 
 def draw_figures():
@@ -94,9 +99,9 @@ def draw_figures():
 
 
 
-    # detect distance at fixed angle
-    obstacle_angle = pg.PlotWidget()
-    grid.addWidget(obstacle_angle, 3*w+3, 1, w, 2*w)
+    # last couple of sonar pings
+    last_pings = pg.PlotWidget()
+    grid.addWidget(last_pings, 3*w+3, 1, w, 2*w)
 
 
 
@@ -110,9 +115,19 @@ def draw_figures():
             polar_bins.setImage(plotData.polarImage)
             obstacle_detection.clear()
             obstacle_detection.plot(plotData.targetRange)
-            obstacle_angle.clear()
-            obstacle_angle.setYRange(0,15)
-            obstacle_angle.plot(plotData.fixedAngleTarget)
+            last_pings.clear()
+            last_pings.setYRange(0,120)
+            # HERE
+
+            last_pings.plot(plotData.bins[-8], pen=(0,   0,  50))
+            last_pings.plot(plotData.bins[-7], pen=(0,   0, 100))
+            last_pings.plot(plotData.bins[-6], pen=(0,   0, 150))
+            last_pings.plot(plotData.bins[-5], pen=(0,   0, 200))
+            last_pings.plot(plotData.bins[-4], pen=(0,  50, 200))
+            last_pings.plot(plotData.bins[-3], pen=(0, 100, 200))
+            last_pings.plot(plotData.bins[-2], pen=(0, 150, 200))
+            last_pings.plot(plotData.bins[-1], pen=(0, 250, 250))
+            last_pings.plot(plotData.Thresholds, pen='r')
  
 
 
@@ -122,14 +137,32 @@ def draw_figures():
     win.show()
     QtGui.QApplication.instance().exec_()
 
+
+def callback(config, level):
+    rospy.logwarn(config)
+    analyseData.Threshold = config.threshold
+    analyseData.BlankDist = config.blanking_dist
+    analyseData.LogStretch = config.log_stretch
+    analyseData.LogWeight = config.log_weight
+    analyseData.SlideThreshold = config.slide_threshold
+    analyseData.BaseThreshold = config.base_threshold
+    return config
+
+def depth_callback(data):
+    global depth
+    depth = data.depth_filt
+
 ################################################################
 ################################################################
 if __name__ == '__main__':
 
+    global depth
     rospy.init_node('plot_sonar', log_level=rospy.DEBUG)
-    rospy.Subscriber('sonar_output', String, get_sonar)
-    plotData = sonar_plot.SonarPlot()
     analyseData = sonar_analyse.SonarEvaluate()
+    rospy.Subscriber('sonar_output', String, get_sonar)
+    rospy.Subscriber('depth_out', depth, depth_callback)
+    srv = Server(SonarConfigConfig, callback)
+    plotData = sonar_plot.SonarPlot()
     time.sleep(1)
     draw_figures()
     

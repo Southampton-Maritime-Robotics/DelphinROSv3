@@ -35,13 +35,11 @@ class SonarPing(object):
     NOTE: the unprocessed information is published since it is more useful for debugging purposes
     TODO: Is it really???
     """
-    def __init__(self, rawData, log_stretch=1, log_weight=0):
+    def __init__(self, rawData):
         """
         Read one dataset from string as published by sonar
         :param rawData: 
         """
-        log_stretch = 50 # DDD make this a param!
-        log_weight = 0 # DDD make this a param!
         global driftOffset
         self.bins =[]
         self.header = []
@@ -51,22 +49,14 @@ class SonarPing(object):
             self.hasBins = 1
             # now split the most recent dataset:
             self.header = data[0:52]   # 13 byte header are read from sonar
-            self.bins = data[52:]     # the rest is bins (from 44? not from 52?
+            self.bins = data[52:]     # the rest is bins 
             self.NBins = float(self.header[42] + self.header[43]*256)
             self.transducerBearing = ((float(self.header[40]+(self.header[41]*256))/6400.0)*360 + driftOffset)%360
             self.LLim =  ((float(self.header[35]+(self.header[36]*256))/6400.0)*360)%360
             self.RLim =  ((float(self.header[37]+(self.header[38]*256))/6400.0)*360)%360
             self.ADInterval = float(self.header[33]+(self.header[34]*256))
             self.pingRange = self.ADInterval * 0.000000640 * self.NBins * 1500. /2
-            #self.pingPower = data[44:-1]
-            #TODODODODODO
             self.pingPower=data[52:]
-            #for idx, intensity in enumerate(self.pingPower):
-            #    # try to reduce blanking distance by applying negative offset at 1m radius
-            #    # TODO: is this really an improvement? -> compare two more complex maps!
-            #     self.pingPower[idx] = int(intensity + log_weight * numpy.log((idx+1)*self.pingRange/log_stretch))
-            #    self.pingPower[idx] = intensity
-
         else:
             self.hasBins = 0
 
