@@ -123,7 +123,8 @@ class SonarPing(object):
 class SonarEvaluate(object):
     """
     Inspect a given sonar ping/set of sonar pings
-    to get various types of further information
+    - use one of three threshold methods to calculate the thresholds for the ping
+
     
     """
     def __init__(self):
@@ -134,9 +135,34 @@ class SonarEvaluate(object):
         self.MaxThreshold = rospy.get_param("/sonar/analyse/MaxThreshold")
         self.BaseThreshold = rospy.get_param("/sonar/analyse/BaseThreshold")
         self.SlideThreshold = rospy.get_param("/sonar/analyse/ThresholdSlope")
+
+        self.threshold_min_average = rospy.get_param("/sonar/analyse/threshold_impulse_response/MinAverage")
+        self.threshold_K = rospy.get_param("/sonar/analyse/threshold_impulse_response/MultiplierK")
+        self.threshold_w = rospy.get_param("/sonar/analyse/threshold_impulse_response/SpatialLengthW")
+
         self.SoundspeedInWater = rospy.get_param("/sonar/SoundspeedWater")
         self.rotationDirection = rospy.get_param("/sonar/rotation/Direction")
         self.rotationOffset = rospy.get_param("/sonar/rotation/Offset")
+
+    def get_thresholds_impulse(self, sonarPing):
+        """
+        Calculate the array of thresholds for the sonar return
+        using the first order infinite impulse response figital filter as described in [mcphail2010low]
+        """
+        thresholds = [self.threshold_min_average * self.threshold_K] * (blanking_idx + 1)
+        def calculate_next_threshold(N_i, B_i):
+            if B_i > self.threshold_K * N_i:
+                return N_i
+            else:
+                N_i_next = N_i - (N_i - B_i)/self.threshold_w
+                return N_i_next
+        average_now = self.threshold_min_average
+        for bin_i in sonarPing[blanking_idx:]:
+            average_now = calculate_next_threshold(average_now, bin_i)
+            thresholds.append(average_now * self.threshold_K)
+        return thresholds
+
+
 
 
     def get_thresholds(self, sonarPing):
@@ -169,7 +195,7 @@ class SonarEvaluate(object):
         if sonarPing.hasBins:
             BinLength = sonarPing.ADInterval / float(self.SoundspeedInWater)/2.    # Make sure the division is by float
             StartBin = int(np.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
-            thresholds = self.get_thresholds(sonarPing)
+            thresholds = self.get_thresholds_impulse(sonarPing) # DDD
 
 
 
@@ -213,6 +239,11 @@ class SonarEvaluate(object):
         return results, detections
 
 def remove_continued(index_list):
+    """
+    in a list of numbers, remove numbers that are continuous,
+    e.g.
+    [1, 3, 4, 5, 8] -> [1, 3, 8]
+    """
     new_list = [index_list[0]]
     previous = index_list[0]
     for value in index_list:
