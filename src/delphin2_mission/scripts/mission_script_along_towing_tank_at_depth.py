@@ -29,7 +29,7 @@ _smCon = construct_stateContainer(_lib, _myUti)
 
 ################################################################################
 # state container generating section
-def construct_smach_sequence(demand_heading, demand_depth, demand_prop, time_steady, start_timeout, end_timeout):
+def construct_smach_sequence(demand_heading, demand_depth, demand_prop, time_steady, start_timeout, track_timeout, end_timeout):
     """
     create sequence for alligning to correct heading at depth,
     then moving along heading, and getting to a halt at depth and heading
@@ -60,7 +60,7 @@ def construct_smach_sequence(demand_heading, demand_depth, demand_prop, time_ste
                                         demandHeading=demand_heading,
                                         demandDepth=demand_depth,
                                         time_steady=-1,
-                                        timeout=0))
+                                        timeout=track_timeout))
                                         
         smach.Sequence.add('GoToDepth_end', _smCon.track_depth_while_keeping_heading_and_going_forward(
                                         demandProp=0,
@@ -74,19 +74,19 @@ def construct_smach_top():
     # Create the top level state machine
     sm_top = smach.StateMachine(outcomes=['finish'])
     heading1 = rospy.get_param("/mission/Heading1")
-    heading2 = rospy.get_param("/mission/Heading2")
+    #heading2 = rospy.get_param("/mission/Heading2")
     demand_depth = rospy.get_param("/mission/Depth")
     demand_prop = rospy.get_param("/mission/Prop")
+    forwards_time = rospy.get_param("/mission/ForwardsTime")
     # Open the container, add state and define state transition
     with sm_top:
         smach.StateMachine.add('INITIALISE', Initialise(_lib,20),
             transitions={'succeeded':'DIVE_ALONG', 'aborted':'STOP','preempted':'STOP'})
+
         smach.StateMachine.add('DIVE_ALONG', construct_smach_sequence(heading1, demand_depth, demand_prop, 
-                                                                      time_steady=3, start_timeout=60, end_timeout=10),
-            transitions={'succeeded':'DIVE_RETURN', 'aborted':'STOP','preempted':'STOP'})
-        smach.StateMachine.add('DIVE_RETURN', construct_smach_sequence(heading2, demand_depth, demand_prop,
-                                                                      time_steady=3, start_timeout=10, end_timeout=10),
+                                                                      time_steady=3, start_timeout=60, track_timeout = forwards_time, end_timeout=10),
             transitions={'succeeded':'STOP', 'aborted':'STOP','preempted':'STOP'})
+
         smach.StateMachine.add('STOP', Stop(_lib), 
             transitions={'succeeded':'finish'})
 
