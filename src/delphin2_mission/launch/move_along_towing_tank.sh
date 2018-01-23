@@ -1,15 +1,15 @@
 #!/bin/bash
 # Set prefix to be used for rosbags, parameter dumps and mapping
-fileprefix="test-logger"
+fileprefix="test-thruster-waterproofing"
 
 # on my computer
-logpath="/home/sophia/simulation/delphin2/MPC-tests/"
-parampath="/home/sophia/delphin/private/src/delphin2_mission/launch/"
-delphinlogpath="/home/sophia/.ros/logFiles/"
+#logpath="/home/sophia/simulation/delphin2/MPC-tests/"
+#parampath="/home/sophia/delphin/private/src/delphin2_mission/launch/"
+#delphinlogpath="/home/sophia/.ros/logFiles/"
 # on delphin
-#logpath="/home/delphin2/sophia/test/"
-#parampath="/home/delphin2/DelphinROSv3/src/delphin2_mission/launch/"
-#delphinlogpath="/home/delphin2/.ros/logFiles/"
+logpath="/home/delphin2/sophia/test-thruster-waterproofing/"
+parampath="/home/delphin2/DelphinROSv3/src/delphin2_mission/launch/"
+delphinlogpath="/home/delphin2/.ros/logFiles/"
 
 # test if date is set on delphin2
 # (BIOS battery runs empty regularly, this is a short test to catch that)
@@ -33,16 +33,21 @@ roscoreID=$!
 echo ${GREEN} roscore process ID $roscoreID ${NC}
 sleep 2
 
+rostopic pub /light_onOff std_msgs/Bool True -r 10 &
+lightID=$!
+
+
 # load parameters
 rosparam load ${parampath}default_parameters.yaml
 rosparam load ${parampath}parameters/sonar.yaml
 rosparam set xsens/filter_profile 42
 # 270 for filter profile 43; 290 otherwise
-rosparam set mission/Heading1 290
-rosparam set mission/Depth 0.5
-rosparam set mission/Altitude 0.5
-rosparam set mission/Prop 22.0 
-rosparam set mission/ForwardsTime 5.0 # 15 is good for all of lamont
+# 80 for reverse direction
+rosparam set mission/Heading1 250
+rosparam set mission/Depth 0.6
+rosparam set mission/Altitude 1.5
+rosparam set mission/Prop 10.0 
+rosparam set mission/ForwardsTime 10.0 
 
 # start mapping
 roslaunch map-octomap.launch &
@@ -51,7 +56,7 @@ echo ${GREEN} map process ID $mapID ${NC}
 
 # record rosbag
 # date and time should be appended automatically
-rosbag record -a -o ${logpath}${fileprefix} &
+rosbag record -a -x "/octomap_full(.*)" -o ${logpath}${fileprefix} &
 rosbagID=$!
 echo ${GREEN} rosbag process ID $rosbagID ${GREEN}
 
@@ -70,6 +75,9 @@ rosrun octomap_server octomap_saver -f ${logpath}${fileprefix}${timestamp}.bt
 # in unexpected ways
 rosparam dump ${logpath}${fileprefix}${timestamp}_PARAM
 
+roslaunch delphin2_mission system_loader__to0.launch
+
+
 
 # start remote control
 # this won't work with mosh, since it doesn't do x forwarding
@@ -82,10 +90,9 @@ rosnode kill $rosbagnode
 # stop rosbag, mapping, and roscore with a sigint
 kill -INT $mapID
 kill -INT $roscoreID
+kill -INT $lightID
 
-echo "bla bla bla"
 sleep 5
-echo "blaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 # get the name of the most recent file
 recentlog="$(ls -t ${delphinlogpath} | head -n1)"
 echo ${delphinlogpath}${recentlog}
