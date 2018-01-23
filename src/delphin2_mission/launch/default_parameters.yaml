@@ -148,10 +148,13 @@ sonar/rotation/Offset: 0 # offset [in degrees]
 sonar/analyse/GlitchCount: 1
 
 sonar/analyse/RangeFudgeFactor: 1.2  # For some reason there seems to be a range scaling factor different to the theoretical one!!!
-# Power level (0 to 250) above which sonar 'sees' a target
-# Value above which something is considered an object of interest
-# Originally this was one simple threshold, now it changes with distance to the transducer
-sonar/analyse/UseSlidingThreshold: True  # Use MaxThreshold as constant threshold if False
+# Thresholding method:
+# Threshold = Power level (0 to 250) above which sonar 'sees' a target
+# Three different methods exist:
+# * constant: one level applied everywhere beyond the blanking distance, the MaxThreshold
+# * sliding: threshold reduces by ThresholdSlope with increasing distance, until BaseThreshold is met
+# * impulseResponse: a filter based on [mcphail2010low], found not very effective in TestwoodLake
+sonar/analyse/ThresholdMethod: "constant"   # "constant", "sliding", or "impulseResponse"
 sonar/analyse/BaseThreshold: 40   # Lowest applied threshold
 sonar/analyse/MaxThreshold: 110   # Highest Threshold applied
 sonar/analyse/ThresholdSlope: 10  # Decrease of Threshold per metre scanned
@@ -193,7 +196,7 @@ sonar/RLim: 350
 # see delphin2_sonar_micron_*.pdf in the datasheets
 # more bins = more resolution, more noise
 # 300 bins is about the upper limit of the visualisation
-sonar/NBins: 200
+sonar/NBins: 100
 
 # Samping interval of each range bin
 # usually not used, since Range is used to calculate this
