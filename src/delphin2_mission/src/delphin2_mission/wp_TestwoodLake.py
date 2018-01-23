@@ -25,7 +25,7 @@ class wp(object):
                                      [5., 7.],
                                      [25., 100.]]).T
 
-        self.to_start_A = numpy.array([[-17., 117.],
+        self.to_start_A = numpy.array([[-12., 112.],
                                        [-17., 117.]]).T
 
         self.to_start_Areverse = numpy.array([[55., 205.],
@@ -40,18 +40,18 @@ class wp(object):
                                    [-17., 117.]
                                    ]).T
 
-        self.to_start_B = numpy.array([[0., 100.],
+        self.to_start_B = numpy.array([[0., 95.],
                                        [0., 100.]]).T
 
-        self.to_start_Breverse = numpy.array([[0., 275.],
-                                              [0., 270.]]).T
+        self.to_start_Breverse = numpy.array([[0., 235.],
+                                              [0., 230.]]).T
 
         self.path_B = numpy.array([[0., 0.],
                                    [5., 7.],
                                    [0., 100.],
-                                   [0., 270.],
-                                   [0., 275.],
-                                   [0., 270.],
+                                   [0., 230.],
+                                   [0., 235.],
+                                   [0., 230.],
                                    [0., 100.]
                                    ]).T
 

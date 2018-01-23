@@ -1,7 +1,7 @@
 #!/bin/bash
 # Set prefix to be used for rosbags, parameter dumps and mapping
 # script for scanning the area accross the step in the middle of testwood lakes
-fileprefix="testwood_pathA_surface"
+fileprefix="testwood_pathB_surface"
 
 killall -9 roscore
 killall -9 rosmaster
@@ -74,7 +74,7 @@ rosparam set mission-timeout 70   # mission timeout in minutes
 
 ############################################################### New Mission
 rosparam set mission/DiveHeading 40.
-rosparam set mission/PathName "path_over_step"    # to_start_A, to_start_Areverse, path_A
+rosparam set mission/PathName "path_B"    # to_start_A, to_start_Areverse, path_A
 timestamp="_$(date +%Y-%m-%d_%H:%M:%S)"
 
 
