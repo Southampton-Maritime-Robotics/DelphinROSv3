@@ -80,9 +80,9 @@ class XSensDriver(object):
         self.enableICC = False
 
         self.config()
-        self.pubStatus = rospy.Publisher('status', status, queue_size = 10)
-        self.pubSensorIMU_deg = rospy.Publisher('compass_out', compass, queue_size=10)
-        self.pubSensorIMU = rospy.Publisher('imu/data', Imu, queue_size=10)
+        self.pubStatus = rospy.Publisher('status', status)
+        self.pubSensorIMU_deg = rospy.Publisher('compass_out', compass)
+        self.pubSensorIMU = rospy.Publisher('imu/data', Imu)
 
         self.mainloop()
 
