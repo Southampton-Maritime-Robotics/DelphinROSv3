@@ -1,8 +1,10 @@
 #!/bin/bash
 # Set location for saving the final map 
 map_path="/home/sophia/experimental-data/2017/maps/"
-bag_path="/home/sophia/experimental-data/2017/10-18-testwood/"
-bag_name="testwood_pathA_altitude_2017-10-18-13-47-44_0.bag"
+bag_path="/home/sophia/experimental-data/2017/11-01-testwood/"
+bag_name="testwood_pathA_surface_2017-11-01-11-10-19_0.bag"
+#bag_name="testwood_pathA_surface_2017-11-01-10-07-15_0.bag"
+
 map_prefix="testwood"
 RVIZconfig="/home/sophia/.rviz/delphin2.rviz"
 
@@ -26,8 +28,8 @@ sleep 2
 
 # load parameters
 rosparam load ${parampath}default_parameters.yaml
-rosparam set sonar/analyse/BlankDist 0.6
-rosparam set sonar/analyse/Threshold 80
+rosparam set sonar/analyse/BlankDist 1.
+rosparam set sonar/analyse/Threshold 70
 rosparam set sonar/Range 7
 
 # start mapping
@@ -53,16 +55,17 @@ rvizID=$!
 # get rid of all processed sonar data, it gets replaced
 # get rif of all tf data, since tf cannot deal with different time stamps it needs replacing, too
 # get rid of position_dead, this is probably not necessary...
-rosbag play ${bag_path}${bag_name} /octomap_binary:=/bla1 /octomap_full:=bla2 /octomap_point_cloud_centers:=/bla3 /octomap_server/parameter_updates:=/bla4 /sonar_mapping:=/bla5 /octomap_server/parameter_descriptions:=/bla6 /projected_map:=/bla7 /tf:=/bla8 /position_dead:=/bla9
+rosbag play ${bag_path}${bag_name} /octomap_binary:=/bla1 /octomap_full:=bla2 /octomap_point_cloud_centers:=/bla3 /octomap_server/parameter_updates:=/bla4 /sonar_mapping:=/bla5 /octomap_server/parameter_descriptions:=/bla6 /projected_map:=/bla7 /tf:=/bla8 /position_dead:=/bla9 
+#/projected_map_updates:=/bla10
 
 ###################
 
 # save map
-rosrun octomap_server octomap_saver -f ${map_path}${map_prefix}${timestamp}.bt
+#rosrun octomap_server octomap_saver -f ${map_path}${map_prefix}${timestamp}.bt
 
 # stop everything with a sigint
 kill -INT $deadReckonID
 kill -INT $sonarDetectID
-kill -INT $rvizID
+#kill -INT $rvizID
 kill -INT $mapID
 kill -INT $roscoreID
