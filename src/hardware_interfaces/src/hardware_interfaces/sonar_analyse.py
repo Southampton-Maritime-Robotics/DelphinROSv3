@@ -17,7 +17,8 @@ import rospy
 import warnings
 
 global driftOffset
-driftOffset = rospy.get_param("/sonar/Driftoffset")
+#driftOffset = rospy.get_param("/sonar/Driftoffset")
+driftOffset = 0
 if driftOffset != 0:
     warnings.warn("Caution: A drift offset has been set")
 
@@ -127,29 +128,30 @@ class SonarEvaluate(object):
 
     
     """
-    def __init__(self):
-        self.RangeFudgeFactor = rospy.get_param("/sonar/analyse/RangeFudgeFactor")
-        # The blanking distance is applied pre re-scaling, but estimated based on scaled data
-        self.BlankDist = rospy.get_param("/sonar/analyse/BlankDist")/self.RangeFudgeFactor  
-        self.UseSlidingThreshold = rospy.get_param("/sonar/analyse/UseSlidingThreshold")
-        self.MaxThreshold = rospy.get_param("/sonar/analyse/MaxThreshold")
-        self.BaseThreshold = rospy.get_param("/sonar/analyse/BaseThreshold")
-        self.SlideThreshold = rospy.get_param("/sonar/analyse/ThresholdSlope")
+    def __init__(self, use_rosparam=True):
+        if use_rosparam:
+            self.RangeFudgeFactor = rospy.get_param("/sonar/analyse/RangeFudgeFactor")
+            # The blanking distance is applied pre re-scaling, but estimated based on scaled data
+            self.BlankDist = rospy.get_param("/sonar/analyse/BlankDist")/self.RangeFudgeFactor  
+            self.ThresholdMethod = rospy.get_param("/sonar/analyse/ThresholdMethod")
+            self.MaxThreshold = rospy.get_param("/sonar/analyse/MaxThreshold")
+            self.BaseThreshold = rospy.get_param("/sonar/analyse/BaseThreshold")
+            self.SlideThreshold = rospy.get_param("/sonar/analyse/ThresholdSlope")
 
-        self.threshold_min_average = rospy.get_param("/sonar/analyse/threshold_impulse_response/MinAverage")
-        self.threshold_K = rospy.get_param("/sonar/analyse/threshold_impulse_response/MultiplierK")
-        self.threshold_w = rospy.get_param("/sonar/analyse/threshold_impulse_response/SpatialLengthW")
+            self.threshold_min_average = rospy.get_param("/sonar/analyse/threshold_impulse_response/MinAverage")
+            self.threshold_K = rospy.get_param("/sonar/analyse/threshold_impulse_response/MultiplierK")
+            self.threshold_w = rospy.get_param("/sonar/analyse/threshold_impulse_response/SpatialLengthW")
 
-        self.SoundspeedInWater = rospy.get_param("/sonar/SoundspeedWater")
-        self.rotationDirection = rospy.get_param("/sonar/rotation/Direction")
-        self.rotationOffset = rospy.get_param("/sonar/rotation/Offset")
+            self.SoundspeedInWater = rospy.get_param("/sonar/SoundspeedWater")
+            self.rotationDirection = rospy.get_param("/sonar/rotation/Direction")
+            self.rotationOffset = rospy.get_param("/sonar/rotation/Offset")
 
-    def get_thresholds_impulse(self, sonarPing):
+    def get_thresholds_impulse(self, sonarPing, blanking_idx):
         """
         Calculate the array of thresholds for the sonar return
         using the first order infinite impulse response figital filter as described in [mcphail2010low]
         """
-        thresholds = [self.threshold_min_average * self.threshold_K] * (blanking_idx + 1)
+        thresholds = []
         def calculate_next_threshold(N_i, B_i):
             if B_i > self.threshold_K * N_i:
                 return N_i
@@ -157,7 +159,7 @@ class SonarEvaluate(object):
                 N_i_next = N_i - (N_i - B_i)/self.threshold_w
                 return N_i_next
         average_now = self.threshold_min_average
-        for bin_i in sonarPing[blanking_idx:]:
+        for bin_i in sonarPing.pingPower[blanking_idx:]:
             average_now = calculate_next_threshold(average_now, bin_i)
             thresholds.append(average_now * self.threshold_K)
         return thresholds
@@ -165,20 +167,26 @@ class SonarEvaluate(object):
 
 
 
-    def get_thresholds(self, sonarPing):
+    def get_thresholds(self, sonarPing, start_bin):
         """
         Calculate array of threshold for the sonar return
-        If the sliding thresholding is not used, apply a constant threshold instead.
+        Apply blanking distance
+        Use threshold method as given by parameters
         """
-        thresholds = []
-        length = len(sonarPing.pingPower)
-        if not self.UseSlidingThreshold:
-            thresholds = [self.MaxThreshold] * length
-        else:
+        thresholds = [250] * start_bin
+        length = len(sonarPing.pingPower) - start_bin
+        if self.ThresholdMethod == "constant":
+            thresholds = thresholds + [self.MaxThreshold] * (length)
+        elif self.ThresholdMethod == "sliding":
             reduction_per_bin = self.SlideThreshold * sonarPing.pingRange/sonarPing.NBins
             for i in range(length):
                 next_threshold = max(self.BaseThreshold, (self.MaxThreshold - reduction_per_bin * i))
                 thresholds.append(next_threshold)
+        elif self.ThresholdMethod == "impulseResponse":
+            thresholds += self.get_thresholds_impulse(sonarPing, start_bin)
+        else:
+            rospy.logerr("Method of sonar analysis not specified!")
+            warnings.warn("Method of sonar analysis not specified!")
         return thresholds
 
     def detect_obstacle(self, sonarPing, depth):
@@ -194,9 +202,8 @@ class SonarEvaluate(object):
         """
         if sonarPing.hasBins:
             BinLength = sonarPing.ADInterval / float(self.SoundspeedInWater)/2.    # Make sure the division is by float
-            StartBin = int(np.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
-            thresholds = self.get_thresholds_impulse(sonarPing) # DDD
-
+            start_bin = int(np.ceil(self.BlankDist/BinLength)) # Index of first bin after blanking distance
+            thresholds = self.get_thresholds(sonarPing, start_bin) 
 
 
             # return indices of bins with value above threshold:
@@ -212,7 +219,7 @@ class SonarEvaluate(object):
  
                 idx = 0
                 while ((idx < len(ReturnIndexes))
-                       and (ReturnIndexes[idx] < StartBin)):
+                       and (ReturnIndexes[idx] < start_bin)):
                     idx += 1
                 if idx < len(ReturnIndexes):
                     target_range = ReturnIndexes[idx] * BinLength * self.RangeFudgeFactor
@@ -220,7 +227,7 @@ class SonarEvaluate(object):
                     # check if this is just a reflection of the surface
                     if abs(target_range - depth) < 0.1:
                         idx += 1
-                        print("depth ???")
+                        #print("depth ???")
                         if len(ReturnIndexes) > idx:
                             target_range = ReturnIndexes[idx] * BinLength * self.RangeFudgeFactor
                         else:
@@ -228,7 +235,7 @@ class SonarEvaluate(object):
                     
             # mean intensity of bins beyond the blanking disance
             # may be of interest in identifying areas of interest
-            meanIntensity = np.mean(sonarPing.pingPower[StartBin:-1])
+            meanIntensity = np.mean(sonarPing.pingPower[start_bin:-1])
 
             # apply offsets so the bearing angle can be turned into rotation around a given axis
             # in the Delphin2 Coordinate system
@@ -236,6 +243,7 @@ class SonarEvaluate(object):
             results = [bearing_in_delphin2ks, target_range, meanIntensity]
         else:
             results = [0, 0, 0]
+            detections = []
         return results, detections
 
 def remove_continued(index_list):
