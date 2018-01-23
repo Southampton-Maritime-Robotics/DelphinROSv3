@@ -88,7 +88,7 @@ def listenForData(status):
     timeout   = 2
     time_zero = time.time()
     
-    control_rate = 4.  # Hz
+    control_rate = 2.5  # Hz
     controlPeriod = 1/control_rate
     r = rospy.Rate(control_rate)
     
