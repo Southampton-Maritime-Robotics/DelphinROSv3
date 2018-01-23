@@ -347,11 +347,11 @@ if __name__ == '__main__':
     rospy.Subscriber('compass_out', compass, compass_cb)
     rospy.Subscriber('prop_demand', Int8, prop_demand_callback)
     
-    pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints, queue_size=10)
-    pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints, queue_size=10)
-    pub_HC   = rospy.Publisher('Heading_controller_values_PID', heading_control_PID, queue_size=10)
-    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
+    pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
+    pub_HC   = rospy.Publisher('Heading_controller_values_PID', heading_control_PID)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pubStatus = rospy.Publisher('status', status)
     
     rospy.loginfo("Heading controller online")
 

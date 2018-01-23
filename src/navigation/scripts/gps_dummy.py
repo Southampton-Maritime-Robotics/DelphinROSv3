@@ -76,8 +76,8 @@ if __name__ == '__main__':
     rospy.init_node('gps_sensor')
   
     #Define Publishers
-    pub = rospy.Publisher('gps_out', gps, queue_size=10)
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pub = rospy.Publisher('gps_out', gps)
+    pubStatus = rospy.Publisher('status', status)
     n_sat = rospy.get_param("dummy/gps/Nsat")
     valid_gpsFix = rospy.get_param("dummy/gps/Fix")
     str = "\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" \

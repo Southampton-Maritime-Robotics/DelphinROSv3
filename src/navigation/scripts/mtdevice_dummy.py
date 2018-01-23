@@ -124,9 +124,9 @@ class delphin2_AUV(object):
         
         ### ros communication ###
         # create publishers and messages to be published
-        self.pubCompassOut = rospy.Publisher('compass_out',compass, queue_size=10)
-        self.pubStatus = rospy.Publisher('status', status, queue_size=10)
-        self.pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+        self.pubCompassOut = rospy.Publisher('compass_out',compass)
+        self.pubStatus = rospy.Publisher('status', status)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
         self.comInfo = compass()
 
         # create subscribers and parameters for callback functions

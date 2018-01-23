@@ -45,7 +45,7 @@ if __name__ == '__main__':
     rospy.logwarn("CAUTION: The initialise state is being bypassed by dummy system!")
   
     #Define Publishers
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
-    pubOutput = rospy.Publisher('EnergyConsumed', energy_consumed, queue_size=10)
+    pubStatus = rospy.Publisher('status', status)
+    pubOutput = rospy.Publisher('EnergyConsumed', energy_consumed)
     
     main()

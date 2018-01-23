@@ -57,11 +57,11 @@ class controller_PID(object):
         
         ### ros communication ###
         # create publishers and messages to be published
-        self.pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints, queue_size=10)
-        self.pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints, queue_size=10)
-        self.pub_HC   = rospy.Publisher('Heading_controller_values_PID_ctrlAllo', heading_control_PID_ctrlAllo, queue_size=10)
-        self.pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
-        self.pubStatus = rospy.Publisher('status', status, queue_size=10)
+        self.pub_tsl  = rospy.Publisher('TSL_setpoints_horizontal', tsl_setpoints)
+        self.pub_tail = rospy.Publisher('tail_setpoints_vertical', tail_setpoints)
+        self.pub_HC   = rospy.Publisher('Heading_controller_values_PID_ctrlAllo', heading_control_PID_ctrlAllo)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
+        self.pubStatus = rospy.Publisher('status', status)
         self.HC = heading_control_PID_ctrlAllo()
         
         # create subscribers and parameters for callback functions
@@ -117,8 +117,8 @@ class controller_PID(object):
                 N_summed = P_term + I_term + D_term
                 
                 ## control allocation
-                # allocate to rudder
-                if surgeVel > 0.4:
+                # allocate a proportion of N_summed to rudder
+                if surgeVel > 0.4:  # only use rudder above speed limit
                     u_R = N_summed/self.N_uu_delta/surgeVel**2
                     # apply rudder limit
                     if np.abs(u_R) > self.u_R_lim:
@@ -133,6 +133,7 @@ class controller_PID(object):
                     
 
                 # allocate to horizontal thrusters
+                # use horizontal thrusters below speed limit, or if the force from the control surfaces does not suffice
                 if N_res != 0:
                     K_1 = np.exp(-self.c1_th*surgeVel**2)
                     # assume front and rear horizontal thruster are operating at the same speed

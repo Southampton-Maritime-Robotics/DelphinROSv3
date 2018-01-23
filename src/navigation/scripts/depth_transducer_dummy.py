@@ -108,9 +108,9 @@ if __name__ == '__main__':
     time.sleep(1) #Allow System to come Online    
     rospy.init_node('depth_transducer')
     rospy.logwarn(">>>>> USING DUMMY DEPTH TRANSDUCER instead of actual depth sensor")
-    pub = rospy.Publisher('depth_out', depth, queue_size=10)
-    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pub = rospy.Publisher('depth_out', depth)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pubStatus = rospy.Publisher('status', status)
     rospy.Subscriber('depth_demand', Float32, depth_demand_cb)
     
     rospy.on_shutdown(shutdown)
