@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -87,6 +88,11 @@ catkin_python_setup()
    DEPENDENCIES
    std_msgs
  )
+
+ generate_dynamic_reconfigure_options(  
+   cfg/SonarConfig.cfg  
+   #...
+   )
 
 ###################################
 ## catkin specific configuration ##
