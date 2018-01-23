@@ -35,7 +35,6 @@ def light_callback(data):
     else:
         serialPort.write('L0')
 ####        print 'Light switched off'
-
 ################################################################
 def shutdown():
     serialPort.flushInput()
@@ -57,6 +56,7 @@ if __name__ == '__main__':
     port_status = setUpSerial()
     
     print 'light driver online'
-    
+    serialPort.write('L1') 
+    print("switched lights on")
     rospy.spin()
         
