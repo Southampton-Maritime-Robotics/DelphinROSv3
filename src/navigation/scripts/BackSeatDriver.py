@@ -24,9 +24,9 @@ from hardware_interfaces.msg import status
 
 def main(controller):
     rospy.init_node('back_seat_driver')
-    pub=rospy.Publisher('back_seat_flag',Int8, queue_size=10)
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
-    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+    pub=rospy.Publisher('back_seat_flag',Int8)
+    pubStatus = rospy.Publisher('status', status)
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
 
     controlRate = 1. # [Hz]
     controlPeriod = 1./controlRate
@@ -85,7 +85,8 @@ def main(controller):
             and controller.getHeadingCtrlStatus()
             and controller.getDepthCtrlStatus()
             and controller.getDeadreckonerStatus()
-            and controller.getLoggerStatus())
+            and controller.getLoggerStatus()
+            and controller.getAltimeterStatus())
         if not all_online:
             pubStatus.publish(nodeID = 11, status = False)
             time.sleep(1)
