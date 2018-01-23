@@ -8,6 +8,7 @@ sonar/Driftoffset: 0
 
 # Left limit for Heading
 # in degrees, from 0 to 359
+# 270
 sonar/LLim: 270
 
 # Right limit for Heading
@@ -37,7 +38,7 @@ sonar/analyse/GlitchCount: 1
 sonar/analyse/Threshold: 70
 
 # This shold be smaller or equal to sonar/Range
-sonar/analyse/ObstacleRange: 4
+sonar/analyse/ObstacleRange: 4.0
 
 # Blanking distance in [metres]
 sonar/analyse/BlankDist: 0.6
