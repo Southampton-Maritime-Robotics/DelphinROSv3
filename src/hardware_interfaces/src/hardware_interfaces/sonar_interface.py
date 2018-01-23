@@ -118,7 +118,7 @@ class SonarTritech:
         # wait for mtAlive
         message_type = 0
         while (message_type != 4) and not rospy.is_shutdown():
-            rospy.logdebug("Waiting for mtAlive after sending mtReBoot")
+            #rospy.logdebug("Waiting for mtAlive after sending mtReBoot")
             # wait a little longer for mtAlive message from transducer
             rospy.sleep(0.1)
             message_type = self.read_sonar()
@@ -136,7 +136,7 @@ class SonarTritech:
         start_t = time.time()
         message_type = 0
         while (message_type != 4) and (time.time() - start_t < 60) and not rospy.is_shutdown():
-            rospy.loginfo("Waiting for mtAlive after sending mtHeadCommand")
+            #rospy.loginfo("Waiting for mtAlive after sending mtHeadCommand")
             if time.time() - start_t > 50:
                 rospy.logwarn("waiting for mtAlive after sending mtHeadCommand - check mtHeadCommand"
                               + str(mtHeadCommand))
@@ -164,7 +164,8 @@ class SonarTritech:
         TODO: 
         * A future interesting value is the HdCtrl1 and HdCtrl2 setting,
           which together change the sonar head configuration
-        * ADSpan and ADLow can be used to remap the dynamic range - is this useful for anything?
+        * ADSpan and ADLow can be used to remap the dynamic range, but only in 4 bit mode. 
+          We are currently opperating in 8 bit mode, so it seems this doesn't do anything
         
         notes on the content:
         - single channel DST, so extra 16 byte appendage is neglected, message length is 60
@@ -185,8 +186,8 @@ class SonarTritech:
         llim = (self.LLim * 6400/360.) % 6400  # convert from degrees to 1/16th Gradians, make sure value is below 6400
         rlim = (self.RLim * 6400/360.) % 6400
         # check the Step size is within the standard settings
-        if not (self.Step in [4, 8, 16, 32]):
-            rospy.logwarn("Setting sonar step size to non-standard value " + str(self.Step))
+        #if not (self.Step in [4, 8, 16, 32]):
+            #rospy.logwarn("Setting sonar step size to non-standard value " + str(self.Step))
 
         mtHeadCommand = (
             # Hdr, Hex Length, Bin Length                                  {1| 2, 3, 4, 5 | 6 7}
@@ -220,12 +221,12 @@ class SonarTritech:
             # Ctl2, ScanZ, LF                                              {63| 64, 65| 66}
             [0x00] + [0x00, 0x00] + [0x0A]
         )
-        rospy.logdebug("Assembled new mtHeadCommand: " +
-                       str(mtHeadCommand[0:14]) + "\n" +
-                       str(mtHeadCommand[14:28]) + "\n" +
-                       str(mtHeadCommand[28:42]) + "\n" +
-                       str(mtHeadCommand[42:56]) + "\n" +
-                       str(mtHeadCommand[56:])   + "\n")
+        #rospy.logdebug("Assembled new mtHeadCommand: " +
+        #               str(mtHeadCommand[0:14]) + "\n" +
+        #               str(mtHeadCommand[14:28]) + "\n" +
+        #               str(mtHeadCommand[28:42]) + "\n" +
+        #               str(mtHeadCommand[42:56]) + "\n" +
+        #               str(mtHeadCommand[56:])   + "\n")
 
         return mtHeadCommand
 
@@ -257,9 +258,9 @@ class SonarTritech:
 
         # send mtSendData message to sonar
         self.Serial.write(uint8_array_to_chr(mtSendData, "mtSendData"))
-        rospy.logdebug("Sending ping trigger to sonar, mtSendData Message: \n"
-                       + str(mtSendData[0:13]) + "\n"
-                       + str(mtSendData[13:]))
+        #rospy.logdebug("Sending ping trigger to sonar, mtSendData Message: \n"
+        #               + str(mtSendData[0:13]) + "\n"
+        #               + str(mtSendData[13:]))
 
     def read_sonar(self):
         """
@@ -281,16 +282,16 @@ class SonarTritech:
             # analyse header data and receive to remaining message length
             headerData = self.Serial.read(13)
             headerData = numpy.fromstring(headerData, dtype=numpy.uint8)
-            rospy.logdebug("Data from sonar: mtHeadData: "
-                           + str(headerData))
+            #rospy.logdebug("Data from sonar: mtHeadData: "
+            #               + str(headerData))
 
             if headerData[0] == 64:
                 # every message should start with and '@' (ASCII 64)
                 # communication is still working, so receive error count is reset
                 self.receiveErrorCount = 0
                 (msgType, msgLength) = analyse_header(headerData)
-                rospy.logdebug("Message type: " + str(msgType) +
-                               " \n Message length: " + str(msgLength))
+                #rospy.logdebug("Message type: " + str(msgType) +
+                #               " \n Message length: " + str(msgLength))
                 startTime = time.time()
                 while self.Serial.inWaiting() < msgLength:
                     time.sleep(0.001)
@@ -302,17 +303,17 @@ class SonarTritech:
 
                 msgData = self.Serial.read(self.Serial.inWaiting())
                 msgData = numpy.fromstring(msgData, dtype=numpy.uint8)
-                rospy.logdebug("Data from sonar: message data: "
-                               + str(msgData))
+                #rospy.logdebug("Data from sonar: message data: "
+                #               + str(msgData))
 
                 if msgData[-1] != 10:
-                    rospy.logdebug("Message error: Message does not end in '\\LF'")
+                    #rospy.logdebug("Message error: Message does not end in '\\LF'")
                     self.Serial.flushInput()
                     return 0
 
                 if msgType == 1:
-                    rospy.logdebug("Message type: mtVersionData \n"
-                                   + "Message data: " + msgData)
+                    #rospy.logdebug("Message type: mtVersionData \n"
+                    #               + "Message data: " + msgData)
                     return 1
 
                 elif msgType == 2:
@@ -323,22 +324,23 @@ class SonarTritech:
                     # debug calculations
                     transBearing = msgData[27] + (msgData[28] * 256)
                     transBearing = (transBearing / 6400.00) * 360
-                    rospy.logdebug("Message type: mtHeadData\n"
-                                   "TransBearing: " + str(transBearing))
+                    #rospy.logdebug("Message type: mtHeadData\n"
+                    #               "TransBearing: " + str(transBearing))
 
                     return 2
 
                 elif msgType == 4:
-                    rospy.logdebug("Message type: mtAlive")
+                    #rospy.logdebug("Message type: mtAlive")
                     self.lastMtAlive = msgData
                     self.analyse_mtAlive()    # Analysis step, not needed for operation of sonar
                     return 4
 
                 else:
-                    rospy.logdebug("Unknown message type: " + str(msgType))
+                    #rospy.logdebug("Unknown message type: " + str(msgType))
+                    pass
             else:
-                rospy.logdebug("Sonar message does not start with the required '@'\n"
-                              + "Starting with: " + str(headerData[0]))
+                #rospy.logdebug("Sonar message does not start with the required '@'\n"
+                #              + "Starting with: " + str(headerData[0]))
                 self.serial_handle_error()
 
     def analyse_mtAlive(self):
@@ -364,8 +366,8 @@ class SonarTritech:
         headInf['InScan'] = bitset[-6]
         headInf['NoParams'] = bitset[-7]
         headInf['SentCfg'] = bitset[-8]
-        rospy.loginfo("Decoded mtAlive: Stepper Position is: " + str(stepperPosition) +
-                      "Header info is: " + str(headInf))
+        #rospy.loginfo("Decoded mtAlive: Stepper Position is: " + str(stepperPosition) +
+        #              "Header info is: " + str(headInf))
 
     def read_setting_demand(self, message):
         newRLim = message.RLim
@@ -399,9 +401,9 @@ class SonarTritech:
             self.Serial.bytesize = serial.EIGHTBITS
             self.Serial.stopbits = serial.STOPBITS_ONE
             self.Serial.parity = serial.PARITY_NONE
-            rospy.loginfo("Setup serial port for sonar: "
-                          + str(self.Serial.portstr) + '\n'
-                          + str(self.Serial.isOpen()))
+            #rospy.loginfo("Setup serial port for sonar: "
+            #              + str(self.Serial.portstr) + '\n'
+            #              + str(self.Serial.isOpen()))
         except:
             rospy.logwarn("Sonar could not be mounted to given serial port " + str(self.SerialParam['Port']))
 
