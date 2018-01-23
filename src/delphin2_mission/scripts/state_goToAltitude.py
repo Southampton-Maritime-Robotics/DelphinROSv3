@@ -36,7 +36,7 @@ class GoToAltitude(smach.State):
     def execute(self,userdata):
         
         #Set Up Publisher for Mission Control Log
-        pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+        pubMissionLog = rospy.Publisher('MissionStrings', String)
 
         # Set Up Loop Timing Control
         r = rospy.Rate(self.__controlRate)
@@ -100,7 +100,10 @@ class GoToAltitude(smach.State):
     def check_Altitude(self):
         
         depthNow = self.__controller.getDepth()
-        altitudeNow = self.__controller.getAltitude()
+        real_altitude = self.__controller.getAltitude()
+        # use pseudo altitude for altitude tracking:
+        pseudo_altitude = self.__controller.getPseudoAltitude()
+        altitudeNow = min(pseudo_altitude, real_altitude)
         errAltitude = altitudeNow - self.__altitude_demand
         depth_demand = depthNow + errAltitude
         
