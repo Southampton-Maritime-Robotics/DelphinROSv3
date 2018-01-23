@@ -19,7 +19,7 @@ import numpy
 
 from delphin2_mission.library_highlevel     import library_highlevel
 from delphin2_mission.utilities             import uti
-from delphin2_mission.wp_EastleightLake     import wp
+from delphin2_mission.wp_TestwoodLake       import wp
 from std_msgs.msg                           import String
 
 ## import simple states
@@ -49,9 +49,9 @@ def test_follow_path():
         # path_lawn_mowing, path_S_shaped, pathTest
         smach.Sequence.add('FOLLOW_PATH', 
             _smCon.LOS_path_following(
-                    path=_wp.pathTest,
+                    path=_wp.home,   # CHANGE PATH HERE
                     demandProp = 22,
-                    timeout=1800))
+                    timeout=3000))
             
 ####        smach.Sequence.add('GoHome',
 ####            _smCon.LOS_path_following(
@@ -69,7 +69,7 @@ def construct_smach_top():
     # Open the container, add state and define state transition
     with sm_top:
         smach.StateMachine.add('INITIALISE', 
-            Initialise(_lib,15),
+            Initialise(_lib,20),
             transitions={'succeeded':'SEQUENCE', 'aborted':'STOP','preempted':'STOP'})
             
         smach.StateMachine.add('SEQUENCE', 
