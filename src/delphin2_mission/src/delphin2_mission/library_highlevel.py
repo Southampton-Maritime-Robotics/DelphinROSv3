@@ -463,7 +463,7 @@ class library_highlevel(object):
         self.__altitude = altitude.altitude_filt
 
     def callback_pseudo_altitude(self, pseudo_altitude):
-        self.__pseudo_altitude = pseudo_altitude
+        self.__pseudo_altitude = pseudo_altitude.data
            
     def callback_sonar_range(self, sonar):
         self.__sonar_range = sonar.TargetRange

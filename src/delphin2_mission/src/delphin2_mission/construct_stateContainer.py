@@ -234,6 +234,7 @@ class construct_stateContainer(object):
             # Add states to the container
             smach.Concurrence.add('PATH_FOLLOWING', self.LOS_path_following(path, demandProp, timeout))
             smach.Concurrence.add('GoToDepth', GoToDepth(self._lib, demandDepth, -1, timeout))
+            smach.Concurrence.add('GoToAltitude', GoToAltitude(self._lib, demandAltitude, -1, timeout))
             
         return sm_con
         
