@@ -24,9 +24,9 @@ class MID:
 
     """Device specific messages"""
     # Reset
-    Reset = '\x40'
+    #Reset = '\x40'
     # Restore factory defaults
-    RestoreFactoryDef = '\x0E'
+    #RestoreFactoryDef = '\x0E'
     # Output configuration (MTi-10/100 series only), N*4 bytes
     OutputConfiguration = '\xC0'
     # Latitude, Longitude and Altitude for local declination and gravity
