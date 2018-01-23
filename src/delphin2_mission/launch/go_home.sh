@@ -36,6 +36,11 @@ roscoreID=$!
 echo ${GREEN} roscore process ID $roscoreID ${NC}
 sleep 2
 
+# The light can be switched off on return, if it is visible far enough to help with locating the AUV
+#rostopic pub /light_onOff std_msgs/Bool True -r 10 &
+#lightID=$!
+
+
 # load parameters
 rosparam load ${parampath}default_parameters.yaml
 # make sure the vehicle will always come home at the surface
@@ -50,11 +55,12 @@ echo ${GREEN} map process ID $mapID ${NC}
 # date and time should be appended automatically
 # use split command to limit the size of one file (in MB)
 # since the current version of ROS has a problem with more than 2GB files
-rosbag record --split --size=1024 -a -o ${logpath}${fileprefix} &
+rosbag record --split --size=1024 -a -x "/octomap_full(.*)" -o ${logpath}${fileprefix} &
 rosbagID=$!
 echo ${GREEN} rosbag process ID $rosbagID ${GREEN}
 
-rostopic pub /tail_setpoints_horizontal hardware_interfaces/tail_setpoints 23 20 -r 10 &
+# CHANGE RETURN PITCH HERE
+rostopic pub /tail_setpoints_horizontal hardware_interfaces/tail_setpoints 21 21 -r 10 &
 tailID=$!
 echo ${GREEN} Control Surfaces set ID $tailID ${GREEN}
 
@@ -87,6 +93,7 @@ rosnode kill $rosbagnode
 kill -INT $mapID
 kill -INT $roscoreID
 kill -INT $tailID
+#kill -INT $lightID
 
 sleep 5
 # get the name of the most recent file
