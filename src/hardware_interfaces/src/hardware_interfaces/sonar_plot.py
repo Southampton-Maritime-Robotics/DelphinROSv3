@@ -26,7 +26,8 @@ class SonarPlot():
         self.bins = collections.deque(maxlen=self.memory)
         self.polarResolution = 1
         self.angleStep = 0.1
-        self.Thresholds = [0, 1, 2]
+        self.Detections = collections.deque(maxlen = self.memory)
+
 
     def add_data(self, sonarPing):
         """
@@ -52,8 +53,7 @@ class SonarPlot():
                     self.polarImage[self.polarResolution + 1, x] = [200, 0, 0]
                     self.polarImage[self.polarResolution - 1, x] = [200, 0, 0]
 
-            self.update_polar()
-            # self.update_last_pings()
+            self.update_polar()  
 
     def add_ping_to_polar(self, back_count, color_weight):
         """
@@ -74,6 +74,11 @@ class SonarPlot():
         for idx, amplitude in enumerate(new_bins):
             # for each bin, get an list of pixels for plotting, 
             # increasing the entries in the list based on the distance from the centre
+            if (len(self.Detections) >= 1) and (self.Detections[-1][idx] > 1.) : 
+                plot_color = [1, 0, 0]
+            else:
+                plot_color = color_weight
+            #plot_color = color_weight
             angleCoverage = [
                 #self.transducerBearing[-1] - self.angleStep/2. + self.angleStep * n/np.sqrt(idx)
                 (self.transducerBearing[-back_count] + self.angleStep/2. + self.angleStep * n/np.sqrt(idx))%360
@@ -92,7 +97,7 @@ class SonarPlot():
                 if (x_coord in gridlines) or (y_coord in gridlines):
                     self.polarImage[x_coord, y_coord] = [200, 0, 0]
                 else:
-                    self.polarImage[x_coord, y_coord] = np.multiply(amplitude, color_weight)
+                    self.polarImage[x_coord, y_coord] = np.multiply(amplitude, plot_color)
 
 
 
@@ -103,8 +108,9 @@ class SonarPlot():
         """
         # whilst more updates would be nicer, they slow down the plotting
         # at least with the current implementation
-        self.add_ping_to_polar(2, [1., 1., 1.])
-        self.add_ping_to_polar(1, [0., 1., 1.])
+        if len(self.bins)>2:
+            self.add_ping_to_polar(2, [1., 1., 1.])
+            self.add_ping_to_polar(1, [0., 1., 1.])
 
 
 #    def update_last_pings(self):
