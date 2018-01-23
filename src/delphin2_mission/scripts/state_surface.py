@@ -23,7 +23,7 @@ class Surface(smach.State):
     def execute(self,userdata):
 
         #Set Up Publisher for Mission Control Log
-        pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+        pubMissionLog = rospy.Publisher('MissionStrings', String)
 
         # Set Up Loop Timing Control
         r = rospy.rate(self.__controlRate)

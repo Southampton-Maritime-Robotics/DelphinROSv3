@@ -38,7 +38,7 @@ class GoToHeading(smach.State):
     def execute(self,userdata):
 
         #Set Up Publisher for Mission Control Log
-        pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+        pubMissionLog = rospy.Publisher('MissionStrings', String)
         
         # Set Up Loop Timing Control
         r = rospy.Rate(self.__controlRate)

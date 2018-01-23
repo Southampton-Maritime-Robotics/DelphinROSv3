@@ -45,7 +45,7 @@ class pathFollowingLOS(smach.State):
             self.__uMax     = 1     # maximum speed [m/s]
             self.__wp_R     = 5     # circle of acceptance [m]
         #Set Up Publisher for Mission Control Log
-        self.pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
         
     def getCurrentLocation(self):    
         # Get a current location of the AUV

@@ -44,7 +44,7 @@ class actions(smach.State):
     def execute(self, userdata):
 
         #Set Up Publisher for Mission Control Log
-        pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+        pubMissionLog = rospy.Publisher('MissionStrings', String)
 
         ####################################################################
         ### Perform actions ################################################

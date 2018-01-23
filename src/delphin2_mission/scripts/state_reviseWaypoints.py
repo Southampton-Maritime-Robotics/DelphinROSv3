@@ -24,7 +24,7 @@ class reviseWaypoints(smach.State):
         self.__wp                   = wp
         
         #Set Up Publisher for Mission Control Log
-        self.pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
+        self.pubMissionLog = rospy.Publisher('MissionStrings', String)
         
     def displayInput(self):
         ## Display the raw input on the screen
