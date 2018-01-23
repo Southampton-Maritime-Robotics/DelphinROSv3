@@ -25,7 +25,7 @@ from delphin2_mission.wp_TestwoodLake import wp
 from std_msgs.msg import String
 
 ## import simple states
-import delphin2_mission.basic_states as bstate
+from delphin2_mission.basic_states import *
 ## import a comples state cconstructor
 from delphin2_mission.construct_stateContainer import construct_stateContainer
 
@@ -42,7 +42,7 @@ _wp = wp()
 
 def go_to_start():
     path_name = rospy.get_param("mission/PathName")
-    path_to_altitude_tracking_start = getattr(wp, path_name)
+    path_to_altitude_tracking_start = getattr(_wp, path_name)
 
     # state machine for reaching the start point at the surface
     sm_se = smach.Sequence(outcomes=['succeeded', 'aborted', 'preempted'],
@@ -51,11 +51,11 @@ def go_to_start():
     # define a sequence of tasks
     with sm_se:
         smach.Sequence.add('GPS_FIX', 
-                           bstate.waitForGPS(_lib, timeout=50))
+                           waitForGPS(_lib, timeout=50))
         
         smach.Sequence.add('FOLLOW_PATH',
                            _smCon.LOS_path_following(path=path_to_altitude_tracking_start,
-                                                     demandProp=10.,
+                                                     demandProp=16.,
                                                      timeout=1380))
                         
     return sm_se
@@ -100,6 +100,10 @@ def move_at_altitude_sequence(demand_heading, demand_altitude, demand_prop, time
                                         demandAltitude=demand_altitude,
                                         time_steady=time_steady,
                                         timeout=end_timeout))
+
+        smach.Sequence.add('GPS_FIX', 
+                           waitForGPS(_lib, timeout=50))
+ 
     return sm_se
  
     
@@ -120,7 +124,7 @@ def construct_smach_top():
     # Open the container, add state and define state transition
     with sm_top:
         smach.StateMachine.add('INITIALISE', 
-                               bstate.Initialise(_lib, 15),
+                               Initialise(_lib, 15),
                                transitions={'succeeded': 'TO_START',
                                             'aborted': 'STOP',
                                             'preempted': 'STOP'})
@@ -135,20 +139,12 @@ def construct_smach_top():
                                move_at_altitude_sequence(dive_heading, demand_altitude, demand_prop,
                                                          time_steady=3, start_timeout=60,
                                                          track_timeout=forwards_time, end_timeout=10),
-                               transitions={'succeeded': 'GET_GPS',
+                               transitions={'succeeded': 'STOP',
                                             'aborted': 'STOP',
                                             'preempted': 'STOP'})
 
-        smach.StateMachine.add('GET_GPS',
-                               bstate.waitForGps(_lib,
-                                                 timeout=50),
-                               transitions={'succeeded': 'STOP',
-                                            'aborted': 'STOP',
-                                            'preempted': 'STOP'
-                                            })
-
         smach.StateMachine.add('STOP', 
-                               bstate.Stop(_lib),
+                               Stop(_lib),
                                transitions={'succeeded': 'finish'})
             
     return sm_top
