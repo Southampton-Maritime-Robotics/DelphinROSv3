@@ -353,24 +353,6 @@ def main_control_loop():
 ######## CALCULATE CURRENT SYSTEM STATES #######################################
 ################################################################################
 
-def determineActuatorWeight(_speed,_depth):
-    # DDD
-    # has been moved to src
-    """
-    Calculate Thruster and control surface weight based on forwards speed.
-    both values lie between 0 and 1
-    thruster weight decreases with speed, control surface weight increases with speed
-    """
-
-    U_star_th = 0.9;
-    w_delta_th = 0.03;
-    w_th = 1-0.5*(math.tanh((_speed-U_star_th)/w_delta_th)+1);
-
-    U_star_cs = 0.5;
-    w_delta_cs = 0.04;
-    w_cs = 0.5*(math.tanh((_speed-U_star_cs)/w_delta_cs)+1);
-    
-    return [w_th, w_cs]
 
 def determinePitchBias(error_depth,der_error_depth,dt):
     global int_error_pitchBias
