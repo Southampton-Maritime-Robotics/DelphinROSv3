@@ -14,7 +14,7 @@ class DepthPitchPID():
 
 
 
-    def determineActuatorWeight(self, _speed, _depth):
+    def determineActuatorWeight(self, _speed):
         """
         Calculate Thruster and control surface weight based on forwards speed.
         both values lie between 0 and 1

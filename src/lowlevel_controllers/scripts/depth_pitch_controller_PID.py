@@ -172,9 +172,8 @@ def thrust_controller(depth_current, error_depth, der_error_depth, error_pitch, 
             int_error_depth += dt*error_depth # Calculate the integral error
             flag_depth_int_th = 1
         elif depth_current < 0.4 and numpy.abs(der_error_depth)<windup_der_err_thr: # guarantee the integrators is active when the sub is near the water surface
-            int_error_depth += dt*error_depth
+            int_error_depth += dt*error_depth  #calculate the integral error
             flag_depth_int_th = 1
-####        int_error_depth += dt*error_depth # Calculate the integral error
         
         DPC.Depth_Pterm = error_depth*DPC.Depth_Pgain
         DPC.Depth_Iterm = int_error_depth*DPC.Depth_Igain
@@ -186,7 +185,7 @@ def thrust_controller(depth_current, error_depth, der_error_depth, error_pitch, 
         if numpy.abs(error_pitch) > DPC.deadzone_Pitch:
 
             # update the integrator and apply saturation
-            if propDemand == 0: # update the integrator only when the thruster is not spining
+            if propDemand == 0: # update the integrator only when the propeller is not spining
                 int_error_pitch_th += dt*error_pitch
                 int_error_pitch_th = myUti.limits(int_error_pitch_th, crMin/DPC.Pitch_Igain/2., crMax/DPC.Pitch_Igain/2.)
         
@@ -280,14 +279,13 @@ def main_control_loop():
         dt_status = 2.
     
     while not rospy.is_shutdown():
-        # to control a timing for status publishing
+        # timingg for status publishing
         if time.time()-timeZero_status > dt_status:
             timeZero_status = time.time()
             pubStatus.publish(nodeID = 8, status = True)
-
         timeRef = time.time()
-        # regulary update the AUV speed in according to the propeller demand
 
+        # regulary update the AUV speed according to the propeller demand
         if time.time()-timeLastDemandProp > timeLastDemandProp_lim:
             propDemand = 0
         try:
@@ -309,9 +307,12 @@ def main_control_loop():
 
             # get system state
             error_depth = system_state_depth(controlPeriod,depth_current,depth_demand,der_error_depth)
+
+            # Pitch Bias PID
             DPC.pitchBias = determinePitchBias(error_depth,der_error_depth,controlPeriod)
+
             [error_pitch, der_error_pitch] = system_state_pitch(controlPeriod,pitch_current,pitch_demand,DPC.pitchBias)
-            [w_th,w_cs] = state.determineActuatorWeight(speed_current,depth_current)
+            [w_th,w_cs] = state.determineActuatorWeight(speed_current)
             
             # determine actuator demands
             CS_demand = CS_controller(error_pitch, 
