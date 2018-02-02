@@ -1,6 +1,6 @@
-float32 heading
-float32 roll
-float32 pitch
+float32 heading   # in degrees
+float32 roll      # in degrees 
+float32 pitch     # in degrees
 float32 temperature
 float32 ax
 float32 ay
