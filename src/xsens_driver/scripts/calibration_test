@@ -58,7 +58,7 @@ class XSensDriver(object):
         self.deviceReset = True  # perform soft reset
 
         self.config()
-        self.pubMagField = rospy.Publisher('mag_field_vector_norm', Float32, queue_size=10)
+        self.pubMagField = rospy.Publisher('mag_field_vector_norm', Float32)
 
         self.mainloop()
 

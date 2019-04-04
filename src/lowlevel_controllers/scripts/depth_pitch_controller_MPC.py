@@ -974,13 +974,13 @@ if __name__== '__main__':
     rospy.Subscriber('depth_out', depth, depth_callback)
     rospy.Subscriber('Depth_onOFF', Bool, depth_onOff_callback)
     
-    pub_tail = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints, queue_size=10)
-    pub_tail_vert = rospy.Publisher('tail_setpoints_vertical', tail_setpoints, queue_size=10)
-    pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints, queue_size=10)
-    pub_DPC  = rospy.Publisher('Depth_pitch_controller_values_MPC', depthandspeed_MPC, queue_size=10)
-    pub_prop = rospy.Publisher('prop_demand', Int8, queue_size=10)###
-    pubMissionLog = rospy.Publisher('MissionStrings', String, queue_size=10)
-    pubStatus = rospy.Publisher('status', status, queue_size=10)
+    pub_tail = rospy.Publisher('tail_setpoints_horizontal', tail_setpoints)
+    # pub_tail_vert = rospy.Publisher('tail_setpoints_vertical', tail_setpoints) # unused
+    pub_tsl  = rospy.Publisher('TSL_setpoints_vertical', tsl_setpoints)
+    pub_DPC  = rospy.Publisher('Depth_pitch_controller_values_MPC', depthandspeed_MPC)
+    #pub_prop = rospy.Publisher('prop_demand', Int8)###
+    pubMissionLog = rospy.Publisher('MissionStrings', String)
+    pubStatus = rospy.Publisher('status', status)
     
     rospy.loginfo("Depth-Pitch controller online")
 
