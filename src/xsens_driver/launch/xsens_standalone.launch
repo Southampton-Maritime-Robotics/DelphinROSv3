@@ -1,0 +1,9 @@
+<launch>
+	<!-- Standalone launch of the xsens -->
+    <param name="xsens_filter_profile" value = "42" />
+    <param name="xsens/AHSOn" value = "False" />
+    <param name="xsens/SoftResetOnStart" value = "True" />
+
+	<node pkg="xsens_driver" type="sensor_driver_xsens" name="xsens_driver" respawn="true" />
+	
+</launch>
