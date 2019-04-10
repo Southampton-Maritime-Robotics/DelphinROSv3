@@ -103,7 +103,8 @@ class GoToAltitude(smach.State):
         real_altitude = self.__controller.getAltitude()
         # use pseudo altitude for altitude tracking:
         pseudo_altitude = self.__controller.getPseudoAltitude()
-        altitudeNow = min(pseudo_altitude, real_altitude)
+        altitudeNow = real_altitude  # use altitude
+        # altitudeNow = min(pseudo_altitude, real_altitude) # use pseudo altitude
         errAltitude = altitudeNow - self.__altitude_demand
         depth_demand = depthNow + errAltitude
         
