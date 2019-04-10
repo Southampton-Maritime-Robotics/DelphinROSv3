@@ -110,9 +110,9 @@ thruster/ArduinoMax: 255.
 # Controlsurfaces have an offset on the arduino side, however to change that the pressure hull needs to be opened, so now it can also be adjusted as a parameter here
 # b: top; c: stbd; d: bottom; e: port
 control_surface/offset/top: 0. 
-control_surface/offset/bottom: -10.  
-control_surface/offset/stbd: 6  
-control_surface/offset/port: -7.  
+control_surface/offset/bottom: 0.  
+control_surface/offset/stbd: 0.  
+control_surface/offset/port: 0.  
 
 ### DEPTH SENSOR
 # The depth sensor occasionally glitches to a too large value
@@ -158,6 +158,9 @@ sonar/analyse/ThresholdMethod: "constant"   # "constant", "sliding", or "impulse
 sonar/analyse/BaseThreshold: 40   # Lowest applied threshold
 sonar/analyse/MaxThreshold: 110   # Highest Threshold applied
 sonar/analyse/ThresholdSlope: 10  # Decrease of Threshold per metre scanned
+sonar/analyse/threshold_impulse_response/MinAverage: 2
+sonar/analyse/threshold_impulse_response/MultiplierK: 2
+sonar/analyse/threshold_impulse_response/SpatialLengthW: 5
 
 # Blanking distance to remove returns from the sonar mount
 # Distance from sonar head withing which returns are ignored
