@@ -20,6 +20,10 @@ class wp(object):
         self.home = numpy.array([[5., 7.],
                                  [-5., 3.]]).T
 
+        # NOTE: during high water levels in January this was a better home coordinate
+        # self.home = numpy.array([[0., 5.],
+        #                         [-5., -5.]]).T
+
         # go to start point of diving section
         self.to_start = numpy.array([[0., 0.],
                                      [5., 7.],
