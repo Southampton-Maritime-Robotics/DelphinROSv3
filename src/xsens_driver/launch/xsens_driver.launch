@@ -1,5 +1,9 @@
 <launch>
-
+    <!-- note: the recent version of the xsens driver has timing problems under the
+               older ROS version used on Delphin2;
+               the even older oceanserver compass is still available on Delphin2 and can be
+               used for tracking compass drift on the xsens; the topic is different to that of xsens
+               so it is only used for logging purposes -->
 	<!-- <node pkg="xsens_driver" type="xsens_logger.py" name="xsens_logger" output="screen" /> -->
 	
 	<!-- <node pkg="hardware_interfaces" type="compass_oceanserver.py" name="ocean_server" /> -->
