@@ -48,11 +48,10 @@ rosparam set xsens/filter_profile 39
 
 rosparam set sonar/analyse/BlankDist 0.6
 rosparam set sonar/analyse/Threshold 95
-rosparam set sonar/analyse/BaseThreshold 95 
-rosparam set sonar/analyse/SlideThreshold 7
-
-rosparam set vertical/PID/weight/thruster/U_star 0.9
-rosparam set vertical/PID/weight/thruster/delta 0.03 
+rosparam set sonar/analyse/ThresholdMethod constant  # constant or sliding
+rosparam set sonar/analyse/MaxThreshold 95
+rosparam set sonar/analyse/BaseThreshold 40 
+rosparam set sonar/analyse/SlideThreshold 15   # 0 or 15
 
 rosparam set sonar/IGainB1 160
 rosparam set sonar/IGainB2 160
@@ -62,14 +61,14 @@ rosparam set sonar/Range 7
 rosparam set sonar/Step 64
 
 
-rosparam set vertical/PID/weight/thruster/U_star 0.9
-rosparam set vertical/PID/weight/thruster/delta 0.03
+rosparam set vertical/PID/weight/thruster/U_star 1.
+rosparam set vertical/PID/weight/thruster/delta 1.
 
-rosparam set mission/Altitude 0.6
+rosparam set mission/Altitude 1.0
 rosparam set mission/Prop 22.0 
 rosparam set mission/ForwardsTime 107.0 
-rosparam set max-depth-demand 2.9
-rosparam set over-depth 3.4
+rosparam set max-depth-demand 4.2
+rosparam set over-depth 4.8
 # set mission timeout in minutes
 # THIS IS FOR GOING ONE WAY AND THEN RETURNING!!
 rosparam set mission-timeout 20   # mission timeout in minutes
